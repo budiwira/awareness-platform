@@ -2,24 +2,45 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
+use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $acme = Tenant::create(['name' => 'Acme Corporation', 'slug' => 'acme', 'status' => 'active']);
+        $beta = Tenant::create(['name' => 'Beta Nusantara', 'slug' => 'beta', 'status' => 'active']);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        User::create([
+            'name' => 'Super Admin',
+            'email' => 'superadmin@platform.local',
+            'password' => 'password',
+            'role' => UserRole::SuperAdmin,
+            'tenant_id' => null,
+            'is_active' => true,
         ]);
+
+        foreach ([$acme, $beta] as $tenant) {
+            User::create([
+                'name' => 'Admin '.$tenant->name,
+                'email' => 'admin@'.$tenant->slug.'.local',
+                'password' => 'password',
+                'role' => UserRole::TenantAdmin,
+                'tenant_id' => $tenant->id,
+                'is_active' => true,
+            ]);
+
+            User::create([
+                'name' => 'User '.$tenant->name,
+                'email' => 'user@'.$tenant->slug.'.local',
+                'password' => 'password',
+                'role' => UserRole::User,
+                'tenant_id' => $tenant->id,
+                'is_active' => true,
+            ]);
+        }
     }
 }
