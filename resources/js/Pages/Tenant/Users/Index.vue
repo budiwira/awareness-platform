@@ -1,0 +1,144 @@
+<script setup>
+import { computed, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+
+defineProps({ users: Array });
+
+const errors = computed(() => usePage().props.errors ?? {});
+
+const showCreate = ref(false);
+const createForm = ref({ name: '', email: '', role: 'user' });
+
+const submitCreate = () => {
+    router.post(route('tenant.users.store'), createForm.value, {
+        onSuccess: () => {
+            createForm.value = { name: '', email: '', role: 'user' };
+            showCreate.value = false;
+        },
+    });
+};
+
+const editingId = ref(null);
+const editForm = ref({ name: '', email: '', role: 'user', is_active: true });
+
+const startEdit = (user) => {
+    editingId.value = user.id;
+    editForm.value = { name: user.name, email: user.email, role: user.role, is_active: user.is_active };
+};
+
+const submitEdit = (user) => {
+    router.patch(route('tenant.users.update', user.id), editForm.value, {
+        onSuccess: () => (editingId.value = null),
+    });
+};
+
+const roleBadge = (role) =>
+    role === 'tenant_admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700';
+</script>
+
+<template>
+    <Head title="Users" />
+
+    <AppLayout title="Organization Users">
+        <div class="flex items-center justify-between mb-6">
+            <p class="text-sm text-gray-500">
+                Kelola anggota organisasi Anda. Perubahan role & status tercatat di audit log.
+            </p>
+            <button
+                @click="showCreate = !showCreate"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+            >
+                + Tambah User
+            </button>
+        </div>
+
+        <div v-if="showCreate" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="font-semibold text-gray-800 mb-4">User Baru</div>
+            <form @submit.prevent="submitCreate" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="text-sm text-gray-600">Nama</label>
+                    <input v-model="createForm.name" type="text" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">Email</label>
+                    <input v-model="createForm.email" type="email" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">Role</label>
+                    <select v-model="createForm.role" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                        <option value="user">User</option>
+                        <option value="tenant_admin">Tenant Admin</option>
+                    </select>
+                    <p v-if="errors.role" class="text-xs text-red-600 mt-1">{{ errors.role }}</p>
+                </div>
+                <div class="md:col-span-3 flex justify-end">
+                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                </div>
+            </form>
+            <p class="text-xs text-gray-400 mt-3">
+                User baru dibuat dengan password sementara acak; akses diberikan lewat flow reset password.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                        <th class="px-6 py-3 font-medium">Name</th>
+                        <th class="px-6 py-3 font-medium">Email</th>
+                        <th class="px-6 py-3 font-medium">Role</th>
+                        <th class="px-6 py-3 font-medium">Status</th>
+                        <th class="px-6 py-3 font-medium text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="user in users" :key="user.id" class="border-b border-gray-50">
+                        <template v-if="editingId === user.id">
+                            <td class="px-6 py-3"><input v-model="editForm.name" class="w-full rounded-lg border-gray-300 text-sm" /></td>
+                            <td class="px-6 py-3"><input v-model="editForm.email" type="email" class="w-full rounded-lg border-gray-300 text-sm" /></td>
+                            <td class="px-6 py-3">
+                                <select v-model="editForm.role" class="w-full rounded-lg border-gray-300 text-sm">
+                                    <option value="user">User</option>
+                                    <option value="tenant_admin">Tenant Admin</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-3">
+                                <select v-model="editForm.is_active" class="w-full rounded-lg border-gray-300 text-sm">
+                                    <option :value="true">Active</option>
+                                    <option :value="false">Disabled</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-3 text-right space-x-2">
+                                <button @click="submitEdit(user)" class="text-indigo-600 text-sm font-medium">Simpan</button>
+                                <button @click="editingId = null" class="text-gray-400 text-sm">Batal</button>
+                            </td>
+                        </template>
+                        <template v-else>
+                            <td class="px-6 py-3 font-medium text-gray-900">{{ user.name }}</td>
+                            <td class="px-6 py-3 text-gray-500">{{ user.email }}</td>
+                            <td class="px-6 py-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="roleBadge(user.role)">
+                                    {{ user.role === 'tenant_admin' ? 'Tenant Admin' : 'User' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-3">
+                                <span
+                                    class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                    :class="user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                                >
+                                    {{ user.is_active ? 'Active' : 'Disabled' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-3 text-right">
+                                <button @click="startEdit(user)" class="text-indigo-600 text-sm font-medium">Edit</button>
+                            </td>
+                        </template>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </AppLayout>
+</template>

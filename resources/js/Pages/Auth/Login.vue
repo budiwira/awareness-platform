@@ -125,7 +125,11 @@ const submit = () => {
                             Lupa password?
                         </Link>
                     </div>
-
+<noscript>
+    <div style="background:red;color:white;padding:10px;margin:10px 0">
+        JavaScript dimatikan! Form akan submit biasa via HTML.
+    </div>
+</noscript>
                     <PrimaryButton class="w-full justify-center py-3" :disabled="form.processing">
                         Masuk
                     </PrimaryButton>
@@ -141,4 +145,10 @@ const submit = () => {
             </div>
         </div>
     </div>
+    <!-- DEBUG: lihat apakah form benar-benar submit tanpa JS -->
+<noscript>
+    <div style="background:red;color:white;padding:10px;margin:10px 0">
+        JavaScript dimatikan! Form akan submit biasa via HTML.
+    </div>
+</noscript>
 </template>

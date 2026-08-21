@@ -13,32 +13,34 @@ const menus = computed(() => {
 
     if (role === 'super_admin') {
         return [
-            { label: 'Platform Dashboard', route: 'platform.dashboard', soon: false },
-            { label: 'Tenants', route: null, soon: true },
-            { label: 'Plans & Billing', route: null, soon: true },
-            { label: 'Content Library', route: null, soon: true },
-            { label: 'Audit Log', route: null, soon: true },
+            { label: 'Platform Dashboard', route: 'platform.dashboard', pattern: 'platform.*', soon: false },
+            { label: 'Tenants', route: null, pattern: null, soon: true },
+            { label: 'Plans & Billing', route: null, pattern: null, soon: true },
+            { label: 'Content Library', route: null, pattern: null, soon: true },
+            { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];
     }
 
     if (role === 'tenant_admin') {
         return [
-            { label: 'Tenant Dashboard', route: 'tenant.dashboard', soon: false },
-            { label: 'Users', route: null, soon: true },
-            { label: 'Training', route: null, soon: true },
-            { label: 'Reports', route: null, soon: true },
-            { label: 'Policy', route: null, soon: true },
+            { label: 'Tenant Dashboard', route: 'tenant.dashboard', pattern: 'tenant.dashboard', soon: false },
+            { label: 'Users', route: 'tenant.users.index', pattern: 'tenant.users.*', soon: false },
+            { label: 'Training', route: null, pattern: null, soon: true },
+            { label: 'Reports', route: null, pattern: null, soon: true },
+            { label: 'Policy', route: null, pattern: null, soon: true },
         ];
     }
 
     return [
-        { label: 'My Dashboard', route: 'user.dashboard', soon: false },
-        { label: 'Training', route: null, soon: true },
-        { label: 'Quiz', route: null, soon: true },
-        { label: 'CTF', route: null, soon: true },
-        { label: 'My Score', route: null, soon: true },
+        { label: 'My Dashboard', route: 'user.dashboard', pattern: 'user.*', soon: false },
+        { label: 'Training', route: null, pattern: null, soon: true },
+        { label: 'Quiz', route: null, pattern: null, soon: true },
+        { label: 'CTF', route: null, pattern: null, soon: true },
+        { label: 'My Score', route: null, pattern: null, soon: true },
     ];
 });
+
+const isActive = (item) => (item.pattern ? route().current(item.pattern) : false);
 
 const roleBadgeClass = computed(() => ({
     super_admin: 'bg-purple-100 text-purple-700',
@@ -53,7 +55,6 @@ const logout = () => {
 
 <template>
     <div class="min-h-screen bg-gray-100">
-        <!-- Sidebar -->
         <aside class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col">
             <div class="flex items-center gap-3 px-6 h-16 border-b border-slate-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -70,7 +71,8 @@ const logout = () => {
                     <Link
                         v-if="!item.soon"
                         :href="route(item.route)"
-                        class="flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white"
+                        class="flex items-center px-3 py-2 rounded-lg text-sm font-medium"
+                        :class="isActive(item) ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'"
                     >
                         {{ item.label }}
                     </Link>
@@ -98,7 +100,6 @@ const logout = () => {
             </div>
         </aside>
 
-        <!-- Main area -->
         <div class="pl-64">
             <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8">
                 <h1 class="text-lg font-semibold text-gray-800">{{ title }}</h1>

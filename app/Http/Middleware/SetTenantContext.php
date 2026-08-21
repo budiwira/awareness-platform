@@ -7,13 +7,13 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetTenantContext
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // id dari SESSION (tanpa query DB) agar guard bisa load user
         $userId = Auth::id();
 
         DB::statement("SELECT set_config('app.user_id', ?, false)", [

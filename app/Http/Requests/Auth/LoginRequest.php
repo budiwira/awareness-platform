@@ -30,6 +30,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        // RLS: buka jendela lookup sempit HANYA selama pengecekan kredensial
         DB::statement("SELECT set_config('app.allow_user_lookup', 'on', false)");
 
         try {
@@ -41,10 +42,11 @@ class LoginRequest extends FormRequest
                 ]);
             }
         } finally {
+            // Wajib mati lagi, bahkan jika terjadi exception
             DB::statement("SELECT set_config('app.allow_user_lookup', '', false)");
         }
 
-        // Login sukses: pasang context user baru agar query & audit setelah ini benar
+        // Login sukses: pasang context user baru untuk query & audit setelah ini
         $user = Auth::user();
 
         DB::statement("SELECT set_config('app.user_id', ?, false)", [(string) $user->id]);

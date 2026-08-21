@@ -2,6 +2,7 @@
 
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Tenant\UserController as TenantUserController;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (Request $request) {
+        
+
         return match ($request->user()->role) {
             UserRole::SuperAdmin => redirect()->route('platform.dashboard'),
             UserRole::TenantAdmin => redirect()->route('tenant.dashboard'),
@@ -21,7 +24,6 @@ Route::middleware('auth')->group(function () {
         };
     })->name('dashboard');
 
-    // SUPER ADMIN
     Route::middleware('can:access-platform-dashboard')
         ->prefix('platform')
         ->name('platform.')
@@ -47,13 +49,11 @@ Route::middleware('auth')->group(function () {
             })->name('dashboard');
         });
 
-    // TENANT ADMIN
     Route::middleware('can:access-tenant-dashboard')
         ->prefix('tenant')
         ->name('tenant.')
         ->group(function () {
             Route::get('/dashboard', function (Request $request) {
-                // Tenant context HANYA dari user yang login, bukan dari request
                 $tenantId = $request->user()->tenant_id;
 
                 return Inertia::render('Tenant/Dashboard', [
@@ -64,9 +64,13 @@ Route::middleware('auth')->group(function () {
                     ],
                 ]);
             })->name('dashboard');
+
+            // Organization & User Management (Task 5)
+            Route::get('/users', [TenantUserController::class, 'index'])->name('users.index');
+            Route::post('/users', [TenantUserController::class, 'store'])->name('users.store');
+            Route::patch('/users/{user}', [TenantUserController::class, 'update'])->name('users.update');
         });
 
-    // USER
     Route::middleware('can:access-user-dashboard')
         ->prefix('me')
         ->name('user.')
