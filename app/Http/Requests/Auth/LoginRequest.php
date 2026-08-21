@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\Audit\Audit;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,15 @@ class LoginRequest extends FormRequest
         } finally {
             DB::statement("SELECT set_config('app.allow_user_lookup', '', false)");
         }
+
+        // Login sukses: pasang context user baru agar query & audit setelah ini benar
+        $user = Auth::user();
+
+        DB::statement("SELECT set_config('app.user_id', ?, false)", [(string) $user->id]);
+        DB::statement("SELECT set_config('app.role', ?, false)", [$user->role->value]);
+        DB::statement("SELECT set_config('app.tenant_id', ?, false)", [$user->tenant_id ?? '']);
+
+        Audit::log('auth.login');
 
         RateLimiter::clear($this->throttleKey());
     }
