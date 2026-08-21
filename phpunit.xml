@@ -29,6 +29,8 @@
         <env name="DB_DATABASE" value="awareness_testing"/>
         <env name="DB_USERNAME" value="awareness_dev"/>
         <env name="DB_PASSWORD" value="LocalDevOnly!123"/>
+        <env name="DB_APP_USERNAME" value="awareness_app"/>
+        <env name="DB_APP_PASSWORD" value="AppRuntime!123"/>
         <!-- <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/> -->
         <env name="DB_URL" value=""/>
