@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -15,7 +16,7 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function (Request $request) {
-        
+        \Log::info('DASHBOARD_CLOSURE', ['uid' => $request->user()?->id]);
 
         return match ($request->user()->role) {
             UserRole::SuperAdmin => redirect()->route('platform.dashboard'),
@@ -47,6 +48,10 @@ Route::middleware('auth')->group(function () {
                         ]),
                 ]);
             })->name('dashboard');
+
+            // Route Tenants ditambahkan di sini
+            Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
+            Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
         });
 
     Route::middleware('can:access-tenant-dashboard')

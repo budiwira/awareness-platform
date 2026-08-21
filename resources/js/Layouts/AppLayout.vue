@@ -14,7 +14,7 @@ const menus = computed(() => {
     if (role === 'super_admin') {
         return [
             { label: 'Platform Dashboard', route: 'platform.dashboard', pattern: 'platform.*', soon: false },
-            { label: 'Tenants', route: null, pattern: null, soon: true },
+            { label: 'Tenants', route: 'platform.tenants.index', pattern: 'platform.tenants.*', soon: false },
             { label: 'Plans & Billing', route: null, pattern: null, soon: true },
             { label: 'Content Library', route: null, pattern: null, soon: true },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
