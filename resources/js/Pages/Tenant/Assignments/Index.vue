@@ -1,0 +1,110 @@
+<script setup>
+import { computed, ref } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+
+defineProps({ assignments: Array, users: Array, modules: Array });
+
+const errors = computed(() => usePage().props.errors ?? {});
+
+const showForm = ref(false);
+const form = ref({ user_id: '', training_module_id: '' });
+
+const submit = () => {
+    router.post(route('tenant.assignments.store'), form.value, {
+        onSuccess: () => {
+            form.value = { user_id: '', training_module_id: '' };
+            showForm.value = false;
+        },
+    });
+};
+
+const updateStatus = (assignment, status) => {
+    router.patch(route('tenant.assignments.update', assignment.id), {
+        status: status,
+        score: status === 'completed' ? 100 : null, // Simplifikasi untuk MVP
+    });
+};
+</script>
+
+<template>
+    <Head title="Training Assignments" />
+
+    <AppLayout title="Training Assignments">
+        <div class="flex items-center justify-between mb-6">
+            <p class="text-sm text-gray-500">
+                Tugaskan modul training kepada anggota organisasi Anda.
+            </p>
+            <button
+                @click="showForm = !showForm"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+            >
+                + Tugaskan Modul
+            </button>
+        </div>
+
+        <div v-if="showForm" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="font-semibold text-gray-800 mb-4">Tugaskan Modul Baru</div>
+            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                    <label class="text-sm text-gray-600">Pilih User</label>
+                    <select v-model="form.user_id" required class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                        <option value="" disabled>-- Pilih User --</option>
+                        <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">Pilih Modul</label>
+                    <select v-model="form.training_module_id" required class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                        <option value="" disabled>-- Pilih Modul --</option>
+                        <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }} ({{ mod.duration_minutes }}m)</option>
+                    </select>
+                </div>
+                <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+            </form>
+            <p v-if="errors.user_id" class="text-xs text-red-600 mt-2">{{ errors.user_id }}</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                        <th class="px-6 py-3 font-medium">User</th>
+                        <th class="px-6 py-3 font-medium">Modul</th>
+                        <th class="px-6 py-3 font-medium">Status</th>
+                        <th class="px-6 py-3 font-medium text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="assignment in assignments" :key="assignment.id" class="border-b border-gray-50">
+                        <td class="px-6 py-3">
+                            <div class="font-medium text-gray-900">{{ assignment.user.name }}</div>
+                            <div class="text-xs text-gray-500">{{ assignment.user.email }}</div>
+                        </td>
+                        <td class="px-6 py-3 text-gray-700">{{ assignment.module.title }}</td>
+                        <td class="px-6 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" 
+                                  :class="{
+                                      'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
+                                      'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
+                                      'bg-emerald-100 text-emerald-700': assignment.status === 'completed'
+                                  }">
+                                {{ assignment.status.replace('_', ' ') }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-3 text-right space-x-2">
+                            <button v-if="assignment.status !== 'completed'" 
+                                    @click="updateStatus(assignment, 'completed')" 
+                                    class="text-emerald-600 text-sm font-medium">
+                                Tandai Selesai
+                            </button>
+                        </td>
+                    </tr>
+                    <tr v-if="assignments.length === 0">
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Belum ada assignment.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </AppLayout>
+</template>

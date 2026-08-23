@@ -25,7 +25,7 @@ const menus = computed(() => {
         return [
             { label: 'Tenant Dashboard', route: 'tenant.dashboard', pattern: 'tenant.dashboard', soon: false },
             { label: 'Users', route: 'tenant.users.index', pattern: 'tenant.users.*', soon: false },
-            { label: 'Training', route: null, pattern: null, soon: true },
+            { label: 'Training', route: 'tenant.assignments.index', pattern: 'tenant.assignments.*', soon: false },
             { label: 'Reports', route: null, pattern: null, soon: true },
             { label: 'Policy', route: null, pattern: null, soon: true },
         ];
@@ -33,7 +33,7 @@ const menus = computed(() => {
 
     return [
         { label: 'My Dashboard', route: 'user.dashboard', pattern: 'user.*', soon: false },
-        { label: 'Training', route: null, pattern: null, soon: true },
+        { label: 'Training', route: 'tenant.assignments.index', pattern: 'tenant.assignments.*', soon: false },
         { label: 'Quiz', route: null, pattern: null, soon: true },
         { label: 'CTF', route: null, pattern: null, soon: true },
         { label: 'My Score', route: null, pattern: null, soon: true },
