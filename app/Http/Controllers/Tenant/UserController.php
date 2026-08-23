@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Services\CsvImporter;
+use Illuminate\Http\UploadedFile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Audit\Audit;
@@ -95,5 +97,22 @@ class UserController extends Controller
         Audit::log('user.updated', $user);
 
         return redirect()->route('tenant.users.index');
+    }
+        public function import(Request $request)
+    {
+        Gate::authorize('create', User::class);
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'], // Max 2MB
+        ]);
+
+        $importer = new CsvImporter();
+        $importer->importUsers(
+            $validated['file'],
+            $request->user()->tenant_id,
+            $request->user()->id
+        );
+
+        return redirect()->route('tenant.users.index')->with('success', 'Import user berhasil.');
     }
 }

@@ -52,6 +52,7 @@ Route::middleware('auth')->group(function () {
             // Route Tenants ditambahkan di sini
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
             Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
+            
         });
 
     Route::middleware('can:access-tenant-dashboard')
@@ -74,6 +75,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/users', [TenantUserController::class, 'index'])->name('users.index');
             Route::post('/users', [TenantUserController::class, 'store'])->name('users.store');
             Route::patch('/users/{user}', [TenantUserController::class, 'update'])->name('users.update');
+            Route::post('/users/import', [TenantUserController::class, 'import'])->name('users.import');
         });
 
     Route::middleware('can:access-user-dashboard')

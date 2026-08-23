@@ -7,6 +7,7 @@ defineProps({ users: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
+// --- Create User State ---
 const showCreate = ref(false);
 const createForm = ref({ name: '', email: '', role: 'user' });
 
@@ -19,6 +20,25 @@ const submitCreate = () => {
     });
 };
 
+// --- Import CSV State ---
+const showImport = ref(false);
+const importForm = ref({ file: null });
+const importErrors = computed(() => errors.value?.file ?? '');
+
+const submitImport = () => {
+    const formData = new FormData();
+    formData.append('file', importForm.value.file);
+
+    router.post(route('tenant.users.import'), formData, {
+        forceFormData: true,
+        onSuccess: () => {
+            importForm.value = { file: null };
+            showImport.value = false;
+        },
+    });
+};
+
+// --- Edit User State ---
 const editingId = ref(null);
 const editForm = ref({ name: '', email: '', role: 'user', is_active: true });
 
@@ -45,14 +65,45 @@ const roleBadge = (role) =>
             <p class="text-sm text-gray-500">
                 Kelola anggota organisasi Anda. Perubahan role & status tercatat di audit log.
             </p>
-            <button
-                @click="showCreate = !showCreate"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
-            >
-                + Tambah User
-            </button>
+            <div class="flex gap-2">
+                <button
+                    @click="showImport = !showImport"
+                    class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500"
+                >
+                    Import CSV
+                </button>
+                <button
+                    @click="showCreate = !showCreate"
+                    class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                >
+                    + Tambah User
+                </button>
+            </div>
         </div>
 
+        <!-- Form Import CSV -->
+        <div v-if="showImport" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div class="font-semibold text-gray-800 mb-4">Import User via CSV</div>
+            <form @submit.prevent="submitImport" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label class="text-sm text-gray-600">File CSV (Format: name, email, role)</label>
+                    <input
+                        @change="importForm.file = $event.target.files[0]"
+                        type="file"
+                        accept=".csv,.txt"
+                        required
+                        class="mt-1 w-full rounded-lg border-gray-300 text-sm"
+                    />
+                    <p v-if="importErrors" class="text-xs text-red-600 mt-1">{{ importErrors }}</p>
+                </div>
+                <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">Upload & Import</button>
+            </form>
+            <p class="text-xs text-gray-400 mt-3">
+                Maksimal 500 baris. Jika ada 1 baris error, seluruh import akan dibatalkan.
+            </p>
+        </div>
+
+        <!-- Form Tambah User -->
         <div v-if="showCreate" class="bg-white rounded-xl shadow-sm p-6 mb-6">
             <div class="font-semibold text-gray-800 mb-4">User Baru</div>
             <form @submit.prevent="submitCreate" class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -83,6 +134,7 @@ const roleBadge = (role) =>
             </p>
         </div>
 
+        <!-- Tabel User -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <table class="w-full text-sm">
                 <thead>

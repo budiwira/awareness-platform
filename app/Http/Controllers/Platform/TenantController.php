@@ -44,3 +44,4 @@ class TenantController extends Controller
         return redirect()->route('platform.tenants.index');
     }
 }
+
