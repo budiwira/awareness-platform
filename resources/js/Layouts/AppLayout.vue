@@ -16,7 +16,7 @@ const menus = computed(() => {
             { label: 'Platform Dashboard', route: 'platform.dashboard', pattern: 'platform.*', soon: false },
             { label: 'Tenants', route: 'platform.tenants.index', pattern: 'platform.tenants.*', soon: false },
             { label: 'Plans & Billing', route: null, pattern: null, soon: true },
-            { label: 'Content Library', route: null, pattern: null, soon: true },
+            { label: 'Content Library', route: 'platform.modules.index', pattern: 'platform.modules.*', soon: false },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];
     }

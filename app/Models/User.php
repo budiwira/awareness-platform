@@ -72,4 +72,8 @@ class User extends Authenticatable
     {
         return $this->role === UserRole::User;
     }
+        public function moduleAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ModuleAssignment::class);
+    }
 }

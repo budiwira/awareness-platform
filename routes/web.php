@@ -1,5 +1,7 @@
 <?php
 
+
+use App\Http\Controllers\Platform\TrainingModuleController as PlatformModuleController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
@@ -49,9 +51,15 @@ Route::middleware('auth')->group(function () {
                 ]);
             })->name('dashboard');
 
-            // Route Tenants ditambahkan di sini
+            // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
             Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
+            
+            // Route Modules ditambahkan di sini
+            Route::get('/modules', [PlatformModuleController::class, 'index'])->name('modules.index');
+            Route::post('/modules', [PlatformModuleController::class, 'store'])->name('modules.store');
+            Route::patch('/modules/{module}', [PlatformModuleController::class, 'update'])->name('modules.update');
+            Route::delete('/modules/{module}', [PlatformModuleController::class, 'destroy'])->name('modules.destroy');
             
         });
 
