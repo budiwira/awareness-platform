@@ -3,6 +3,7 @@
 use App\Http\Controllers\Platform\TrainingModuleController as PlatformModuleController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentController;
+use App\Http\Controllers\User\MyTrainingController as UserTrainingController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -26,6 +27,7 @@ Route::middleware('auth')->group(function () {
             UserRole::User => redirect()->route('user.dashboard'),
         };
     })->name('dashboard');
+    
 
     Route::middleware('can:access-platform-dashboard')
         ->prefix('platform')
@@ -99,6 +101,11 @@ Route::middleware('auth')->group(function () {
                     'tenant_name' => $request->user()->tenant?->name,
                 ]);
             })->name('dashboard');
+
+            // Route Training (Ditambahkan di sini)
+            Route::get('/training', [UserTrainingController::class, 'index'])->name('training.index');
+            Route::get('/training/{assignment}', [UserTrainingController::class, 'show'])->name('training.show');
+            Route::patch('/training/{assignment}/complete', [UserTrainingController::class, 'markComplete'])->name('training.complete');
         });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
