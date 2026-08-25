@@ -14,8 +14,12 @@ class MyTrainingController extends Controller
     {
         $userId = $request->user()->id;
 
-        // User hanya bisa melihat assignment miliknya sendiri
-        $assignments = ModuleAssignment::with(['module:id,title,description,duration_minutes'])
+        // User hanya bisa melihat assignment miliknya sendiri,
+        // termasuk info apakah modulnya punya quiz aktif
+        $assignments = ModuleAssignment::with([
+            'module:id,title,description,duration_minutes',
+            'module.quiz:id,training_module_id',
+        ])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -25,14 +29,25 @@ class MyTrainingController extends Controller
         ]);
     }
 
+    public function show(ModuleAssignment $assignment)
+    {
+        if ($assignment->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak berhak melihat assignment ini.');
+        }
+
+        $assignment->load(['module:id,title,description,content,duration_minutes']);
+
+        return Inertia::render('User/MyTraining/Show', [
+            'assignment' => $assignment,
+        ]);
+    }
+
     public function markComplete(Request $request, ModuleAssignment $assignment)
     {
-        // Pastikan assignment ini milik user yang login
         if ($assignment->user_id !== $request->user()->id) {
             abort(403, 'Anda tidak berhak mengubah assignment ini.');
         }
 
-        // Hanya bisa menandai selesai, tidak bisa mengubah kembali
         if ($assignment->status === 'completed') {
             return redirect()->back();
         }
@@ -47,19 +62,5 @@ class MyTrainingController extends Controller
         ]);
 
         return redirect()->route('user.training.index');
-    }
-
-    public function show(ModuleAssignment $assignment)
-    {
-        // Pastikan assignment ini milik user yang login
-        if ($assignment->user_id !== auth()->id()) {
-            abort(403, 'Anda tidak berhak melihat assignment ini.');
-        }
-
-        $assignment->load(['module:id,title,description,content,duration_minutes']);
-
-        return Inertia::render('User/MyTraining/Show', [
-            'assignment' => $assignment,
-        ]);
     }
 }

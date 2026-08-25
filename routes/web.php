@@ -4,6 +4,10 @@ use App\Http\Controllers\Platform\TrainingModuleController as PlatformModuleCont
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentController;
 use App\Http\Controllers\User\MyTrainingController as UserTrainingController;
+use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
+use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
+use App\Http\Controllers\User\MyScoreController as UserScoreController;
+use App\Http\Controllers\Tenant\ReportController as TenantReportController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -62,6 +66,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/modules', [PlatformModuleController::class, 'store'])->name('modules.store');
             Route::patch('/modules/{module}', [PlatformModuleController::class, 'update'])->name('modules.update');
             Route::delete('/modules/{module}', [PlatformModuleController::class, 'destroy'])->name('modules.destroy');
+
+            // Route Quizzes
+            Route::get('/quizzes', [PlatformQuizController::class, 'index'])->name('quizzes.index');
+            Route::post('/quizzes', [PlatformQuizController::class, 'store'])->name('quizzes.store');
+            Route::get('/quizzes/{quiz}', [PlatformQuizController::class, 'show'])->name('quizzes.show');
+            Route::post('/quizzes/{quiz}/questions', [PlatformQuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
         });
 
     Route::middleware('can:access-tenant-dashboard')
@@ -90,6 +100,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/assignments', [TenantAssignmentController::class, 'index'])->name('assignments.index');
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
             Route::patch('/assignments/{assignment}', [TenantAssignmentController::class, 'update'])->name('assignments.update');
+            Route::get('/reports', [TenantReportController::class, 'index'])->name('reports');
         });
 
     Route::middleware('can:access-user-dashboard')
@@ -102,10 +113,16 @@ Route::middleware('auth')->group(function () {
                 ]);
             })->name('dashboard');
 
-            // Route Training (Ditambahkan di sini)
+            // Route Training
             Route::get('/training', [UserTrainingController::class, 'index'])->name('training.index');
             Route::get('/training/{assignment}', [UserTrainingController::class, 'show'])->name('training.show');
             Route::patch('/training/{assignment}/complete', [UserTrainingController::class, 'markComplete'])->name('training.complete');
+
+            // Route Quizzes for Users
+            Route::get('/training/{assignment}/quiz', [UserQuizController::class, 'show'])->name('training.quiz');
+            Route::post('/training/{assignment}/quiz', [UserQuizController::class, 'submit'])->name('training.quiz.submit');
+            Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
+            Route::get('/score', [UserScoreController::class, 'index'])->name('score');
         });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

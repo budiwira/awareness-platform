@@ -16,6 +16,7 @@ const menus = computed(() => {
             { label: 'Platform Dashboard', route: 'platform.dashboard', pattern: 'platform.*', soon: false },
             { label: 'Tenants', route: 'platform.tenants.index', pattern: 'platform.tenants.*', soon: false },
             { label: 'Content Library', route: 'platform.modules.index', pattern: 'platform.modules.*', soon: false },
+            { label: 'Quizzes', route: 'platform.quizzes.index', pattern: 'platform.quizzes.*', soon: false },
             { label: 'Plans & Billing', route: null, pattern: null, soon: true },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];
@@ -26,18 +27,17 @@ const menus = computed(() => {
             { label: 'Tenant Dashboard', route: 'tenant.dashboard', pattern: 'tenant.dashboard', soon: false },
             { label: 'Users', route: 'tenant.users.index', pattern: 'tenant.users.*', soon: false },
             { label: 'Training', route: 'tenant.assignments.index', pattern: 'tenant.assignments.*', soon: false },
-            { label: 'Reports', route: null, pattern: null, soon: true },
+            { label: 'Reports', route: 'tenant.reports', pattern: 'tenant.reports', soon: false },
             { label: 'Policy', route: null, pattern: null, soon: true },
         ];
     }
 
-    // Default untuk role 'user'
     return [
         { label: 'My Dashboard', route: 'user.dashboard', pattern: 'user.*', soon: false },
         { label: 'Training', route: 'user.training.index', pattern: 'user.training.*', soon: false },
         { label: 'Quiz', route: null, pattern: null, soon: true },
         { label: 'CTF', route: null, pattern: null, soon: true },
-        { label: 'My Score', route: null, pattern: null, soon: true },
+        { label: 'My Score', route: 'user.score', pattern: 'user.score', soon: false },
     ];
 });
 
@@ -56,7 +56,6 @@ const logout = () => {
 
 <template>
     <div class="min-h-screen bg-gray-100">
-        <!-- Sidebar -->
         <aside class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col">
             <div class="flex items-center gap-3 px-6 h-16 border-b border-slate-800">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -90,7 +89,6 @@ const logout = () => {
                 </template>
             </nav>
 
-            <!-- User Profile & Logout -->
             <div class="px-4 py-4 border-t border-slate-800">
                 <div class="text-sm font-medium truncate">{{ user?.name }}</div>
                 <div class="text-xs text-slate-400 mb-3">{{ user?.role_label }}</div>
@@ -103,7 +101,6 @@ const logout = () => {
             </div>
         </aside>
 
-        <!-- Main Content Area -->
         <div class="pl-64">
             <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8">
                 <h1 class="text-lg font-semibold text-gray-800">{{ title }}</h1>

@@ -32,25 +32,42 @@ const markComplete = (assignment) => {
                 <tbody>
                     <tr v-for="assignment in assignments" :key="assignment.id" class="border-b border-gray-50">
                         <td class="px-6 py-3">
-                            <Link :href="route('user.training.show', assignment.id)" class="text-indigo-600 font-medium hover:underline">
+                            <Link
+                                :href="route('user.training.show', assignment.id)"
+                                class="text-indigo-600 font-medium hover:underline"
+                            >
                                 {{ assignment.module.title }}
                             </Link>
                         </td>
                         <td class="px-6 py-3 text-gray-500">{{ assignment.module.duration_minutes }} menit</td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" 
-                                  :class="{
-                                      'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
-                                      'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
-                                      'bg-emerald-100 text-emerald-700': assignment.status === 'completed'
-                                  }">
+                            <span
+                                class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                :class="{
+                                    'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
+                                    'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
+                                    'bg-emerald-100 text-emerald-700': assignment.status === 'completed'
+                                }"
+                            >
                                 {{ assignment.status === 'completed' ? 'Selesai' : (assignment.status === 'in_progress' ? 'Sedang Dikerjakan' : 'Ditugaskan') }}
                             </span>
+                            <span v-if="assignment.score !== null" class="ml-2 text-xs text-gray-500">
+                                Skor: {{ assignment.score }}
+                            </span>
                         </td>
-                        <td class="px-6 py-3 text-right">
-                            <button v-if="assignment.status !== 'completed'" 
-                                    @click="markComplete(assignment)" 
-                                    class="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-500">
+                        <td class="px-6 py-3 text-right space-x-2">
+                            <Link
+                                v-if="assignment.module?.quiz"
+                                :href="route('user.training.quiz', assignment.id)"
+                                class="px-3 py-1 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-500"
+                            >
+                                Kerjakan Quiz
+                            </Link>
+                            <button
+                                v-if="assignment.status !== 'completed'"
+                                @click="markComplete(assignment)"
+                                class="text-emerald-600 text-xs font-medium"
+                            >
                                 Tandai Selesai
                             </button>
                             <span v-else class="text-xs text-gray-400">✓ Selesai</span>

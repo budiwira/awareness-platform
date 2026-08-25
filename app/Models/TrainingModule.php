@@ -26,4 +26,9 @@ class TrainingModule extends Model
     {
         return $this->hasMany(ModuleAssignment::class);
     }
+
+        public function quiz(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Quiz::class, 'training_module_id');
+    }
 }
