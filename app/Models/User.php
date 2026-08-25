@@ -76,4 +76,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(ModuleAssignment::class);
     }
+        public function caseParticipations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CaseParticipation::class);
+    }
 }

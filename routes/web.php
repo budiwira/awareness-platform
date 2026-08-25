@@ -8,6 +8,7 @@ use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\Tenant\ReportController as TenantReportController;
+use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -72,6 +73,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/quizzes', [PlatformQuizController::class, 'store'])->name('quizzes.store');
             Route::get('/quizzes/{quiz}', [PlatformQuizController::class, 'show'])->name('quizzes.show');
             Route::post('/quizzes/{quiz}/questions', [PlatformQuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
+
+            // Route Cases
+            Route::get('/cases', [PlatformCaseController::class, 'index'])->name('cases.index');
+            Route::post('/cases', [PlatformCaseController::class, 'store'])->name('cases.store');
+            Route::get('/cases/{caseStudy}', [PlatformCaseController::class, 'show'])->name('cases.show');
+            Route::post('/cases/{caseStudy}/scenes', [PlatformCaseController::class, 'storeScene'])->name('cases.scenes.store');
         });
 
     Route::middleware('can:access-tenant-dashboard')
