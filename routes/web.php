@@ -9,6 +9,7 @@ use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\Tenant\ReportController as TenantReportController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
+use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -130,6 +131,13 @@ Route::middleware('auth')->group(function () {
             Route::post('/training/{assignment}/quiz', [UserQuizController::class, 'submit'])->name('training.quiz.submit');
             Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
             Route::get('/score', [UserScoreController::class, 'index'])->name('score');
+            
+            // Route Cases for Users
+            Route::get('/cases', [UserCaseController::class, 'index'])->name('cases.index');
+            Route::post('/cases/{caseStudy}/start', [UserCaseController::class, 'start'])->name('cases.start');
+            Route::get('/cases/run/{participation}', [UserCaseController::class, 'run'])->name('cases.run');
+            Route::post('/cases/run/{participation}', [UserCaseController::class, 'submit'])->name('cases.submit');
+            Route::get('/cases/result/{participation}', [UserCaseController::class, 'result'])->name('cases.result');
         });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

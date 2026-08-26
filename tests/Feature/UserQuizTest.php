@@ -36,7 +36,7 @@ test('quiz payload never contains correct_index', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('User/MyTraining/Quiz')
-            ->has('questions', 2, fn (Assert $q) => $q->missing('correct_index'))
+            ->has('questions', 2, fn (Assert $q) => $q->missing('correct_index')->etc())
         );
 });
 
