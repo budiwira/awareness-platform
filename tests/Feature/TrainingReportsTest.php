@@ -32,6 +32,26 @@ test('user sees own score page with stats', function () {
             ->has('attempts', 1)
         );
 });
+test('tenant admin can export csv report', function () {
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Budi Export']);
+
+    $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+    $content = $response->streamedContent();
+    expect($content)->toContain('Budi Export');
+});
+
+test('regular user cannot export report', function () {
+    $tenant = Tenant::factory()->create();
+    $user = User::factory()->create(['tenant_id' => $tenant->id]);
+
+    $this->actingAs($user)->get(route('tenant.reports.export'))->assertForbidden();
+});
 
 test('tenant admin reports only include own tenant data', function () {
     $tenantA = Tenant::factory()->create();

@@ -116,6 +116,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/assignments', [TenantAssignmentController::class, 'index'])->name('assignments.index');
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
             Route::patch('/assignments/{assignment}', [TenantAssignmentController::class, 'update'])->name('assignments.update');
+            Route::get('/reports/export', [TenantReportController::class, 'export'])->name('reports.export');
             Route::get('/reports', [TenantReportController::class, 'index'])->name('reports');
 
             // Route TTX

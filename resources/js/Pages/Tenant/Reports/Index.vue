@@ -9,6 +9,12 @@ defineProps({ stats: Object, per_user: Array });
     <Head title="Reports" />
 
     <AppLayout title="Laporan Training">
+                <div class="flex justify-end mb-4">
+            <a :href="route('tenant.reports.export')"
+                class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500">
+                ⬇ Download CSV
+            </a>
+        </div>
         <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
             <div class="bg-white rounded-xl shadow-sm p-5">
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Anggota</div>

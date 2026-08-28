@@ -18,8 +18,51 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $tenantId = $request->user()->tenant_id;
+        $report = $this->buildReport($request->user()->tenant_id);
 
+        return Inertia::render('Tenant/Reports/Index', $report);
+    }
+
+    public function export(Request $request)
+    {
+        $report = $this->buildReport($request->user()->tenant_id);
+        $perUser = $report['per_user'];
+
+        $filename = 'awareness-report-' . now()->format('Ymd-His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($perUser) {
+            $out = fopen('php://output', 'w');
+
+            // BOM agar Excel membuka UTF-8 dengan benar
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, ['Nama', 'Email', 'Ditugaskan', 'Selesai', 'Percobaan', 'Rata-rata Quiz', 'Awareness Score']);
+
+            foreach ($perUser as $row) {
+                fputcsv($out, [
+                    $row['name'],
+                    $row['email'],
+                    $row['assigned'],
+                    $row['completed'],
+                    $row['attempts'],
+                    $row['avg_score'],
+                    $row['awareness_score'],
+                ]);
+            }
+
+            fclose($out);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function buildReport(string $tenantId): array
+    {
         $users = User::where('tenant_id', $tenantId)->get();
 
         $assignments = ModuleAssignment::with('user:id,name,email')->where('tenant_id', $tenantId)->get();
@@ -27,7 +70,6 @@ class ReportController extends Controller
 
         $totalCtfPoints = (int) CtfChallenge::where('is_active', true)->sum('points');
 
-        // Preload & group per user untuk efisiensi
         $gAssign = ModuleAssignment::where('tenant_id', $tenantId)->get()->groupBy('user_id');
         $gQuiz = QuizAttempt::where('tenant_id', $tenantId)->get()->groupBy('user_id');
         $gCase = CaseParticipation::where('tenant_id', $tenantId)->get()->groupBy('user_id');
@@ -75,9 +117,6 @@ class ReportController extends Controller
             'org_avg' => $orgAvg,
         ];
 
-        return Inertia::render('Tenant/Reports/Index', [
-            'stats' => $stats,
-            'per_user' => $perUser,
-        ]);
+        return ['stats' => $stats, 'per_user' => $perUser];
     }
 }
