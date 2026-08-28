@@ -17,6 +17,7 @@ use App\Http\Controllers\Platform\PlanController as PlatformPlanController;
 use App\Http\Controllers\Platform\ReportController as PlatformReportController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
+use App\Http\Controllers\Tenant\BillingController as TenantBillingController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -149,6 +150,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/ttx/exercises/{exercise}/injects', [TenantTtxExerciseController::class, 'storeInject'])->name('ttx.exercises.injects.store');
             Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
             Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
+            
+            // Route Billing
+            Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
+            Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
         });
 
     Route::middleware('can:access-user-dashboard')

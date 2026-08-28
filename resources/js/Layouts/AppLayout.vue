@@ -35,6 +35,7 @@ const menus = computed(() => {
             { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', pattern: 'tenant.ttx.index', soon: false },
             { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', pattern: 'tenant.ttx.exercises.*', soon: false },
             { label: 'Reports', route: 'tenant.reports', pattern: 'tenant.reports', soon: false },
+            { label: 'Billing', route: 'tenant.billing.index', pattern: 'tenant.billing.*', soon: false },
             { label: 'Policy', route: null, pattern: null, soon: true },
         ];
     }
