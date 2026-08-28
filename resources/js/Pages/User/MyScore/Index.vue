@@ -2,13 +2,42 @@
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({ stats: Object, assignments: Array, attempts: Array });
+defineProps({ score: Object, stats: Object, assignments: Array, attempts: Array });
 </script>
 
 <template>
     <Head title="My Score" />
 
     <AppLayout title="Skor Saya">
+        <!-- OVERALL + BREAKDOWN -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center">
+                <div
+                    class="w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold"
+                    :class="score.overall >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                >
+                    {{ score.overall }}
+                </div>
+                <div class="text-sm text-gray-500 mt-3">Awareness Score</div>
+            </div>
+
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                <div class="font-semibold text-gray-800 mb-4">Komponen Skor (explainable)</div>
+                <div class="space-y-3">
+                    <div v-for="b in score.breakdown" :key="b.key">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700">{{ b.label }} <span class="text-gray-400">({{ b.weight }}%)</span></span>
+                            <span class="font-medium text-gray-900">{{ b.score }}</span>
+                        </div>
+                        <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-500" :style="{ width: b.score + '%' }"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAT CARDS -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white rounded-xl shadow-sm p-5">
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Ditugaskan</div>
@@ -23,11 +52,12 @@ defineProps({ stats: Object, assignments: Array, attempts: Array });
                 <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.attempts }}</div>
             </div>
             <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Rata-rata Skor</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Rata-rata Quiz</div>
                 <div class="text-2xl font-bold text-indigo-600 mt-1">{{ stats.avg_score }}</div>
             </div>
         </div>
 
+        <!-- RIWAYAT QUIZ -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
             <div class="px-6 py-4 font-semibold text-gray-800 border-b border-gray-100">Riwayat Percobaan Quiz</div>
             <table class="w-full text-sm">
@@ -58,6 +88,7 @@ defineProps({ stats: Object, assignments: Array, attempts: Array });
             </table>
         </div>
 
+        <!-- TUGAS TRAINING -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="px-6 py-4 font-semibold text-gray-800 border-b border-gray-100">Tugas Training</div>
             <table class="w-full text-sm">

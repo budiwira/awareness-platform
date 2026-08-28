@@ -9,7 +9,7 @@ defineProps({ stats: Object, per_user: Array });
     <Head title="Reports" />
 
     <AppLayout title="Laporan Training">
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
             <div class="bg-white rounded-xl shadow-sm p-5">
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Anggota</div>
                 <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.users }}</div>
@@ -27,8 +27,12 @@ defineProps({ stats: Object, per_user: Array });
                 <div class="text-2xl font-bold text-indigo-600 mt-1">{{ stats.pass_rate }}%</div>
             </div>
             <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Rata-rata Skor</div>
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Rata-rata Quiz</div>
                 <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.avg_score }}</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border-2 border-indigo-200">
+                <div class="text-xs text-indigo-600 uppercase tracking-wide">Awareness Org</div>
+                <div class="text-2xl font-bold text-indigo-700 mt-1">{{ stats.org_avg }}</div>
             </div>
         </div>
 
@@ -41,7 +45,8 @@ defineProps({ stats: Object, per_user: Array });
                         <th class="px-6 py-3 font-medium">Ditugaskan</th>
                         <th class="px-6 py-3 font-medium">Selesai</th>
                         <th class="px-6 py-3 font-medium">Percobaan</th>
-                        <th class="px-6 py-3 font-medium">Rata-rata Skor</th>
+                        <th class="px-6 py-3 font-medium">Rata-rata Quiz</th>
+                        <th class="px-6 py-3 font-medium">Awareness Score</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -56,9 +61,15 @@ defineProps({ stats: Object, per_user: Array });
                         <td class="px-6 py-3 font-medium" :class="row.avg_score >= 70 ? 'text-emerald-600' : 'text-gray-600'">
                             {{ row.avg_score }}
                         </td>
+                        <td class="px-6 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
+                                  :class="row.awareness_score >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'">
+                                {{ row.awareness_score }}
+                            </span>
+                        </td>
                     </tr>
                     <tr v-if="per_user.length === 0">
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada anggota.</td>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">Belum ada anggota.</td>
                     </tr>
                 </tbody>
             </table>
