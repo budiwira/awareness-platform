@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\TtxScore;
 
 class TtxExerciseController extends Controller
 {
@@ -134,6 +135,100 @@ class TtxExerciseController extends Controller
         Audit::log('ttx.member_added', $team, ['user_id' => $member->id]);
 
         return redirect()->back();
+    }
+        public function advance(Request $request, TtxExercise $exercise)
+    {
+        $this->ensureTenant($request, $exercise->tenant_id);
+
+        $order = array_keys(self::PHASES);
+        $i = array_search($exercise->phase, $order);
+
+        if ($i !== false && $i < count($order) - 1) {
+            $exercise->phase = $order[$i + 1];
+            $exercise->save();
+            Audit::log('ttx.phase_advanced', $exercise, ['phase' => $exercise->phase]);
+        }
+
+        return redirect()->route('tenant.ttx.exercises.show', $exercise);
+    }
+
+    public function storeInject(Request $request, TtxExercise $exercise)
+    {
+        $this->ensureTenant($request, $exercise->tenant_id);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $exercise->injects()->create([
+            'tenant_id' => $exercise->tenant_id,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'order' => $exercise->injects()->count() + 1,
+        ]);
+
+        Audit::log('ttx.inject_added', $exercise, ['title' => $validated['title']]);
+
+        return redirect()->route('tenant.ttx.exercises.show', $exercise);
+    }
+
+    public function evaluateForm(Request $request, TtxExercise $exercise)
+    {
+        $this->ensureTenant($request, $exercise->tenant_id);
+
+        $exercise->load('teams.members.user:id,name,email');
+
+        $members = $exercise->teams->flatMap->members->pluck('user')->unique('id')->values();
+
+        $scores = TtxScore::where('exercise_id', $exercise->id)->get()->keyBy('user_id')
+            ->map(fn ($s) => $s->score);
+
+        return Inertia::render('Tenant/Ttx/Exercises/Evaluate', [
+            'exercise' => $exercise,
+            'members' => $members,
+            'scores' => $scores,
+        ]);
+    }
+
+    public function evaluateStore(Request $request, TtxExercise $exercise)
+    {
+        $this->ensureTenant($request, $exercise->tenant_id);
+
+        $validated = $request->validate([
+            'aar_notes' => ['nullable', 'string'],
+            'corrective_actions' => ['nullable', 'string'],
+            'scores' => ['nullable', 'array'],
+            'scores.*' => ['nullable', 'integer', 'min:0', 'max:100'],
+        ]);
+
+        $exercise->load('teams.members');
+        $memberIds = $exercise->teams->flatMap->members->pluck('user_id')->map(fn ($v) => (string) $v)->unique()->all();
+
+        $actions = collect(explode("\n", $validated['corrective_actions'] ?? ''))
+            ->map(fn ($s) => trim($s))->filter(fn ($s) => $s !== '')->values()->all();
+
+        $exercise->update([
+            'aar_notes' => $validated['aar_notes'] ?? $exercise->aar_notes,
+            'corrective_actions' => $actions,
+            'phase' => 'completed',
+        ]);
+
+        // Hanya anggota tim yang valid yang diberi skor (defense in depth)
+        foreach ($validated['scores'] ?? [] as $userId => $score) {
+            if ($score === null || $score === '' || ! in_array((string) $userId, $memberIds)) {
+                continue;
+            }
+
+            TtxScore::updateOrCreate(
+                ['user_id' => $userId, 'exercise_id' => $exercise->id],
+                ['tenant_id' => $exercise->tenant_id, 'score' => (int) $score]
+            );
+        }
+
+        Audit::log('ttx.evaluated', $exercise);
+
+        return redirect()->route('tenant.ttx.exercises.show', $exercise);
     }
 
     private function ensureTenant(Request $request, string $tenantId): void

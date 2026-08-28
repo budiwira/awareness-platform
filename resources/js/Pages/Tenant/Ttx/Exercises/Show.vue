@@ -1,4 +1,17 @@
 <script setup>
+
+const showInjectForm = ref(false);
+const injectForm = ref({ title: '', description: '' });
+
+const submitInject = () => {
+    router.post(route('tenant.ttx.exercises.injects.store', props.exercise.id), injectForm.value, {
+        onSuccess: () => {
+            injectForm.value = { title: '', description: '' };
+            showInjectForm.value = false;
+        },
+    });
+};
+
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -67,6 +80,17 @@ const submitMember = (teamId) => {
                 </div>
             </div>
         </div>
+                <!-- AKSI FASILITATOR -->
+        <div class="flex justify-end gap-2 mb-6">
+            <Link :href="route('tenant.ttx.exercises.evaluate', exercise.id)"
+                class="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm hover:bg-purple-500">
+                Isi Evaluasi / AAR
+            </Link>
+            <button v-if="exercise.phase !== 'completed'" @click="router.post(route('tenant.ttx.exercises.advance', exercise.id))"
+                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500">
+                Advance Fase →
+            </button>
+        </div>
 
         <!-- INFO -->
         <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -79,6 +103,18 @@ const submitMember = (teamId) => {
         <!-- INJECTS (preview) -->
         <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
             <h3 class="font-semibold text-gray-800 mb-3">Injects ({{ exercise.injects?.length ?? 0 }})</h3>
+                        <div class="mb-3">
+                <button @click="showInjectForm = !showInjectForm"
+                    class="px-3 py-1.5 rounded-lg bg-yellow-500 text-white text-sm hover:bg-yellow-400">+ Inject</button>
+            </div>
+
+            <form v-if="showInjectForm" @submit.prevent="submitInject" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <input v-model="injectForm.title" type="text" required placeholder="Judul inject (mis. 09:30 — Eskalasi)"
+                    class="rounded-lg border-gray-300 text-sm" />
+                <input v-model="injectForm.description" type="text" placeholder="Deskripsi komplikasi"
+                    class="rounded-lg border-gray-300 text-sm" />
+                <button class="px-4 py-2 rounded-lg bg-yellow-500 text-white text-sm">Simpan</button>
+            </form>
             <ol class="space-y-2">
                 <li v-for="inj in exercise.injects" :key="inj.id" class="text-sm border-l-4 border-yellow-400 bg-yellow-50 rounded-r-lg p-3">
                     <span class="font-medium">{{ inj.title }}</span> — {{ inj.description }}

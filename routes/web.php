@@ -129,6 +129,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/ttx/exercises/{exercise}', [TenantTtxExerciseController::class, 'show'])->name('ttx.exercises.show');
             Route::post('/ttx/exercises/{exercise}/teams', [TenantTtxExerciseController::class, 'storeTeam'])->name('ttx.teams.store');
             Route::post('/ttx/teams/{team}/members', [TenantTtxExerciseController::class, 'storeTeamMember'])->name('ttx.teams.members.store');
+            
+            // Advanced TTX Exercise Routes
+            Route::post('/ttx/exercises/{exercise}/advance', [TenantTtxExerciseController::class, 'advance'])->name('ttx.exercises.advance');
+            Route::post('/ttx/exercises/{exercise}/injects', [TenantTtxExerciseController::class, 'storeInject'])->name('ttx.exercises.injects.store');
+            Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
+            Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
         });
 
     Route::middleware('can:access-user-dashboard')
