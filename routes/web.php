@@ -12,6 +12,8 @@ use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
 use App\Http\Controllers\User\CtfController as UserCtfController;
+use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
+use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -115,6 +117,18 @@ Route::middleware('auth')->group(function () {
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
             Route::patch('/assignments/{assignment}', [TenantAssignmentController::class, 'update'])->name('assignments.update');
             Route::get('/reports', [TenantReportController::class, 'index'])->name('reports');
+
+            // Route TTX
+            Route::get('/ttx', [TenantTtxController::class, 'index'])->name('ttx.index');
+            Route::post('/ttx/playbooks', [TenantTtxController::class, 'storePlaybook'])->name('ttx.playbooks.store');
+            Route::post('/ttx/runbooks', [TenantTtxController::class, 'storeRunbook'])->name('ttx.runbooks.store');
+            
+            // Route TTX Exercises & Teams
+            Route::get('/ttx/exercises', [TenantTtxExerciseController::class, 'index'])->name('ttx.exercises.index');
+            Route::post('/ttx/exercises', [TenantTtxExerciseController::class, 'store'])->name('ttx.exercises.store');
+            Route::get('/ttx/exercises/{exercise}', [TenantTtxExerciseController::class, 'show'])->name('ttx.exercises.show');
+            Route::post('/ttx/exercises/{exercise}/teams', [TenantTtxExerciseController::class, 'storeTeam'])->name('ttx.teams.store');
+            Route::post('/ttx/teams/{team}/members', [TenantTtxExerciseController::class, 'storeTeamMember'])->name('ttx.teams.members.store');
         });
 
     Route::middleware('can:access-user-dashboard')

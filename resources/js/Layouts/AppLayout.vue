@@ -29,6 +29,8 @@ const menus = computed(() => {
             { label: 'Tenant Dashboard', route: 'tenant.dashboard', pattern: 'tenant.dashboard', soon: false },
             { label: 'Users', route: 'tenant.users.index', pattern: 'tenant.users.*', soon: false },
             { label: 'Training', route: 'tenant.assignments.index', pattern: 'tenant.assignments.*', soon: false },
+            { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', pattern: 'tenant.ttx.*', soon: false },
+            { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', pattern: 'tenant.ttx.exercises.*', soon: false },
             { label: 'Reports', route: 'tenant.reports', pattern: 'tenant.reports', soon: false },
             { label: 'Policy', route: null, pattern: null, soon: true },
         ];
