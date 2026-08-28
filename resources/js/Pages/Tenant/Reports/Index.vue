@@ -1,6 +1,8 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import StatCard from '@/Components/StatCard.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 
 defineProps({ stats: Object, per_user: Array });
 </script>
@@ -9,42 +11,25 @@ defineProps({ stats: Object, per_user: Array });
     <Head title="Reports" />
 
     <AppLayout title="Laporan Training">
-                <div class="flex justify-end mb-4">
+        <div class="flex justify-end mb-4">
             <a :href="route('tenant.reports.export')"
                 class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500">
                 ⬇ Download CSV
             </a>
         </div>
+
         <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-            <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Anggota</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.users }}</div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Penugasan</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.assignments }}</div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Completion</div>
-                <div class="text-2xl font-bold text-emerald-600 mt-1">{{ stats.completion_rate }}%</div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Pass Rate</div>
-                <div class="text-2xl font-bold text-indigo-600 mt-1">{{ stats.pass_rate }}%</div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-5">
-                <div class="text-xs text-gray-500 uppercase tracking-wide">Rata-rata Quiz</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ stats.avg_score }}</div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-5 border-2 border-indigo-200">
-                <div class="text-xs text-indigo-600 uppercase tracking-wide">Awareness Org</div>
-                <div class="text-2xl font-bold text-indigo-700 mt-1">{{ stats.org_avg }}</div>
-            </div>
+            <StatCard label="Anggota" :value="stats.users" />
+            <StatCard label="Penugasan" :value="stats.assignments" />
+            <StatCard label="Completion" :value="stats.completion_rate + '%'" accent="text-emerald-600" />
+            <StatCard label="Pass Rate" :value="stats.pass_rate + '%'" accent="text-indigo-600" />
+            <StatCard label="Rata-rata Quiz" :value="stats.avg_score" />
+            <StatCard label="Awareness Org" :value="stats.org_avg" accent="text-indigo-700" border="border-2 border-indigo-200" />
         </div>
 
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="px-6 py-4 font-semibold text-gray-800 border-b border-gray-100">Progres per Anggota</div>
-            <table class="w-full text-sm">
+            <table v-if="per_user.length > 0" class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Nama</th>
@@ -74,11 +59,9 @@ defineProps({ stats: Object, per_user: Array });
                             </span>
                         </td>
                     </tr>
-                    <tr v-if="per_user.length === 0">
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">Belum ada anggota.</td>
-                    </tr>
                 </tbody>
             </table>
+            <EmptyState v-else message="Belum ada anggota." />
         </div>
     </AppLayout>
 </template>
