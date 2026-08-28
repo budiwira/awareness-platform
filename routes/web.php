@@ -12,6 +12,7 @@ use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
 use App\Http\Controllers\User\CtfController as UserCtfController;
+use App\Http\Controllers\Platform\ReportController as PlatformReportController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
 use App\Enums\UserRole;
@@ -88,6 +89,9 @@ Route::middleware('auth')->group(function () {
             // Route CTF
             Route::get('/ctf', [PlatformCtfController::class, 'index'])->name('ctf.index');
             Route::post('/ctf', [PlatformCtfController::class, 'store'])->name('ctf.store');
+
+            // Route Reports
+            Route::get('/reports', [PlatformReportController::class, 'index'])->name('reports');
         });
 
     Route::middleware('can:access-tenant-dashboard')
