@@ -18,6 +18,7 @@ const menus = computed(() => {
             { label: 'Content Library', route: 'platform.modules.index', pattern: 'platform.modules.*', soon: false },
             { label: 'Quizzes', route: 'platform.quizzes.index', pattern: 'platform.quizzes.*', soon: false },
             { label: 'Case Studies', route: 'platform.cases.index', pattern: 'platform.cases.*', soon: false },
+            { label: 'CTF', route: 'platform.ctf.index', pattern: 'platform.ctf.*', soon: false },
             { label: 'Plans & Billing', route: null, pattern: null, soon: true },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];

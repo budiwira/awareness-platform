@@ -10,6 +10,7 @@ use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\Tenant\ReportController as TenantReportController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
+use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -80,6 +81,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/cases', [PlatformCaseController::class, 'store'])->name('cases.store');
             Route::get('/cases/{caseStudy}', [PlatformCaseController::class, 'show'])->name('cases.show');
             Route::post('/cases/{caseStudy}/scenes', [PlatformCaseController::class, 'storeScene'])->name('cases.scenes.store');
+            
+            // Route CTF
+            Route::get('/ctf', [PlatformCtfController::class, 'index'])->name('ctf.index');
+            Route::post('/ctf', [PlatformCtfController::class, 'store'])->name('ctf.store');
         });
 
     Route::middleware('can:access-tenant-dashboard')

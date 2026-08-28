@@ -80,4 +80,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(CaseParticipation::class);
     }
+        public function ctfSolves(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CtfSolve::class);
+    }
 }
