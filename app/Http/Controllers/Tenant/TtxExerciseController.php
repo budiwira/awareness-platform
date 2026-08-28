@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\TtxExercise;
 use App\Models\TtxPlaybook;
 use App\Models\TtxRunbook;
+use App\Models\TtxScore;
 use App\Models\TtxTeam;
 use App\Models\TtxTeamMember;
 use App\Models\User;
+use App\Notifications\TtxInvitation;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\TtxScore;
 
 class TtxExerciseController extends Controller
 {
@@ -118,7 +119,6 @@ class TtxExerciseController extends Controller
             'role_in_team' => ['required', 'in:lead,member'],
         ]);
 
-        // Defense in depth: anggota harus dari tenant yang sama
         $member = User::where('id', $validated['user_id'])
             ->where('tenant_id', $request->user()->tenant_id)
             ->first();
@@ -134,9 +134,13 @@ class TtxExerciseController extends Controller
 
         Audit::log('ttx.member_added', $team, ['user_id' => $member->id]);
 
+        // NOTIFIKASI: undang user ke TTX
+        $member->notify(new TtxInvitation($team->name, $team->exercise->title));
+
         return redirect()->back();
     }
-        public function advance(Request $request, TtxExercise $exercise)
+
+    public function advance(Request $request, TtxExercise $exercise)
     {
         $this->ensureTenant($request, $exercise->tenant_id);
 
@@ -214,7 +218,6 @@ class TtxExerciseController extends Controller
             'phase' => 'completed',
         ]);
 
-        // Hanya anggota tim yang valid yang diberi skor (defense in depth)
         foreach ($validated['scores'] ?? [] as $userId => $score) {
             if ($score === null || $score === '' || ! in_array((string) $userId, $memberIds)) {
                 continue;

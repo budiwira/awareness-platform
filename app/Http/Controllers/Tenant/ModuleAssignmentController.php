@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
 use App\Models\TrainingModule;
 use App\Models\User;
+use App\Notifications\TrainingAssigned;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -19,13 +20,11 @@ class ModuleAssignmentController extends Controller
 
         $tenantId = $request->user()->tenant_id;
 
-        // Ambil semua assignment untuk user di tenant ini, beserta info user dan modulnya
         $assignments = ModuleAssignment::with(['user:id,name,email', 'module:id,title,duration_minutes'])
             ->where('tenant_id', $tenantId)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Ambil daftar user dan modul aktif untuk form assign
         $users = User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name', 'email']);
         $modules = TrainingModule::where('is_active', true)->orderBy('title')->get(['id', 'title', 'duration_minutes']);
 
@@ -45,16 +44,14 @@ class ModuleAssignmentController extends Controller
             'training_module_id' => ['required', 'exists:training_modules,id'],
         ]);
 
-        // Pastikan user yang ditugaskan adalah milik tenant ini (Defense in Depth)
         $targetUser = User::where('id', $validated['user_id'])
             ->where('tenant_id', $request->user()->tenant_id)
             ->first();
 
-        if (!$targetUser) {
+        if (! $targetUser) {
             abort(403, 'User tidak ditemukan di tenant Anda.');
         }
 
-        // Cek duplikasi
         $exists = ModuleAssignment::where('user_id', $targetUser->id)
             ->where('training_module_id', $validated['training_module_id'])
             ->exists();
@@ -65,7 +62,7 @@ class ModuleAssignmentController extends Controller
 
         ModuleAssignment::create([
             'user_id' => $targetUser->id,
-            'tenant_id' => $request->user()->tenant_id, // Server-side enforcement
+            'tenant_id' => $request->user()->tenant_id,
             'training_module_id' => $validated['training_module_id'],
             'status' => 'assigned',
         ]);
@@ -74,6 +71,10 @@ class ModuleAssignmentController extends Controller
             'user_id' => $targetUser->id,
             'module_id' => $validated['training_module_id'],
         ]);
+
+        // NOTIFIKASI: beri tahu user bahwa ia ditugaskan modul baru
+        $module = TrainingModule::find($validated['training_module_id']);
+        $targetUser->notify(new TrainingAssigned($module));
 
         return redirect()->route('tenant.assignments.index');
     }
@@ -88,7 +89,7 @@ class ModuleAssignmentController extends Controller
         ]);
 
         $assignment->update($validated);
-        
+
         if ($validated['status'] === 'completed') {
             $assignment->completed_at = now();
             $assignment->save();

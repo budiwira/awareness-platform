@@ -6,7 +6,9 @@ defineProps({
     title: { type: String, default: 'Dashboard' },
 });
 
-const user = computed(() => usePage().props.auth.user);
+const page = usePage();
+const user = computed(() => page.props.auth.user);
+const unread = computed(() => page.props.unread ?? 0);
 
 const menus = computed(() => {
     const role = user.value?.role;
@@ -16,10 +18,10 @@ const menus = computed(() => {
             { label: 'Platform Dashboard', route: 'platform.dashboard', pattern: 'platform.*', soon: false },
             { label: 'Tenants', route: 'platform.tenants.index', pattern: 'platform.tenants.*', soon: false },
             { label: 'Content Library', route: 'platform.modules.index', pattern: 'platform.modules.*', soon: false },
-            { label: 'Reports', route: 'platform.reports', pattern: 'platform.reports', soon: false },
             { label: 'Quizzes', route: 'platform.quizzes.index', pattern: 'platform.quizzes.*', soon: false },
             { label: 'Case Studies', route: 'platform.cases.index', pattern: 'platform.cases.*', soon: false },
             { label: 'CTF', route: 'platform.ctf.index', pattern: 'platform.ctf.*', soon: false },
+            { label: 'Reports', route: 'platform.reports', pattern: 'platform.reports', soon: false },
             { label: 'Plans & Billing', route: null, pattern: null, soon: true },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];
@@ -30,7 +32,7 @@ const menus = computed(() => {
             { label: 'Tenant Dashboard', route: 'tenant.dashboard', pattern: 'tenant.dashboard', soon: false },
             { label: 'Users', route: 'tenant.users.index', pattern: 'tenant.users.*', soon: false },
             { label: 'Training', route: 'tenant.assignments.index', pattern: 'tenant.assignments.*', soon: false },
-            { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', pattern: 'tenant.ttx.*', soon: false },
+            { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', pattern: 'tenant.ttx.index', soon: false },
             { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', pattern: 'tenant.ttx.exercises.*', soon: false },
             { label: 'Reports', route: 'tenant.reports', pattern: 'tenant.reports', soon: false },
             { label: 'Policy', route: null, pattern: null, soon: true },
@@ -38,11 +40,11 @@ const menus = computed(() => {
     }
 
     return [
-        { label: 'My Dashboard', route: 'user.dashboard', pattern: 'user.*', soon: false },
+        { label: 'My Dashboard', route: 'user.dashboard', pattern: 'user.dashboard', soon: false },
         { label: 'Training', route: 'user.training.index', pattern: 'user.training.*', soon: false },
         { label: 'Case Studies', route: 'user.cases.index', pattern: 'user.cases.*', soon: false },
-        { label: 'Quiz', route: null, pattern: null, soon: true },
         { label: 'CTF', route: 'user.ctf.index', pattern: 'user.ctf.*', soon: false },
+        { label: 'Quiz', route: null, pattern: null, soon: true },
         { label: 'My Score', route: 'user.score', pattern: 'user.score', soon: false },
     ];
 });
@@ -110,9 +112,20 @@ const logout = () => {
         <div class="pl-64">
             <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8">
                 <h1 class="text-lg font-semibold text-gray-800">{{ title }}</h1>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="roleBadgeClass">
-                    {{ user?.role_label }}
-                </span>
+                <div class="flex items-center gap-4">
+                    <Link :href="route('notifications.index')" class="relative text-gray-500 hover:text-gray-700" title="Notifikasi">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                        <span v-if="unread > 0"
+                            class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5">
+                            {{ unread }}
+                        </span>
+                    </Link>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="roleBadgeClass">
+                        {{ user?.role_label }}
+                    </span>
+                </div>
             </header>
 
             <main class="p-8">

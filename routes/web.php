@@ -8,6 +8,7 @@ use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\Tenant\ReportController as TenantReportController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
@@ -29,6 +30,9 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
     Route::get('/dashboard', function (Request $request) {
         \Log::info('DASHBOARD_CLOSURE', ['uid' => $request->user()?->id]);
 
