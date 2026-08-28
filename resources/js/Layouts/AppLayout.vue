@@ -39,7 +39,7 @@ const menus = computed(() => {
         { label: 'Training', route: 'user.training.index', pattern: 'user.training.*', soon: false },
         { label: 'Case Studies', route: 'user.cases.index', pattern: 'user.cases.*', soon: false },
         { label: 'Quiz', route: null, pattern: null, soon: true },
-        { label: 'CTF', route: null, pattern: null, soon: true },
+        { label: 'CTF', route: 'user.ctf.index', pattern: 'user.ctf.*', soon: false },
         { label: 'My Score', route: 'user.score', pattern: 'user.score', soon: false },
     ];
 });

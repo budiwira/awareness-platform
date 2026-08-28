@@ -11,6 +11,7 @@ use App\Http\Controllers\Tenant\ReportController as TenantReportController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
+use App\Http\Controllers\User\CtfController as UserCtfController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -143,6 +144,12 @@ Route::middleware('auth')->group(function () {
             Route::get('/cases/run/{participation}', [UserCaseController::class, 'run'])->name('cases.run');
             Route::post('/cases/run/{participation}', [UserCaseController::class, 'submit'])->name('cases.submit');
             Route::get('/cases/result/{participation}', [UserCaseController::class, 'result'])->name('cases.result');
+
+            // Route CTF for Users
+            Route::get('/ctf', [UserCtfController::class, 'index'])->name('ctf.index');
+            Route::post('/ctf/{challenge}/submit', [UserCtfController::class, 'submit'])
+                ->name('ctf.submit')
+                ->middleware('throttle:10,1');
         });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
