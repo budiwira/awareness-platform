@@ -18,4 +18,13 @@ class Tenant extends Model
     {
         return $this->hasMany(User::class);
     }
+        public function subscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function currentSubscription(): ?Subscription
+    {
+        return $this->subscriptions()->where('status', 'active')->latest('started_at')->first();
+    }
 }

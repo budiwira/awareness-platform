@@ -22,7 +22,7 @@ const menus = computed(() => {
             { label: 'Case Studies', route: 'platform.cases.index', pattern: 'platform.cases.*', soon: false },
             { label: 'CTF', route: 'platform.ctf.index', pattern: 'platform.ctf.*', soon: false },
             { label: 'Reports', route: 'platform.reports', pattern: 'platform.reports', soon: false },
-            { label: 'Plans & Billing', route: null, pattern: null, soon: true },
+            { label: 'Plans & Billing', route: 'platform.plans.index', pattern: 'platform.plans.*', soon: false },
             { label: 'Audit Log', route: null, pattern: null, soon: true },
         ];
     }
