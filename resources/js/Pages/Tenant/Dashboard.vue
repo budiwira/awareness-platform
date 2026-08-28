@@ -1,49 +1,36 @@
 <script setup>
-import { computed } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import StatCard from '@/Components/StatCard.vue';
-import { Head, usePage } from '@inertiajs/vue3';
 
 defineProps({ stats: Object });
-
-const user = computed(() => usePage().props.auth.user);
 </script>
 
 <template>
     <Head title="Tenant Dashboard" />
 
-    <AppLayout title="Tenant Dashboard">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard label="Total Members" :value="stats.total_users" accent="border-indigo-500" />
-            <StatCard label="Active Members" :value="stats.active_users" accent="border-emerald-500" />
-            <StatCard label="Admins" :value="stats.admins" accent="border-amber-500" />
+    <AppLayout title="Dashboard Organisasi">
+        <p class="text-sm text-gray-500 mb-6">Ringkasan aktivitas & kesiapan anggota organisasi.</p>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <StatCard label="Total Anggota" :value="stats.total_users" />
+            <StatCard label="Anggota Aktif" :value="stats.active_users" accent="text-emerald-600" />
+            <StatCard label="Admin" :value="stats.admins" accent="text-indigo-600" />
         </div>
 
-        <div class="mt-8 bg-white rounded-xl shadow-sm p-6">
-            <div class="font-semibold text-gray-800 mb-4">
-                Program Awareness — {{ user?.tenant_name }}
-            </div>
-
-            <div class="space-y-4">
-                <div v-for="mod in [
-                    { name: 'Training & Microlearning', progress: 0 },
-                    { name: 'Quiz & Assessment', progress: 0 },
-                    { name: 'CTF Awareness', progress: 0 },
-                    { name: 'Policy Acknowledgment', progress: 0 },
-                ]" :key="mod.name">
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-gray-600">{{ mod.name }}</span>
-                        <span class="text-gray-400 text-xs uppercase tracking-wide">module ready soon</span>
-                    </div>
-                    <div class="w-full bg-gray-100 rounded-full h-2">
-                        <div class="bg-indigo-500 h-2 rounded-full" :style="{ width: mod.progress + '%' }"></div>
-                    </div>
-                </div>
-            </div>
-
-            <p class="text-xs text-gray-400 mt-6">
-                Data di halaman ini hanya mencakup organisasi Anda. Isolasi lintas tenant dijaga di level aplikasi dan database.
-            </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link :href="route('tenant.assignments.index')" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition block">
+                <div class="font-semibold text-gray-900 mb-1">📋 Training</div>
+                <div class="text-sm text-gray-500">Kelola penugasan modul ke anggota.</div>
+            </Link>
+            <Link :href="route('tenant.ttx.exercises.index')" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition block">
+                <div class="font-semibold text-gray-900 mb-1">🎯 Simulasi TTX</div>
+                <div class="text-sm text-gray-500">Buat & jalankan latihan tabletop.</div>
+            </Link>
+            <Link :href="route('tenant.reports')" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition block">
+                <div class="font-semibold text-gray-900 mb-1">📊 Laporan</div>
+                <div class="text-sm text-gray-500">Lihat awareness score & ekspor CSV.</div>
+            </Link>
         </div>
     </AppLayout>
 </template>

@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.readAll');
+    
     Route::get('/dashboard', function (Request $request) {
         \Log::info('DASHBOARD_CLOSURE', ['uid' => $request->user()?->id]);
 
@@ -43,7 +44,6 @@ Route::middleware('auth')->group(function () {
         };
     })->name('dashboard');
     
-
     Route::middleware('can:access-platform-dashboard')
         ->prefix('platform')
         ->name('platform.')
@@ -150,9 +150,30 @@ Route::middleware('auth')->group(function () {
         ->prefix('me')
         ->name('user.')
         ->group(function () {
+            
+            // Updated User Dashboard Closure
             Route::get('/dashboard', function (Request $request) {
+                $user = $request->user();
+
+                $assignments = \App\Models\ModuleAssignment::where('user_id', $user->id)->get();
+                $attempts = \App\Models\QuizAttempt::where('user_id', $user->id)->get();
+                $cases = \App\Models\CaseParticipation::where('user_id', $user->id)->get();
+                $solves = \App\Models\CtfSolve::where('user_id', $user->id)->get();
+                $ttx = \App\Models\TtxScore::where('user_id', $user->id)->get();
+                $totalCtfPoints = (int) \App\Models\CtfChallenge::where('is_active', true)->sum('points');
+
+                $score = (new \App\Support\Scoring\AwarenessScore)->compute(
+                    $assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints
+                );
+
+                $pending = $assignments->where('status', 'assigned')->count();
+                $inProgress = $assignments->where('status', 'in_progress')->count();
+
                 return Inertia::render('User/Dashboard', [
-                    'tenant_name' => $request->user()->tenant?->name,
+                    'tenant_name' => $user->tenant?->name,
+                    'score' => $score,
+                    'pending' => $pending,
+                    'in_progress' => $inProgress,
                 ]);
             })->name('dashboard');
 
