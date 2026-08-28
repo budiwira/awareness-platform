@@ -9,6 +9,6 @@ class TtxExercise extends Model
     protected $casts = ['scheduled_at' => 'datetime', 'corrective_actions' => 'array'];
     public function playbook(): BelongsTo { return $this->belongsTo(TtxPlaybook::class, 'playbook_id'); }
     public function runbook(): BelongsTo { return $this->belongsTo(TtxRunbook::class, 'runbook_id'); }
-    public function injects(): HasMany { return $this->hasMany(TtxInject::class)->orderBy('order'); }
-    public function teams(): HasMany { return $this->hasMany(TtxTeam::class); }
+    public function injects(): HasMany { return $this->hasMany(TtxInject::class, 'exercise_id')->orderBy('order'); }
+    public function teams(): HasMany { return $this->hasMany(TtxTeam::class, 'exercise_id'); }
 }
