@@ -20,6 +20,7 @@ class CaseStudyController extends Controller
             ->keyBy('case_study_id');
 
         $cases = CaseStudy::where('is_active', true)
+            ->where('status', 'published')
             ->withCount('scenes')
             ->orderBy('title')
             ->get()
@@ -46,7 +47,7 @@ class CaseStudyController extends Controller
 
     public function start(Request $request, CaseStudy $caseStudy)
     {
-        if (! $caseStudy->is_active) {
+        if (! $caseStudy->is_active || $caseStudy->status !== 'published') {
             return redirect()->route('user.cases.index');
         }
 

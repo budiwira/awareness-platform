@@ -26,7 +26,10 @@ class ModuleAssignmentController extends Controller
             ->get();
 
         $users = User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name', 'email']);
-        $modules = TrainingModule::where('is_active', true)->orderBy('title')->get(['id', 'title', 'duration_minutes']);
+        $modules = TrainingModule::where('is_active', true)
+            ->where('status', 'published')
+            ->orderBy('title')
+            ->get(['id', 'title', 'duration_minutes']);
 
         return Inertia::render('Tenant/Assignments/Index', [
             'assignments' => $assignments,

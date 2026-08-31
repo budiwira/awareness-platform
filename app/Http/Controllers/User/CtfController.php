@@ -17,8 +17,8 @@ class CtfController extends Controller
             ->get()
             ->keyBy('challenge_id');
 
-        // KEAMANAN: flag tidak pernah ikut dalam payload
         $challenges = CtfChallenge::where('is_active', true)
+            ->where('status', 'published')
             ->orderBy('points')
             ->get()
             ->map(fn ($c) => [
@@ -38,7 +38,7 @@ class CtfController extends Controller
 
     public function submit(Request $request, CtfChallenge $challenge)
     {
-        if (! $challenge->is_active) {
+        if (! $challenge->is_active || $challenge->status !== 'published') {
             return redirect()->route('user.ctf.index');
         }
 
