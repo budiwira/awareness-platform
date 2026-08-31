@@ -1,10 +1,31 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
 const props = defineProps({ stats: Object, per_user: Array });
+
+const filterTier = ref('semua'); // 'semua' | 'baik' | 'cukup' | 'perlu_perbaikan' | 'belum_mengerjakan'
+
+const getTier = (score) => {
+    if (score >= 70) return 'baik';
+    if (score >= 40) return 'cukup';
+    if (score > 0) return 'perlu_perbaikan';
+    return 'belum_mengerjakan';
+};
+
+const getTierLabel = (score) => {
+    if (score >= 70) return 'Baik';
+    if (score >= 40) return 'Cukup';
+    if (score > 0) return 'Perlu Perbaikan';
+    return 'Belum Mengerjakan';
+};
+
+const filteredUsers = computed(() => {
+    if (filterTier.value === 'semua') return props.per_user;
+    return props.per_user.filter(u => getTier(u.awareness_score) === filterTier.value);
+});
 
 const avgMemberScore = computed(() => {
     if (props.per_user.length === 0) return 0;
@@ -21,13 +42,15 @@ const completedAssignments = computed(() => {
 const progressBarColor = (score) => {
     if (score >= 70) return '#0f766e';
     if (score >= 40) return '#f59e0b';
-    return '#e11d48';
+    if (score > 0) return '#e11d48';
+    return '#9ca3af';
 };
 
 const badgeStyle = (score) => {
     if (score >= 70) return { background: '#ccfbf1', color: '#115e59' };
     if (score >= 40) return { background: '#fef3c7', color: '#92400e' };
-    return { background: '#fee2e2', color: '#991b1b' };
+    if (score > 0) return { background: '#fee2e2', color: '#991b1b' };
+    return { background: '#f3f4f6', color: '#6b7280' };
 };
 </script>
 
@@ -52,12 +75,51 @@ const badgeStyle = (score) => {
 
         <div class="card overflow-hidden">
             <div class="px-6 py-4 flex justify-between items-center border-b" style="border-color: var(--line)">
-                <div class="font-semibold" style="color: var(--ink)">Progres per Anggota</div>
+                <div>
+                    <div class="font-semibold" style="color: var(--ink)">Progres per Anggota</div>
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
+                        <button 
+                            @click="filterTier = 'semua'" 
+                            class="chip"
+                            :class="filterTier === 'semua' ? 'chip-active' : ''"
+                        >
+                            Semua
+                        </button>
+                        <button 
+                            @click="filterTier = 'baik'" 
+                            class="chip"
+                            :class="filterTier === 'baik' ? 'chip-active' : ''"
+                        >
+                            Baik
+                        </button>
+                        <button 
+                            @click="filterTier = 'cukup'" 
+                            class="chip"
+                            :class="filterTier === 'cukup' ? 'chip-active' : ''"
+                        >
+                            Cukup
+                        </button>
+                        <button 
+                            @click="filterTier = 'perlu_perbaikan'" 
+                            class="chip"
+                            :class="filterTier === 'perlu_perbaikan' ? 'chip-active' : ''"
+                        >
+                            Perlu Perbaikan
+                        </button>
+                        <button 
+                            @click="filterTier = 'belum_mengerjakan'" 
+                            class="chip"
+                            :class="filterTier === 'belum_mengerjakan' ? 'chip-active' : ''"
+                        >
+                            Belum Mengerjakan
+                        </button>
+                    </div>
+                </div>
                 <a :href="route('tenant.reports.export')" class="btn btn-secondary">
                     Download CSV
                 </a>
             </div>
-            <table v-if="per_user.length > 0" class="w-full text-sm">
+            <table v-if="filteredUsers.length > 0" class="w-full text-sm">
                 <thead>
                     <tr class="text-left border-b" style="color: var(--muted); border-color: var(--line)">
                         <th class="px-6 py-3 font-medium">Anggota</th>
@@ -67,7 +129,7 @@ const badgeStyle = (score) => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in per_user" :key="row.id" class="border-b" style="border-color: var(--line)">
+                    <tr v-for="row in filteredUsers" :key="row.id" class="border-b" style="border-color: var(--line)">
                         <td class="px-6 py-3">
                             <div class="font-medium" style="color: var(--ink)">{{ row.name }}</div>
                             <div class="text-xs" style="color: var(--muted)">{{ row.email }}</div>
@@ -84,14 +146,14 @@ const badgeStyle = (score) => {
                         </td>
                         <td class="px-6 py-3">
                             <span class="badge" :style="badgeStyle(row.awareness_score)">
-                                {{ row.awareness_score >= 70 ? 'Baik' : row.awareness_score >= 40 ? 'Cukup' : 'Perlu Perbaikan' }}
+                                {{ getTierLabel(row.awareness_score) }}
                             </span>
                         </td>
                         <td class="px-6 py-3 text-right font-semibold" style="color: var(--ink)">{{ row.awareness_score }}</td>
                     </tr>
                 </tbody>
             </table>
-            <EmptyState v-else message="Belum ada anggota." />
+            <EmptyState v-else message="Tidak ada anggota yang cocok dengan filter." />
         </div>
     </AppLayout>
 </template>
