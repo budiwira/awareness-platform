@@ -35,6 +35,6 @@ class TrainingModule extends Model
 
     public function plans(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Plan::class, 'plan_module')->withTimestamps();
+        return $this->belongsToMany(Plan::class, 'plan_module');
     }
 }

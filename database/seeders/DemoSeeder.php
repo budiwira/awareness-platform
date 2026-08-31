@@ -149,13 +149,13 @@ class DemoSeeder extends Seeder
 
         // ---------- SUBSCRIPTIONS ----------
         $pro = Plan::where('slug', 'pro')->first();
-        $free = Plan::where('slug', 'free')->first();
+        $starter = Plan::where('slug', 'starter')->first();
 
         if ($pro && ! Subscription::where('tenant_id', $acme->id)->where('status', 'active')->exists()) {
             Subscription::create(['tenant_id' => $acme->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()->subMonths(2)]);
         }
-        if ($free && ! Subscription::where('tenant_id', $beta->id)->where('status', 'active')->exists()) {
-            Subscription::create(['tenant_id' => $beta->id, 'plan_id' => $free->id, 'status' => 'active', 'started_at' => now()->subMonth()]);
+        if ($starter && ! Subscription::where('tenant_id', $beta->id)->where('status', 'active')->exists()) {
+            Subscription::create(['tenant_id' => $beta->id, 'plan_id' => $starter->id, 'status' => 'active', 'started_at' => now()->subMonth()]);
         }
 
         // ---------- ACTIVITY PER USER ----------
