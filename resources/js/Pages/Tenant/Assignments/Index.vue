@@ -3,12 +3,30 @@ import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({ assignments: Array, users: Array, modules: Array });
+const props = defineProps({ assignments: Array, users: Array, modules: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
 const showForm = ref(false);
 const form = ref({ user_id: '', training_module_id: '' });
+
+const sortBy = ref('terbaru'); // 'terbaru' | 'nama_az'
+
+const sortedAssignments = computed(() => {
+    const arr = [...props.assignments];
+    if (sortBy.value === 'nama_az') {
+        return arr.sort((a, b) => a.user.name.localeCompare(b.user.name));
+    }
+    // Default: terbaru (created_at desc sudah dari controller)
+    return arr;
+});
+
+const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const d = new Date(dateString);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
 
 const submit = () => {
     router.post(route('tenant.assignments.store'), form.value, {
@@ -35,12 +53,18 @@ const updateStatus = (assignment, status) => {
             <p class="text-sm text-gray-500">
                 Tugaskan modul training kepada anggota organisasi Anda.
             </p>
-            <button
-                @click="showForm = !showForm"
-                class="btn btn-primary"
-            >
-                + Tugaskan Modul
-            </button>
+            <div class="flex items-center gap-3">
+                <select v-model="sortBy" class="input text-sm">
+                    <option value="terbaru">Terbaru</option>
+                    <option value="nama_az">Nama A-Z</option>
+                </select>
+                <button
+                    @click="showForm = !showForm"
+                    class="btn btn-primary"
+                >
+                    + Tugaskan Modul
+                </button>
+            </div>
         </div>
 
         <div v-if="showForm" class="card p-6 mb-6">
@@ -71,17 +95,19 @@ const updateStatus = (assignment, status) => {
                     <tr class="text-left text-gray-500 border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">User</th>
                         <th class="px-6 py-3 font-medium">Modul</th>
+                        <th class="px-6 py-3 font-medium">Tanggal Penugasan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
                         <th class="px-6 py-3 font-medium text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="assignment in assignments" :key="assignment.id" class="border-b border-gray-50">
+                    <tr v-for="assignment in sortedAssignments" :key="assignment.id" class="border-b border-gray-50">
                         <td class="px-6 py-3">
                             <div class="font-medium text-gray-900">{{ assignment.user.name }}</div>
                             <div class="text-xs text-gray-500">{{ assignment.user.email }}</div>
                         </td>
                         <td class="px-6 py-3 text-gray-700">{{ assignment.module.title }}</td>
+                        <td class="px-6 py-3 text-gray-600">{{ formatDate(assignment.created_at) }}</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" 
                                   :class="{
@@ -95,13 +121,13 @@ const updateStatus = (assignment, status) => {
                         <td class="px-6 py-3 text-right space-x-2">
                             <button v-if="assignment.status !== 'completed'" 
                                     @click="updateStatus(assignment, 'completed')" 
-                                    class="text-emerald-600 text-sm font-medium">
+                                    class="text-emerald-600 text-sm font-medium hover:text-emerald-700 transition-colors">
                                 Tandai Selesai
                             </button>
                         </td>
                     </tr>
-                    <tr v-if="assignments.length === 0">
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Belum ada assignment.</td>
+                    <tr v-if="sortedAssignments.length === 0">
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">Belum ada assignment.</td>
                     </tr>
                 </tbody>
             </table>
