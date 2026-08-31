@@ -33,7 +33,7 @@ const menus = computed(() => {
                 { label: 'Users', route: 'platform.users.index' },
             ]},
             { section: 'Konten', items: [
-                { label: 'Content Library', route: 'platform.modules.index' },
+                { label: 'Studio Konten', route: 'platform.modules.index' },
                 { label: 'Quizzes', route: 'platform.quizzes.index' },
                 { label: 'Case Studies', route: 'platform.cases.index' },
                 { label: 'CTF', route: 'platform.ctf.index' },
