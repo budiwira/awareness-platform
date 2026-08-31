@@ -1,50 +1,64 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import StatCard from '@/Components/StatCard.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
 defineProps({ stats: Object, tenants: Array });
+
+const statCards = [
+    { key: 'tenants', label: 'Total Tenant', accent: 'text-gray-900' },
+    { key: 'active_tenants', label: 'Tenant Aktif', accent: 'text-teal-700' },
+    { key: 'users', label: 'Total User', accent: 'text-gray-900' },
+    { key: 'tenant_admins', label: 'Tenant Admin', accent: 'text-amber-600' },
+];
 </script>
 
 <template>
     <Head title="Platform Dashboard" />
 
     <AppLayout title="Dashboard Platform">
-        <p class="text-sm text-gray-500 mb-6">Kesehatan seluruh organisasi di platform.</p>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <StatCard label="Total Tenant" :value="stats.tenants" />
-            <StatCard label="Tenant Aktif" :value="stats.active_tenants" accent="text-emerald-600" />
-            <StatCard label="Total User" :value="stats.users" />
-            <StatCard label="Tenant Admin" :value="stats.tenant_admins" accent="text-indigo-600" />
+        <div
+            class="rounded-2xl p-8 text-white mb-8"
+            style="background: linear-gradient(140deg, #0f766e 0%, #115e59 55%, #134e4a 100%)"
+        >
+            <h2 class="font-display text-2xl font-bold mb-1">Kesehatan Platform</h2>
+            <p class="text-teal-100 text-sm max-w-2xl">
+                Ringkasan seluruh organisasi terdaftar: adopsi, aktivitas, dan distribusi pengguna.
+            </p>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="px-6 py-4 font-semibold text-gray-800 border-b border-gray-100 flex items-center justify-between">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div v-for="s in statCards" :key="s.key" class="card p-5">
+                <div class="text-xs uppercase tracking-wide" style="color: var(--muted)">{{ s.label }}</div>
+                <div class="text-3xl font-bold mt-1" :class="s.accent">{{ stats[s.key] }}</div>
+            </div>
+        </div>
+
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 font-display font-semibold text-gray-900 border-b border-gray-100 flex items-center justify-between">
                 <span>Organisasi Terdaftar</span>
-                <Link :href="route('platform.tenants.index')" class="text-sm text-indigo-600 hover:underline">Kelola →</Link>
+                <Link :href="route('platform.tenants.index')" class="text-sm text-teal-700 hover:underline">Kelola →</Link>
             </div>
             <table v-if="tenants.length > 0" class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left border-b border-gray-100" style="color: var(--muted)">
                         <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Status</th>
-                        <th class="px-6 py-3 font-medium">Anggota</th>
+                        <th class="px-6 py-3 font-medium text-right">Anggota</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="t in tenants" :key="t.slug" class="border-b border-gray-50">
+                    <tr v-for="t in tenants" :key="t.slug" class="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
                         <td class="px-6 py-3 font-medium text-gray-900">{{ t.name }}</td>
-                        <td class="px-6 py-3 text-gray-500 font-mono text-xs">{{ t.slug }}</td>
+                        <td class="px-6 py-3 font-mono text-xs" style="color: var(--muted)">{{ t.slug }}</td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium"
-                                  :class="t.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'">
-                                {{ t.status }}
-                            </span>
+                            <span
+                                class="badge"
+                                :class="t.status === 'active' ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-100 text-gray-600'"
+                            >{{ t.status }}</span>
                         </td>
-                        <td class="px-6 py-3 text-gray-600">{{ t.users_count }}</td>
+                        <td class="px-6 py-3 text-right font-medium text-gray-700">{{ t.users_count }}</td>
                     </tr>
                 </tbody>
             </table>
