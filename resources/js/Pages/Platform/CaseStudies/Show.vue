@@ -56,7 +56,7 @@ const qualityBadge = (q) => ({
             </Link>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="card p-6 mb-6">
             <h2 class="text-xl font-bold text-gray-900">{{ caseStudy.title }}</h2>
             <p class="text-sm text-gray-500 mt-1">{{ caseStudy.description }}</p>
             <p class="text-xs text-gray-400 mt-2">{{ caseStudy.difficulty }} · {{ caseStudy.duration_minutes }} menit · {{ caseStudy.scenes?.length ?? 0 }} scene</p>
@@ -64,7 +64,7 @@ const qualityBadge = (q) => ({
 
         <!-- Daftar scene (quality & feedback HANYA untuk super admin) -->
         <div class="space-y-4 mb-8">
-            <div v-for="(scene, si) in caseStudy.scenes" :key="scene.id" class="bg-white rounded-xl shadow-sm p-6">
+            <div v-for="(scene, si) in caseStudy.scenes" :key="scene.id" class="card p-6">
                 <div class="font-medium text-gray-900 mb-3">Scene {{ si + 1 }}: {{ scene.situation }}</div>
                 <ul class="space-y-2">
                     <li v-for="(opt, oi) in scene.options" :key="oi" class="text-sm border border-gray-100 rounded-lg p-3">
@@ -78,18 +78,18 @@ const qualityBadge = (q) => ({
                     </li>
                 </ul>
             </div>
-            <div v-if="(caseStudy.scenes?.length ?? 0) === 0" class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500 text-sm">
+            <div v-if="(caseStudy.scenes?.length ?? 0) === 0" class="card p-8 text-center text-gray-500 text-sm">
                 Belum ada scene. Tambahkan di bawah.
             </div>
         </div>
 
         <!-- Form tambah scene -->
-        <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="card p-6">
             <div class="font-semibold text-gray-800 mb-4">Tambah Scene</div>
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
                     <label class="text-sm text-gray-600">Situasi</label>
-                    <textarea v-model="form.situation" rows="2" required class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    <textarea v-model="form.situation" rows="2" required class="input mt-1 w-full"></textarea>
                     <p v-if="errors.situation" class="text-xs text-red-600 mt-1">{{ errors.situation }}</p>
                 </div>
 
@@ -97,14 +97,14 @@ const qualityBadge = (q) => ({
                     <label class="text-sm text-gray-600">Opsi Keputusan (2–4)</label>
                     <div class="mt-1 space-y-3">
                         <div v-for="(opt, i) in form.options" :key="i" class="border border-gray-100 rounded-lg p-3 space-y-2">
-                            <input v-model="opt.text" type="text" required :placeholder="'Teks opsi ' + String.fromCharCode(65 + i)" class="w-full rounded-lg border-gray-300 text-sm" />
+                            <input v-model="opt.text" type="text" required :placeholder="'Teks opsi ' + String.fromCharCode(65 + i)" class="input w-full" />
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <select v-model="opt.quality" class="rounded-lg border-gray-300 text-sm">
+                                <select v-model="opt.quality" class="input">
                                     <option value="best">Best (terbaik)</option>
                                     <option value="acceptable">Acceptable (dapat diterima)</option>
                                     <option value="poor">Poor (buruk)</option>
                                 </select>
-                                <input v-model="opt.feedback" type="text" required placeholder="Feedback setelah dipilih" class="rounded-lg border-gray-300 text-sm" />
+                                <input v-model="opt.feedback" type="text" required placeholder="Feedback setelah dipilih" class="input" />
                             </div>
                             <button v-if="form.options.length > 2" type="button" @click="removeOption(i)" class="text-red-500 text-xs">Hapus opsi</button>
                         </div>
@@ -114,7 +114,7 @@ const qualityBadge = (q) => ({
                 </div>
 
                 <div class="flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan Scene</button>
+                    <button class="btn btn-primary">Simpan Scene</button>
                 </div>
             </form>
         </div>

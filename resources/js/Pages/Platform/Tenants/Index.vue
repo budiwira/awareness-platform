@@ -33,13 +33,13 @@ const statusBadge = (status) =>
             </p>
             <button
                 @click="showCreate = !showCreate"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                class="btn btn-primary"
             >
                 + Tambah Tenant
             </button>
         </div>
 
-        <div v-if="showCreate" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showCreate" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Nama Organisasi</label>
@@ -47,16 +47,16 @@ const statusBadge = (status) =>
                         v-model="form.name"
                         type="text"
                         required
-                        class="mt-1 w-full rounded-lg border-gray-300 text-sm"
+                        class="input mt-1 w-full"
                         placeholder="PT Contoh Nusantara"
                     />
                     <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name }}</p>
                 </div>
-                <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                <button class="btn btn-primary">Simpan</button>
             </form>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">

@@ -41,26 +41,26 @@ const difficultyBadge = (d) => ({
             </p>
             <button
                 @click="showForm = !showForm"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                class="btn btn-primary"
             >
                 + Buat Challenge
             </button>
         </div>
 
-        <div v-if="showForm" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Judul</label>
-                    <input v-model="form.title" type="text" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Deskripsi Tantangan</label>
-                    <textarea v-model="form.description" rows="2" class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    <textarea v-model="form.description" rows="2" class="input mt-1 w-full"></textarea>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Kategori</label>
-                    <select v-model="form.category" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.category" class="input mt-1 w-full">
                         <option value="general">General</option>
                         <option value="phishing">Phishing</option>
                         <option value="password">Password</option>
@@ -70,7 +70,7 @@ const difficultyBadge = (d) => ({
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Kesulitan</label>
-                    <select v-model="form.difficulty" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.difficulty" class="input mt-1 w-full">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
                         <option value="advanced">Advanced</option>
@@ -78,24 +78,24 @@ const difficultyBadge = (d) => ({
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Poin</label>
-                    <input v-model.number="form.points" type="number" min="10" max="1000" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model.number="form.points" type="number" min="10" max="1000" required class="input mt-1 w-full" />
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Flag (rahasia)</label>
-                    <input v-model="form.flag" type="text" required placeholder="FLAG{contoh_flag}" class="mt-1 w-full rounded-lg border-gray-300 text-sm font-mono" />
+                    <input v-model="form.flag" type="text" required placeholder="FLAG{contoh_flag}" class="input mt-1 w-full font-mono" />
                     <p v-if="errors.flag" class="text-xs text-red-600 mt-1">{{ errors.flag }}</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Hint (opsional)</label>
-                    <input v-model="form.hint" type="text" class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.hint" type="text" class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                    <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">

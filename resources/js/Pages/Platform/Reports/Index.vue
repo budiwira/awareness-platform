@@ -11,13 +11,13 @@ defineProps({ rows: Array, platform_avg: Number });
     <AppLayout title="Laporan Lintas Tenant">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm text-gray-500">Kesehatan awareness seluruh organisasi di platform.</p>
-            <div class="bg-white rounded-xl shadow-sm px-5 py-3 border-2 border-indigo-200">
+            <div class="card px-5 py-3 border-2 border-indigo-200">
                 <span class="text-xs text-indigo-600 uppercase tracking-wide">Awareness Platform</span>
                 <span class="ml-3 text-2xl font-bold text-indigo-700">{{ platform_avg }}</span>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">

@@ -22,7 +22,7 @@ const difficultyBadge = (d) => ({
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="c in cases" :key="c.id" class="bg-white rounded-xl shadow-sm p-6 flex flex-col">
+            <div v-for="c in cases" :key="c.id" class="card p-6 flex flex-col">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-semibold text-gray-900">{{ c.title }}</h3>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
@@ -45,27 +45,27 @@ const difficultyBadge = (d) => ({
                     <button
                         v-if="!c.participation"
                         @click="start(c.id)"
-                        class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                        class="btn btn-primary"
                     >
                         Mulai
                     </button>
                     <button
                         v-else-if="c.participation.status !== 'completed'"
                         @click="$inertia.visit(route('user.cases.run', c.participation.id))"
-                        class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500"
+                        class="btn btn-primary"
                     >
                         Lanjutkan
                     </button>
                     <button
                         v-else
                         @click="$inertia.visit(route('user.cases.result', c.participation.id))"
-                        class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300"
+                        class="btn btn-secondary"
                     >
                         Lihat Hasil
                     </button>
                 </div>
             </div>
-            <div v-if="cases.length === 0" class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-gray-500 text-sm">
+            <div v-if="cases.length === 0" class="col-span-2 card p-8 text-center text-gray-500 text-sm">
                 Belum ada case study aktif.
             </div>
         </div>

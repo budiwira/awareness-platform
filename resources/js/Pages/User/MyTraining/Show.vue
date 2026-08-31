@@ -45,7 +45,7 @@ const markComplete = () => {
             </Link>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-8">
+        <div class="card p-8">
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">{{ assignment.module.title }}</h2>
@@ -66,7 +66,7 @@ const markComplete = () => {
                 <button
                     v-if="!isCompleted"
                     @click="markComplete"
-                    class="px-6 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition"
+                    class="btn btn-primary transition"
                 >
                     Tandai Sebagai Selesai
                 </button>

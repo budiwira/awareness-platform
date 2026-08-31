@@ -92,8 +92,8 @@ const hasAar = computed(() => {
                     
                     <!-- Lingkaran -->
                     <div class="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm relative z-10"
-                        :style="i < currentIndex ? 'background: var(--brand); color: #fff;' : (i === currentIndex ? 'background: #fff; border: 2px solid rgb(251 191 36); color: rgb(251 191 36);' : 'background: #fff; border: 1px solid var(--line); color: var(--muted);')">
-                        <template v-if="i < currentIndex">✓</template>
+                        :style="exercise.phase === 'completed' ? 'background: var(--brand); color: #fff;' : (i < currentIndex ? 'background: var(--brand); color: #fff;' : (i === currentIndex ? 'background: #fff; border: 2px solid rgb(251 191 36); color: rgb(251 191 36);' : 'background: #fff; border: 1px solid var(--line); color: var(--muted);'))">
+                        <template v-if="exercise.phase === 'completed' || i < currentIndex">✓</template>
                         <template v-else>{{ i + 1 }}</template>
                     </div>
                     

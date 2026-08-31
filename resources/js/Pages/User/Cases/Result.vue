@@ -16,7 +16,7 @@ const qualityBadge = (q) => ({
 
     <AppLayout :title="'Hasil: ' + case_title">
         <div class="max-w-3xl mx-auto">
-            <div class="bg-white rounded-xl shadow-sm p-8 text-center mb-6">
+            <div class="card p-8 text-center mb-6">
                 <div
                     class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold mb-3"
                     :class="score >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
@@ -27,7 +27,7 @@ const qualityBadge = (q) => ({
             </div>
 
             <div class="space-y-4 mb-8">
-                <div v-for="(row, i) in breakdown" :key="i" class="bg-white rounded-xl shadow-sm p-6">
+                <div v-for="(row, i) in breakdown" :key="i" class="card p-6">
                     <div class="font-medium text-gray-900 mb-3">{{ i + 1 }}. {{ row.situation }}</div>
 
                     <div v-if="row.chosen" class="text-sm border border-gray-100 rounded-lg p-3 mb-2">
@@ -47,7 +47,7 @@ const qualityBadge = (q) => ({
             </div>
 
             <div class="flex justify-center">
-                <Link :href="route('user.cases.index')" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 text-sm">
+                <Link :href="route('user.cases.index')" class="btn btn-secondary">
                     Ke Daftar Case
                 </Link>
             </div>

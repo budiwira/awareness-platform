@@ -19,7 +19,7 @@ const markComplete = (assignment) => {
             Modul training yang ditugaskan kepada Anda. Klik judul untuk membaca materi.
         </p>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">
@@ -59,7 +59,7 @@ const markComplete = (assignment) => {
                             <Link
                                 v-if="assignment.module?.quiz"
                                 :href="route('user.training.quiz', assignment.id)"
-                                class="px-3 py-1 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-500"
+                                class="btn btn-primary text-xs"
                             >
                                 Kerjakan Quiz
                             </Link>

@@ -31,57 +31,56 @@ const phaseBadge = (p) => ({
     <AppLayout title="Simulasi Tabletop Exercise">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm text-gray-500">Rencanakan & kelola simulasi tabletop berdasarkan playbook & runbook.</p>
-            <button @click="showForm = !showForm"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+            <button @click="showForm = !showForm" class="btn btn-primary">
                 + Buat Exercise
             </button>
         </div>
 
-        <div v-if="showForm" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Judul Exercise</label>
-                    <input v-model="form.title" type="text" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Narasi Skenario</label>
-                    <textarea v-model="form.scenario" rows="3" class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    <textarea v-model="form.scenario" rows="3" class="input mt-1 w-full"></textarea>
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm text-gray-600">Tujuan Latihan</label>
-                    <textarea v-model="form.objectives" rows="2" class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    <textarea v-model="form.objectives" rows="2" class="input mt-1 w-full"></textarea>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Playbook</label>
-                    <select v-model="form.playbook_id" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.playbook_id" class="input mt-1 w-full">
                         <option value="">-- Tanpa playbook --</option>
                         <option v-for="pb in playbooks" :key="pb.id" :value="pb.id">{{ pb.title }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Runbook</label>
-                    <select v-model="form.runbook_id" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.runbook_id" class="input mt-1 w-full">
                         <option value="">-- Tanpa runbook --</option>
                         <option v-for="rb in runbooks" :key="rb.id" :value="rb.id">{{ rb.title }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Ruang Lingkup</label>
-                    <input v-model="form.scope" type="text" class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.scope" type="text" class="input mt-1 w-full" />
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Jadwal</label>
-                    <input v-model="form.scheduled_at" type="datetime-local" class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.scheduled_at" type="datetime-local" class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                    <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link v-for="ex in exercises" :key="ex.id" :href="route('tenant.ttx.exercises.show', ex.id)"
-                class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition block">
+                class="card p-6 hover:shadow-md transition block">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-semibold text-gray-900">{{ ex.title }}</h3>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="phaseBadge(ex.phase)">
@@ -95,7 +94,7 @@ const phaseBadge = (p) => ({
                     <div>Tim: {{ ex.teams?.length ?? 0 }}</div>
                 </div>
             </Link>
-            <div v-if="exercises.length === 0" class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-gray-500 text-sm">
+            <div v-if="exercises.length === 0" class="col-span-2 card p-8 text-center text-gray-500 text-sm">
                 Belum ada exercise.
             </div>
         </div>

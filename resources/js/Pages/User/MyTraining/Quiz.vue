@@ -25,7 +25,7 @@ const submit = () => {
             </Link>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="card p-6 mb-6">
             <p class="text-sm text-gray-600">
                 Jawab semua pertanyaan. Nilai kelulusan: <span class="font-semibold">{{ passing_score }}%</span>.
             </p>
@@ -33,7 +33,7 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-6">
-            <div v-for="(q, qi) in questions" :key="q.id" class="bg-white rounded-xl shadow-sm p-6">
+            <div v-for="(q, qi) in questions" :key="q.id" class="card p-6">
                 <div class="font-medium text-gray-900 mb-4">{{ qi + 1 }}. {{ q.question }}</div>
                 <div class="space-y-2">
                     <label
@@ -54,7 +54,7 @@ const submit = () => {
             </div>
 
             <div class="flex justify-end">
-                <button class="px-6 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+                <button class="btn btn-primary">
                     Kumpulkan Jawaban
                 </button>
             </div>

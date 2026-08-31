@@ -27,17 +27,17 @@ const submit = () => {
             </p>
             <button
                 @click="showForm = !showForm"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                class="btn btn-primary"
             >
                 + Buat Quiz
             </button>
         </div>
 
-        <div v-if="showForm" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                     <label class="text-sm text-gray-600">Modul</label>
-                    <select v-model="form.training_module_id" required class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.training_module_id" required class="input mt-1 w-full">
                         <option value="" disabled>-- Pilih Modul --</option>
                         <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }}</option>
                     </select>
@@ -45,20 +45,20 @@ const submit = () => {
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Judul Quiz</label>
-                    <input v-model="form.title" type="text" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Passing Score (%)</label>
-                    <input v-model.number="form.passing_score" type="number" min="1" max="100" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model.number="form.passing_score" type="number" min="1" max="100" required class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-3 flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                    <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">

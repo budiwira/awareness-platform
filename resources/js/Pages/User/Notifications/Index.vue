@@ -14,13 +14,12 @@ const markOne = (id) => router.patch(route('notifications.read', id));
     <AppLayout title="Notifikasi">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm text-gray-500">Pemberitahuan penugasan training dan undangan TTX.</p>
-            <button @click="markAll"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+            <button @click="markAll" class="btn btn-primary">
                 Tandai Semua Dibaca
             </button>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <div v-for="n in notifications" :key="n.id"
                 class="flex items-start justify-between px-6 py-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50"
                 :class="n.read_at ? 'opacity-60' : ''"

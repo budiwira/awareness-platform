@@ -37,35 +37,35 @@ const updateStatus = (assignment, status) => {
             </p>
             <button
                 @click="showForm = !showForm"
-                class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                class="btn btn-primary"
             >
                 + Tugaskan Modul
             </button>
         </div>
 
-        <div v-if="showForm" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showForm" class="card p-6 mb-6">
             <div class="font-semibold text-gray-800 mb-4">Tugaskan Modul Baru</div>
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                     <label class="text-sm text-gray-600">Pilih User</label>
-                    <select v-model="form.user_id" required class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.user_id" required class="input mt-1 w-full">
                         <option value="" disabled>-- Pilih User --</option>
                         <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                     </select>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Pilih Modul</label>
-                    <select v-model="form.training_module_id" required class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="form.training_module_id" required class="input mt-1 w-full">
                         <option value="" disabled>-- Pilih Modul --</option>
                         <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }} ({{ mod.duration_minutes }}m)</option>
                     </select>
                 </div>
-                <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                <button class="btn btn-primary">Simpan</button>
             </form>
             <p v-if="errors.user_id" class="text-xs text-red-600 mt-2">{{ errors.user_id }}</p>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">

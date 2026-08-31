@@ -46,32 +46,32 @@ const submitRunbook = () => {
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="font-semibold text-gray-800">Playbook</h2>
                     <button @click="showPlaybookForm = !showPlaybookForm"
-                        class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-500">
+                        class="btn btn-primary">
                         + Playbook
                     </button>
                 </div>
 
-                <div v-if="showPlaybookForm" class="bg-white rounded-xl shadow-sm p-5 mb-4">
+                <div v-if="showPlaybookForm" class="card p-5 mb-4">
                     <form @submit.prevent="submitPlaybook" class="space-y-3">
                         <input v-model="playbookForm.title" type="text" required placeholder="Judul playbook"
-                            class="w-full rounded-lg border-gray-300 text-sm" />
+                            class="input w-full" />
                         <textarea v-model="playbookForm.description" rows="2" placeholder="Deskripsi singkat"
-                            class="w-full rounded-lg border-gray-300 text-sm"></textarea>
+                            class="input w-full"></textarea>
                         <textarea v-model="playbookForm.content" rows="4" placeholder="Prosedur (satu langkah per baris)"
-                            class="w-full rounded-lg border-gray-300 text-sm font-mono"></textarea>
-                        <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                            class="input w-full font-mono"></textarea>
+                        <button class="btn btn-primary">Simpan</button>
                     </form>
                 </div>
 
                 <div class="space-y-3">
-                    <div v-for="pb in playbooks" :key="pb.id" class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-indigo-500">
+                    <div v-for="pb in playbooks" :key="pb.id" class="card p-5 border-l-4 border-indigo-500">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium text-gray-900">{{ pb.title }}</h3>
                             <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
                         </div>
                         <p class="text-sm text-gray-500 mt-1">{{ pb.description }}</p>
                     </div>
-                    <div v-if="playbooks.length === 0" class="bg-white rounded-xl shadow-sm p-6 text-center text-gray-500 text-sm">
+                    <div v-if="playbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
                         Belum ada playbook.
                     </div>
                 </div>
@@ -82,25 +82,25 @@ const submitRunbook = () => {
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="font-semibold text-gray-800">Runbook</h2>
                     <button @click="showRunbookForm = !showRunbookForm"
-                        class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-500">
+                        class="btn btn-primary">
                         + Runbook
                     </button>
                 </div>
 
-                <div v-if="showRunbookForm" class="bg-white rounded-xl shadow-sm p-5 mb-4">
+                <div v-if="showRunbookForm" class="card p-5 mb-4">
                     <form @submit.prevent="submitRunbook" class="space-y-3">
                         <input v-model="runbookForm.title" type="text" required placeholder="Judul runbook"
-                            class="w-full rounded-lg border-gray-300 text-sm" />
+                            class="input w-full" />
                         <textarea v-model="runbookForm.description" rows="2" placeholder="Deskripsi singkat"
-                            class="w-full rounded-lg border-gray-300 text-sm"></textarea>
+                            class="input w-full"></textarea>
                         <textarea v-model="runbookForm.steps" rows="4" placeholder="Langkah teknis (satu per baris)"
-                            class="w-full rounded-lg border-gray-300 text-sm font-mono"></textarea>
-                        <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">Simpan</button>
+                            class="input w-full font-mono"></textarea>
+                        <button class="btn btn-primary">Simpan</button>
                     </form>
                 </div>
 
                 <div class="space-y-3">
-                    <div v-for="rb in runbooks" :key="rb.id" class="bg-white rounded-xl shadow-sm p-5 border-l-4 border-emerald-500">
+                    <div v-for="rb in runbooks" :key="rb.id" class="card p-5 border-l-4 border-emerald-500">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium text-gray-900">{{ rb.title }}</h3>
                             <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
@@ -110,7 +110,7 @@ const submitRunbook = () => {
                             <li v-for="(step, i) in rb.steps" :key="i">{{ step }}</li>
                         </ol>
                     </div>
-                    <div v-if="runbooks.length === 0" class="bg-white rounded-xl shadow-sm p-6 text-center text-gray-500 text-sm">
+                    <div v-if="runbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
                         Belum ada runbook.
                     </div>
                 </div>

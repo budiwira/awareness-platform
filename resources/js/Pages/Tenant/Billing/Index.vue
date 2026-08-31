@@ -23,7 +23,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
     <Head title="Billing" />
 
     <AppLayout title="Billing & Langganan">
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6 flex items-center justify-between">
+        <div class="card p-6 mb-6 flex items-center justify-between">
             <div>
                 <div class="text-sm text-gray-500">Plan aktif saat ini</div>
                 <div class="text-xl font-bold text-gray-900">{{ current_plan?.name ?? 'Free' }}</div>
@@ -45,7 +45,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div v-for="plan in plans" :key="plan.id"
-                class="bg-white rounded-xl shadow-sm p-6 flex flex-col"
+                class="card p-6 flex flex-col"
                 :class="plan.id === current_plan?.id ? 'ring-2 ring-indigo-500' : ''">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-semibold text-gray-900">{{ plan.name }}</h3>
@@ -64,7 +64,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
                 <button
                     v-if="plan.id !== current_plan?.id"
                     @click="choose(plan.id)"
-                    class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+                    class="btn btn-primary w-full">
                     Pilih Plan Ini
                 </button>
             </div>

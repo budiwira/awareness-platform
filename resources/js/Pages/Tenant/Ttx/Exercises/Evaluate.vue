@@ -28,7 +28,7 @@ const submit = () => {
 
         <form @submit.prevent="submit" class="max-w-3xl space-y-6">
             <!-- SKOR PER PESERTA -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="card p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Skor Peserta (0–100)</h3>
                 <div class="space-y-3">
                     <div v-for="m in members" :key="m.id" class="flex items-center justify-between gap-4">
@@ -37,28 +37,28 @@ const submit = () => {
                             <div class="text-xs text-gray-500">{{ m.email }}</div>
                         </div>
                         <input v-model.number="form.scores[m.id]" type="number" min="0" max="100"
-                            class="w-24 rounded-lg border-gray-300 text-sm" placeholder="—" />
+                            class="input w-24" placeholder="—" />
                     </div>
                     <p v-if="members.length === 0" class="text-sm text-gray-500">Belum ada anggota tim.</p>
                 </div>
             </div>
 
             <!-- AAR -->
-            <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="card p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">After-Action Review (AAR)</h3>
                 <label class="text-sm text-gray-600">Catatan Debriefing</label>
                 <textarea v-model="form.aar_notes" rows="4"
                     placeholder="Celah SOP, kesiapan tim, koordinasi antar tim..."
-                    class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    class="input mt-1 w-full"></textarea>
 
                 <label class="text-sm text-gray-600 mt-4 block">Corrective Action Plan (satu per baris)</label>
                 <textarea v-model="form.corrective_actions" rows="4"
                     placeholder="Perbarui SOP eskalasi&#10;Latihan komunikasi eksternal tiap kuartal"
-                    class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    class="input mt-1 w-full"></textarea>
             </div>
 
             <div class="flex justify-end">
-                <button class="px-6 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500">
+                <button class="btn btn-primary">
                     Simpan Evaluasi & Selesaikan Exercise
                 </button>
             </div>

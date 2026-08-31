@@ -25,7 +25,7 @@ const submit = () => {
             </Link>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="card p-6 mb-6">
             <p class="text-sm text-gray-600">
                 Pilih keputusan yang menurut Anda paling tepat untuk setiap situasi.
             </p>
@@ -33,7 +33,7 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit" class="space-y-6">
-            <div v-for="(scene, si) in scenes" :key="scene.id" class="bg-white rounded-xl shadow-sm p-6">
+            <div v-for="(scene, si) in scenes" :key="scene.id" class="card p-6">
                 <div class="text-xs uppercase tracking-wide text-gray-400 mb-2">Scene {{ si + 1 }}</div>
                 <div class="font-medium text-gray-900 mb-4">{{ scene.situation }}</div>
                 <div class="space-y-2">
@@ -55,7 +55,7 @@ const submit = () => {
             </div>
 
             <div class="flex justify-end">
-                <button class="px-6 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
+                <button class="btn btn-primary">
                     Kumpulkan Keputusan
                 </button>
             </div>

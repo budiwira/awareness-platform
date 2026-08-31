@@ -34,7 +34,7 @@ const submit = () => {
             </Link>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div class="card p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-xl font-bold text-gray-900">{{ quiz.title }}</h2>
@@ -48,7 +48,7 @@ const submit = () => {
 
         <!-- Daftar pertanyaan (kunci jawaban HANYA terlihat oleh super admin) -->
         <div class="space-y-4 mb-8">
-            <div v-for="(q, qi) in quiz.questions" :key="q.id" class="bg-white rounded-xl shadow-sm p-6">
+            <div v-for="(q, qi) in quiz.questions" :key="q.id" class="card p-6">
                 <div class="font-medium text-gray-900 mb-3">{{ qi + 1 }}. {{ q.question }}</div>
                 <ul class="space-y-1">
                     <li
@@ -62,18 +62,18 @@ const submit = () => {
                     </li>
                 </ul>
             </div>
-            <div v-if="(quiz.questions?.length ?? 0) === 0" class="bg-white rounded-xl shadow-sm p-8 text-center text-gray-500 text-sm">
+            <div v-if="(quiz.questions?.length ?? 0) === 0" class="card p-8 text-center text-gray-500 text-sm">
                 Belum ada pertanyaan. Tambahkan di bawah.
             </div>
         </div>
 
         <!-- Form tambah pertanyaan -->
-        <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="card p-6">
             <div class="font-semibold text-gray-800 mb-4">Tambah Pertanyaan</div>
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
                     <label class="text-sm text-gray-600">Pertanyaan</label>
-                    <textarea v-model="form.question" rows="2" required class="mt-1 w-full rounded-lg border-gray-300 text-sm"></textarea>
+                    <textarea v-model="form.question" rows="2" required class="input mt-1 w-full"></textarea>
                     <p v-if="errors.question" class="text-xs text-red-600 mt-1">{{ errors.question }}</p>
                 </div>
 
@@ -82,7 +82,7 @@ const submit = () => {
                     <div class="mt-1 space-y-2">
                         <div v-for="(opt, i) in form.options" :key="i" class="flex items-center gap-2">
                             <input type="radio" :value="i" v-model="form.correct_index" class="text-indigo-600" :title="'Jadikan ' + String.fromCharCode(65 + i) + ' kunci jawaban'" />
-                            <input v-model="form.options[i]" type="text" required :placeholder="'Pilihan ' + String.fromCharCode(65 + i)" class="flex-1 rounded-lg border-gray-300 text-sm" />
+                            <input v-model="form.options[i]" type="text" required :placeholder="'Pilihan ' + String.fromCharCode(65 + i)" class="input flex-1" />
                             <button type="button" @click="removeOption(i)" class="text-red-500 text-sm" v-if="form.options.length > 2">Hapus</button>
                         </div>
                     </div>
@@ -92,7 +92,7 @@ const submit = () => {
                 </div>
 
                 <div class="flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan Pertanyaan</button>
+                    <button class="btn btn-primary">Simpan Pertanyaan</button>
                 </div>
             </form>
         </div>

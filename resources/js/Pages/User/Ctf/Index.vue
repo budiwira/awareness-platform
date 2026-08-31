@@ -32,7 +32,7 @@ const difficultyBadge = (d) => ({
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="c in challenges" :key="c.id" class="bg-white rounded-xl shadow-sm p-6 flex flex-col">
+            <div v-for="c in challenges" :key="c.id" class="card p-6 flex flex-col">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-semibold text-gray-900">{{ c.title }}</h3>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
@@ -57,16 +57,14 @@ const difficultyBadge = (d) => ({
                         type="text"
                         required
                         placeholder="FLAG{...}"
-                        class="flex-1 rounded-lg border-gray-300 text-sm font-mono"
+                        class="input flex-1 font-mono"
                     />
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">
-                        Submit
-                    </button>
+                    <button class="btn btn-primary">Submit</button>
                 </form>
                 <p v-if="errors.flag" class="text-xs text-red-600 mt-2">{{ errors.flag }}</p>
             </div>
 
-            <div v-if="challenges.length === 0" class="col-span-2 bg-white rounded-xl shadow-sm p-8 text-center text-gray-500 text-sm">
+            <div v-if="challenges.length === 0" class="col-span-2 card p-8 text-center text-gray-500 text-sm">
                 Belum ada challenge aktif.
             </div>
         </div>

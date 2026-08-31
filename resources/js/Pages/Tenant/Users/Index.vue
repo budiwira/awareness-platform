@@ -68,13 +68,13 @@ const roleBadge = (role) =>
             <div class="flex gap-2">
                 <button
                     @click="showImport = !showImport"
-                    class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500"
+                    class="btn btn-primary"
                 >
                     Import CSV
                 </button>
                 <button
                     @click="showCreate = !showCreate"
-                    class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+                    class="btn btn-primary"
                 >
                     + Tambah User
                 </button>
@@ -82,7 +82,7 @@ const roleBadge = (role) =>
         </div>
 
         <!-- Form Import CSV -->
-        <div v-if="showImport" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showImport" class="card p-6 mb-6">
             <div class="font-semibold text-gray-800 mb-4">Import User via CSV</div>
             <form @submit.prevent="submitImport" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
@@ -92,11 +92,11 @@ const roleBadge = (role) =>
                         type="file"
                         accept=".csv,.txt"
                         required
-                        class="mt-1 w-full rounded-lg border-gray-300 text-sm"
+                        class="input mt-1 w-full"
                     />
                     <p v-if="importErrors" class="text-xs text-red-600 mt-1">{{ importErrors }}</p>
                 </div>
-                <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm">Upload & Import</button>
+                <button class="btn btn-primary">Upload & Import</button>
             </form>
             <p class="text-xs text-gray-400 mt-3">
                 Maksimal 500 baris. Jika ada 1 baris error, seluruh import akan dibatalkan.
@@ -104,29 +104,29 @@ const roleBadge = (role) =>
         </div>
 
         <!-- Form Tambah User -->
-        <div v-if="showCreate" class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div v-if="showCreate" class="card p-6 mb-6">
             <div class="font-semibold text-gray-800 mb-4">User Baru</div>
             <form @submit.prevent="submitCreate" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="text-sm text-gray-600">Nama</label>
-                    <input v-model="createForm.name" type="text" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="createForm.name" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name }}</p>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Email</label>
-                    <input v-model="createForm.email" type="email" required class="mt-1 w-full rounded-lg border-gray-300 text-sm" />
+                    <input v-model="createForm.email" type="email" required class="input mt-1 w-full" />
                     <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email }}</p>
                 </div>
                 <div>
                     <label class="text-sm text-gray-600">Role</label>
-                    <select v-model="createForm.role" class="mt-1 w-full rounded-lg border-gray-300 text-sm">
+                    <select v-model="createForm.role" class="input mt-1 w-full">
                         <option value="user">User</option>
                         <option value="tenant_admin">Tenant Admin</option>
                     </select>
                     <p v-if="errors.role" class="text-xs text-red-600 mt-1">{{ errors.role }}</p>
                 </div>
                 <div class="md:col-span-3 flex justify-end">
-                    <button class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm">Simpan</button>
+                    <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
             <p class="text-xs text-gray-400 mt-3">
@@ -135,7 +135,7 @@ const roleBadge = (role) =>
         </div>
 
         <!-- Tabel User -->
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 border-b border-gray-100">
@@ -149,16 +149,16 @@ const roleBadge = (role) =>
                 <tbody>
                     <tr v-for="user in users" :key="user.id" class="border-b border-gray-50">
                         <template v-if="editingId === user.id">
-                            <td class="px-6 py-3"><input v-model="editForm.name" class="w-full rounded-lg border-gray-300 text-sm" /></td>
-                            <td class="px-6 py-3"><input v-model="editForm.email" type="email" class="w-full rounded-lg border-gray-300 text-sm" /></td>
+                            <td class="px-6 py-3"><input v-model="editForm.name" class="input w-full" /></td>
+                            <td class="px-6 py-3"><input v-model="editForm.email" type="email" class="input w-full" /></td>
                             <td class="px-6 py-3">
-                                <select v-model="editForm.role" class="w-full rounded-lg border-gray-300 text-sm">
+                                <select v-model="editForm.role" class="input w-full">
                                     <option value="user">User</option>
                                     <option value="tenant_admin">Tenant Admin</option>
                                 </select>
                             </td>
                             <td class="px-6 py-3">
-                                <select v-model="editForm.is_active" class="w-full rounded-lg border-gray-300 text-sm">
+                                <select v-model="editForm.is_active" class="input w-full">
                                     <option :value="true">Active</option>
                                     <option :value="false">Disabled</option>
                                 </select>
