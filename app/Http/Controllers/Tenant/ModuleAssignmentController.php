@@ -19,6 +19,9 @@ class ModuleAssignmentController extends Controller
         Gate::authorize('viewAny', ModuleAssignment::class);
 
         $tenantId = $request->user()->tenant_id;
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
         $assignments = ModuleAssignment::with(['user:id,name,email', 'module:id,title,duration_minutes'])
             ->where('tenant_id', $tenantId)
@@ -26,7 +29,8 @@ class ModuleAssignmentController extends Controller
             ->get();
 
         $users = User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name', 'email']);
-        $modules = TrainingModule::where('is_active', true)
+        $modules = TrainingModule::whereIn('id', $entitledModuleIds)
+            ->where('is_active', true)
             ->where('status', 'published')
             ->orderBy('title')
             ->get(['id', 'title', 'duration_minutes']);
@@ -53,6 +57,14 @@ class ModuleAssignmentController extends Controller
 
         if (! $targetUser) {
             abort(403, 'User tidak ditemukan di tenant Anda.');
+        }
+
+        // Validasi entitlement: modul harus ter-entitle
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$entitlement->hasModule($tenant, $validated['training_module_id'])) {
+            return redirect()->back()->withErrors(['training_module_id' => 'Modul ini tidak termasuk dalam plan organisasi Anda.']);
         }
 
         $exists = ModuleAssignment::where('user_id', $targetUser->id)

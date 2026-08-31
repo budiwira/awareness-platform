@@ -25,6 +25,13 @@ class ReportController extends Controller
 
     public function export(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'reports_export')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur ekspor laporan.');
+        }
+
         $report = $this->buildReport($request->user()->tenant_id);
         $perUser = $report['per_user'];
 

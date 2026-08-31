@@ -27,6 +27,17 @@ class TtxExerciseController extends Controller
 
     public function index(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur TTX Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
+                'cta' => 'Ajukan upgrade melalui menu Billing',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
         $tenantId = $request->user()->tenant_id;
 
         $exercises = TtxExercise::with(['playbook:id,title', 'runbook:id,title', 'teams'])
@@ -47,6 +58,13 @@ class TtxExerciseController extends Controller
 
     public function store(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'scenario' => ['nullable', 'string'],
