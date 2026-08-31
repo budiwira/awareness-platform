@@ -10,7 +10,7 @@ class CtfChallenge extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'category', 'difficulty', 'points', 'flag', 'hint', 'is_active'];
+    protected $fillable = ['title', 'description', 'category', 'difficulty', 'points', 'flag', 'hint', 'is_active', 'status'];
 
     protected $casts = ['is_active' => 'boolean'];
 

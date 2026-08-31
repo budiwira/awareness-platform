@@ -10,7 +10,7 @@ class CaseStudy extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'difficulty', 'duration_minutes', 'is_active'];
+    protected $fillable = ['title', 'description', 'difficulty', 'duration_minutes', 'is_active', 'status'];
 
     protected $casts = ['is_active' => 'boolean'];
 

@@ -16,6 +16,7 @@ class TrainingModule extends Model
         'content',
         'duration_minutes',
         'is_active',
+        'status',
     ];
 
     protected $casts = [
