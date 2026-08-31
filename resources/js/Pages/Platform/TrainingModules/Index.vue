@@ -1,95 +1,85 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ modules: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
-const showForm = ref(false);
-const editingId = ref(null);
-const form = ref({ title: '', description: '', content: '', duration_minutes: 10, is_active: true });
+const statusFilter = ref('all');
 
-const startCreate = () => {
-    editingId.value = null;
-    form.value = { title: '', description: '', content: '', duration_minutes: 10, is_active: true };
-    showForm.value = true;
+const filteredModules = computed(() => {
+    const data = usePage().props.modules;
+    if (statusFilter.value === 'all') return data;
+    return data.filter(m => m.status === statusFilter.value);
+});
+
+const statusCounts = computed(() => {
+    const data = usePage().props.modules;
+    return {
+        all: data.length,
+        draft: data.filter(m => m.status === 'draft').length,
+        published: data.filter(m => m.status === 'published').length,
+        archived: data.filter(m => m.status === 'archived').length,
+    };
+});
+
+const publish = (id) => {
+    router.post(route('platform.modules.publish', id));
 };
 
-const startEdit = (module) => {
-    editingId.value = module.id;
-    form.value = { ...module };
-    showForm.value = true;
-};
-
-const submit = () => {
-    if (editingId.value) {
-        router.patch(route('platform.modules.update', editingId.value), form.value, {
-            onSuccess: () => (showForm.value = false),
-        });
-    } else {
-        router.post(route('platform.modules.store'), form.value, {
-            onSuccess: () => (showForm.value = false),
-        });
+const archive = (id) => {
+    if (confirm('Arsipkan modul ini? Modul tidak akan terlihat di tenant.')) {
+        router.post(route('platform.modules.archive', id));
     }
 };
 
 const destroy = (id) => {
-    if (confirm('Hapus modul ini?')) {
+    if (confirm('Hapus permanen modul ini?')) {
         router.delete(route('platform.modules.destroy', id));
     }
+};
+
+const statusBadge = (status) => {
+    const map = {
+        draft: 'bg-gray-100 text-gray-700',
+        published: 'bg-emerald-100 text-emerald-700',
+        archived: 'bg-amber-100 text-amber-700',
+    };
+    return map[status] || 'bg-gray-100 text-gray-700';
+};
+
+const statusLabel = (status) => {
+    const map = { draft: 'Draft', published: 'Published', archived: 'Archived' };
+    return map[status] || status;
 };
 </script>
 
 <template>
-    <Head title="Training Modules" />
+    <Head title="Studio Konten" />
 
-    <AppLayout title="Content Library">
+    <AppLayout title="Studio Konten">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm text-gray-500">
-                Kelola materi training global. Tenant Admin akan menugaskan modul ini ke user mereka.
+                Pipeline authoring konten — Draft, Published, Archived.
             </p>
-            <button
-                @click="startCreate"
-                class="btn btn-primary"
-            >
-                + Buat Modul Baru
-            </button>
+            <Link :href="route('platform.modules.create')" class="btn btn-primary">
+                + Buat Modul
+            </Link>
         </div>
 
-        <div v-if="showForm" class="card p-6 mb-6">
-            <div class="font-semibold text-gray-800 mb-4">{{ editingId ? 'Edit Modul' : 'Modul Baru' }}</div>
-            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Judul</label>
-                    <input v-model="form.title" type="text" required class="input mt-1 w-full" />
-                    <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Deskripsi Singkat</label>
-                    <textarea v-model="form.description" rows="2" class="input mt-1 w-full"></textarea>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Konten Materi (HTML/Text)</label>
-                    <textarea v-model="form.content" rows="6" required class="input mt-1 w-full"></textarea>
-                    <p v-if="errors.content" class="text-xs text-red-600 mt-1">{{ errors.content }}</p>
-                </div>
-                <div>
-                    <label class="text-sm text-gray-600">Durasi (menit)</label>
-                    <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
-                </div>
-                <div v-if="editingId" class="flex items-center pt-6">
-                    <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                        <input type="checkbox" v-model="form.is_active" class="rounded border-gray-300" />
-                        Modul Aktif
-                    </label>
-                </div>
-                <div class="md:col-span-2 flex justify-end gap-2">
-                    <button type="button" @click="showForm = false" class="btn btn-secondary">Batal</button>
-                    <button class="btn btn-primary">Simpan</button>
-                </div>
-            </form>
+        <!-- Filter chips -->
+        <div class="flex gap-2 mb-6">
+            <button
+                v-for="(count, key) in statusCounts"
+                :key="key"
+                @click="statusFilter = key"
+                class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+            >
+                {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
+            </button>
         </div>
 
         <div class="card overflow-hidden">
@@ -99,21 +89,40 @@ const destroy = (id) => {
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Durasi</th>
                         <th class="px-6 py-3 font-medium">Status</th>
+                        <th class="px-6 py-3 font-medium text-right">Ditugaskan</th>
                         <th class="px-6 py-3 font-medium text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="module in modules" :key="module.id" class="border-b border-gray-50">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ module.title }}</td>
+                    <tr v-if="filteredModules.length === 0">
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                            <div class="flex flex-col items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <div class="text-sm">Tidak ada modul dengan status ini.</div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-for="module in filteredModules" :key="module.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                        <td class="px-6 py-3">
+                            <Link :href="route('platform.modules.show', module.id)" class="font-medium text-gray-900 hover:text-teal-600 transition-colors">
+                                {{ module.title }}
+                            </Link>
+                            <div class="text-xs text-gray-500 mt-0.5">{{ module.description?.substring(0, 60) }}{{ module.description?.length > 60 ? '...' : '' }}</div>
+                        </td>
                         <td class="px-6 py-3 text-gray-500">{{ module.duration_minutes }} menit</td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="module.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'">
-                                {{ module.is_active ? 'Aktif' : 'Nonaktif' }}
+                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(module.status)">
+                                {{ statusLabel(module.status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-right space-x-2">
-                            <button @click="startEdit(module)" class="text-indigo-600 text-sm font-medium">Edit</button>
-                            <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium">Hapus</button>
+                        <td class="px-6 py-3 text-right text-gray-500">{{ module.assignments_count }}</td>
+                        <td class="px-6 py-3 text-right space-x-3">
+                            <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
+                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>
+                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="text-amber-600 text-sm font-medium hover:underline">Archive</button>
+                            <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline">Hapus</button>
                         </td>
                     </tr>
                 </tbody>
