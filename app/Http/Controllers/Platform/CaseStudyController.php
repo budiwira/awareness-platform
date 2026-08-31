@@ -15,7 +15,22 @@ class CaseStudyController extends Controller
     {
         Gate::authorize('viewAny', CaseStudy::class);
 
-        $cases = CaseStudy::withCount('scenes')->orderBy('created_at', 'desc')->get();
+        $cases = CaseStudy::withCount('scenes')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($case) {
+                return [
+                    'id' => $case->id,
+                    'title' => $case->title,
+                    'description' => $case->description,
+                    'difficulty' => $case->difficulty,
+                    'duration_minutes' => $case->duration_minutes,
+                    'status' => $case->status,
+                    'is_active' => $case->is_active,
+                    'scenes_count' => $case->scenes_count,
+                    'created_at' => $case->created_at,
+                ];
+            });
 
         return Inertia::render('Platform/CaseStudies/Index', ['cases' => $cases]);
     }
@@ -29,6 +44,7 @@ class CaseStudyController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'difficulty' => ['required', 'in:beginner,intermediate,advanced'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
+            'status' => ['nullable', 'in:draft,published'],
         ]);
 
         $case = CaseStudy::create($validated);
@@ -44,6 +60,26 @@ class CaseStudyController extends Controller
         $caseStudy->load('scenes');
 
         return Inertia::render('Platform/CaseStudies/Show', ['caseStudy' => $caseStudy]);
+    }
+
+    public function publish(CaseStudy $caseStudy)
+    {
+        Gate::authorize('update', $caseStudy);
+
+        $caseStudy->update(['status' => 'published']);
+        Audit::log('case.published', $caseStudy, ['title' => $caseStudy->title]);
+
+        return back();
+    }
+
+    public function archive(CaseStudy $caseStudy)
+    {
+        Gate::authorize('update', $caseStudy);
+
+        $caseStudy->update(['status' => 'archived']);
+        Audit::log('case.archived', $caseStudy, ['title' => $caseStudy->title]);
+
+        return back();
     }
 
     public function storeScene(Request $request, CaseStudy $caseStudy)

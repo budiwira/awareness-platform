@@ -79,8 +79,13 @@ Route::middleware('auth')->group(function () {
             
             // Route Modules
             Route::get('/modules', [PlatformModuleController::class, 'index'])->name('modules.index');
+            Route::get('/modules/create', [PlatformModuleController::class, 'create'])->name('modules.create');
             Route::post('/modules', [PlatformModuleController::class, 'store'])->name('modules.store');
+            Route::get('/modules/{module}', [PlatformModuleController::class, 'show'])->name('modules.show');
+            Route::get('/modules/{module}/edit', [PlatformModuleController::class, 'edit'])->name('modules.edit');
             Route::patch('/modules/{module}', [PlatformModuleController::class, 'update'])->name('modules.update');
+            Route::post('/modules/{module}/publish', [PlatformModuleController::class, 'publish'])->name('modules.publish');
+            Route::post('/modules/{module}/archive', [PlatformModuleController::class, 'archive'])->name('modules.archive');
             Route::delete('/modules/{module}', [PlatformModuleController::class, 'destroy'])->name('modules.destroy');
 
             // Route Quizzes
@@ -94,10 +99,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/cases', [PlatformCaseController::class, 'store'])->name('cases.store');
             Route::get('/cases/{caseStudy}', [PlatformCaseController::class, 'show'])->name('cases.show');
             Route::post('/cases/{caseStudy}/scenes', [PlatformCaseController::class, 'storeScene'])->name('cases.scenes.store');
+            Route::post('/cases/{caseStudy}/publish', [PlatformCaseController::class, 'publish'])->name('cases.publish');
+            Route::post('/cases/{caseStudy}/archive', [PlatformCaseController::class, 'archive'])->name('cases.archive');
             
             // Route CTF
             Route::get('/ctf', [PlatformCtfController::class, 'index'])->name('ctf.index');
             Route::post('/ctf', [PlatformCtfController::class, 'store'])->name('ctf.store');
+            Route::post('/ctf/{challenge}/publish', [PlatformCtfController::class, 'publish'])->name('ctf.publish');
+            Route::post('/ctf/{challenge}/archive', [PlatformCtfController::class, 'archive'])->name('ctf.archive');
 
             // Route Reports
             Route::get('/reports', [PlatformReportController::class, 'index'])->name('reports');

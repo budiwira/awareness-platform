@@ -15,9 +15,63 @@ class TrainingModuleController extends Controller
     {
         Gate::authorize('viewAny', TrainingModule::class);
 
-        $modules = TrainingModule::orderBy('created_at', 'desc')->get();
+        $modules = TrainingModule::withCount('assignments')
+            ->with('quiz')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($module) {
+                return [
+                    'id' => $module->id,
+                    'title' => $module->title,
+                    'description' => $module->description,
+                    'duration_minutes' => $module->duration_minutes,
+                    'status' => $module->status,
+                    'is_active' => $module->is_active,
+                    'assignments_count' => $module->assignments_count,
+                    'has_quiz' => $module->quiz !== null,
+                    'created_at' => $module->created_at,
+                ];
+            });
 
         return Inertia::render('Platform/TrainingModules/Index', ['modules' => $modules]);
+    }
+
+    public function show(TrainingModule $module)
+    {
+        Gate::authorize('viewAny', TrainingModule::class);
+
+        $module->load(['quiz.questions', 'assignments']);
+
+        $stats = [
+            'assignments_count' => $module->assignments()->count(),
+            'completed_count' => $module->assignments()->where('status', 'completed')->count(),
+            'avg_score' => round($module->assignments()->whereHas('quizAttempt')->with('quizAttempt')->get()->avg(fn($a) => $a->quizAttempt->score ?? 0)),
+        ];
+
+        return Inertia::render('Platform/TrainingModules/Show', [
+            'module' => $module,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function create()
+    {
+        Gate::authorize('create', TrainingModule::class);
+
+        return Inertia::render('Platform/TrainingModules/Wizard', [
+            'module' => null,
+        ]);
+    }
+
+    public function edit(TrainingModule $module)
+    {
+        Gate::authorize('update', $module);
+
+        $module->load('quiz');
+
+        return Inertia::render('Platform/TrainingModules/Wizard', [
+            'module' => $module,
+        ]);
     }
 
     public function store(Request $request)
@@ -29,12 +83,21 @@ class TrainingModuleController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'content' => ['required', 'string'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
+            'status' => ['required', 'in:draft,published'],
+            'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
-        $module = TrainingModule::create($validated);
-        Audit::log('module.created', $module, ['title' => $module->title]);
+        $module = TrainingModule::create([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'content' => $validated['content'],
+            'duration_minutes' => $validated['duration_minutes'],
+            'status' => $validated['status'],
+        ]);
 
-        return redirect()->route('platform.modules.index');
+        Audit::log('module.created', $module, ['title' => $module->title, 'status' => $module->status]);
+
+        return redirect()->route('platform.modules.show', $module);
     }
 
     public function update(Request $request, TrainingModule $module)
@@ -46,13 +109,34 @@ class TrainingModuleController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'content' => ['required', 'string'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
+            'status' => ['required', 'in:draft,published,archived'],
             'is_active' => ['required', 'boolean'],
         ]);
 
         $module->update($validated);
-        Audit::log('module.updated', $module, ['title' => $module->title]);
+        Audit::log('module.updated', $module, ['title' => $module->title, 'status' => $module->status]);
 
-        return redirect()->route('platform.modules.index');
+        return redirect()->route('platform.modules.show', $module);
+    }
+
+    public function publish(TrainingModule $module)
+    {
+        Gate::authorize('update', $module);
+
+        $module->update(['status' => 'published']);
+        Audit::log('module.published', $module, ['title' => $module->title]);
+
+        return back();
+    }
+
+    public function archive(TrainingModule $module)
+    {
+        Gate::authorize('update', $module);
+
+        $module->update(['status' => 'archived']);
+        Audit::log('module.archived', $module, ['title' => $module->title]);
+
+        return back();
     }
 
     public function destroy(TrainingModule $module)

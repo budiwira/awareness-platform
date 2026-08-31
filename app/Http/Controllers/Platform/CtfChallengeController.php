@@ -17,7 +17,21 @@ class CtfChallengeController extends Controller
 
         $challenges = CtfChallenge::withCount('solves')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($challenge) {
+                return [
+                    'id' => $challenge->id,
+                    'title' => $challenge->title,
+                    'description' => $challenge->description,
+                    'category' => $challenge->category,
+                    'difficulty' => $challenge->difficulty,
+                    'points' => $challenge->points,
+                    'status' => $challenge->status,
+                    'is_active' => $challenge->is_active,
+                    'solves_count' => $challenge->solves_count,
+                    'created_at' => $challenge->created_at,
+                ];
+            });
 
         return Inertia::render('Platform/Ctf/Index', ['challenges' => $challenges]);
     }
@@ -34,11 +48,32 @@ class CtfChallengeController extends Controller
             'points' => ['required', 'integer', 'min:10', 'max:1000'],
             'flag' => ['required', 'string', 'min:4', 'max:255'],
             'hint' => ['nullable', 'string', 'max:1000'],
+            'status' => ['nullable', 'in:draft,published'],
         ]);
 
         $challenge = CtfChallenge::create($validated);
         Audit::log('ctf.created', $challenge, ['title' => $challenge->title]);
 
         return redirect()->route('platform.ctf.index');
+    }
+
+    public function publish(CtfChallenge $challenge)
+    {
+        Gate::authorize('update', $challenge);
+
+        $challenge->update(['status' => 'published']);
+        Audit::log('ctf.published', $challenge, ['title' => $challenge->title]);
+
+        return back();
+    }
+
+    public function archive(CtfChallenge $challenge)
+    {
+        Gate::authorize('update', $challenge);
+
+        $challenge->update(['status' => 'archived']);
+        Audit::log('ctf.archived', $challenge, ['title' => $challenge->title]);
+
+        return back();
     }
 }
