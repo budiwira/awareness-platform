@@ -89,7 +89,7 @@ class TrainingModuleController extends Controller
 
         $module = TrainingModule::create([
             'title' => $validated['title'],
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? null,
             'content' => $validated['content'],
             'duration_minutes' => $validated['duration_minutes'],
             'status' => $validated['status'],
