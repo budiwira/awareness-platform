@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import Toast from '@/Components/Toast.vue';
 
 defineProps({
     title: { type: String, default: 'Dashboard' },
@@ -54,7 +55,7 @@ const isActive = (item) => (item.pattern ? route().current(item.pattern) : false
 
 const roleBadgeClass = computed(() => ({
     super_admin: 'bg-purple-100 text-purple-700',
-    tenant_admin: 'bg-indigo-100 text-indigo-700',
+    tenant_admin: 'bg-teal-100 text-teal-700',
     user: 'bg-emerald-100 text-emerald-700',
 }[user.value?.role] ?? 'bg-gray-100 text-gray-700'));
 
@@ -67,11 +68,11 @@ const logout = () => {
     <div class="min-h-screen bg-gray-100">
         <aside class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-white flex flex-col">
             <div class="flex items-center gap-3 px-6 h-16 border-b border-slate-800">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 shrink-0" viewBox="0 0 24 24" fill="currentColor" style="color: var(--brand)">
                     <path d="M12 2l8 4v6c0 5.25-3.4 9.74-8 10-4.6-.26-8-4.75-8-10V6l8-4z" />
                 </svg>
                 <div class="min-w-0">
-                    <div class="font-bold leading-tight truncate">Awareness Platform</div>
+                    <div class="font-bold leading-tight truncate font-display">Awareness Platform</div>
                     <div class="text-xs text-slate-400 truncate">{{ user?.tenant_name ?? 'Platform Control' }}</div>
                 </div>
             </div>
@@ -82,7 +83,7 @@ const logout = () => {
                         v-if="!item.soon"
                         :href="route(item.route)"
                         class="flex items-center px-3 py-2 rounded-lg text-sm font-medium"
-                        :class="isActive(item) ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'"
+                        :class="isActive(item) ? 'bg-teal-700 text-white' : 'text-slate-300 hover:bg-slate-800'"
                     >
                         {{ item.label }}
                     </Link>
@@ -112,9 +113,9 @@ const logout = () => {
 
         <div class="pl-64">
             <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8">
-                <h1 class="text-lg font-semibold text-gray-800">{{ title }}</h1>
+                <h1 class="text-lg font-semibold font-display" style="color: var(--ink)">{{ title }}</h1>
                 <div class="flex items-center gap-4">
-                    <Link :href="route('notifications.index')" class="relative text-gray-500 hover:text-gray-700" title="Notifikasi">
+                    <Link :href="route('notifications.index')" class="relative hover:opacity-80" style="color: var(--muted)" title="Notifikasi">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
@@ -123,7 +124,7 @@ const logout = () => {
                             {{ unread }}
                         </span>
                     </Link>
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold" :class="roleBadgeClass">
+                    <span class="badge" :class="roleBadgeClass">
                         {{ user?.role_label }}
                     </span>
                 </div>
