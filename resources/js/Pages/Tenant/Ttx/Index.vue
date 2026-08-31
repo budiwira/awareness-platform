@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ playbooks: Array, runbooks: Array });
@@ -64,13 +64,13 @@ const submitRunbook = () => {
                 </div>
 
                 <div class="space-y-3">
-                    <div v-for="pb in playbooks" :key="pb.id" class="card p-5 border-l-4 border-indigo-500">
+                    <Link v-for="pb in playbooks" :key="pb.id" :href="route('tenant.ttx.playbooks.show', pb.id)" class="card p-5 border-l-4 border-indigo-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium text-gray-900">{{ pb.title }}</h3>
                             <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
                         </div>
                         <p class="text-sm text-gray-500 mt-1">{{ pb.description }}</p>
-                    </div>
+                    </Link>
                     <div v-if="playbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
                         Belum ada playbook.
                     </div>
@@ -100,7 +100,7 @@ const submitRunbook = () => {
                 </div>
 
                 <div class="space-y-3">
-                    <div v-for="rb in runbooks" :key="rb.id" class="card p-5 border-l-4 border-emerald-500">
+                    <Link v-for="rb in runbooks" :key="rb.id" :href="route('tenant.ttx.runbooks.show', rb.id)" class="card p-5 border-l-4 border-emerald-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium text-gray-900">{{ rb.title }}</h3>
                             <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
@@ -109,7 +109,7 @@ const submitRunbook = () => {
                         <ol class="mt-2 space-y-1 text-sm text-gray-600 list-decimal list-inside">
                             <li v-for="(step, i) in rb.steps" :key="i">{{ step }}</li>
                         </ol>
-                    </div>
+                    </Link>
                     <div v-if="runbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
                         Belum ada runbook.
                     </div>

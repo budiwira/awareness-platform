@@ -192,6 +192,8 @@ Route::middleware('auth')->group(function () {
 
             // Route TTX
             Route::get('/ttx', [TenantTtxController::class, 'index'])->name('ttx.index');
+            Route::get('/ttx/playbooks/{playbook}', [TenantTtxController::class, 'showPlaybook'])->name('ttx.playbooks.show');
+            Route::get('/ttx/runbooks/{runbook}', [TenantTtxController::class, 'showRunbook'])->name('ttx.runbooks.show');
             Route::post('/ttx/playbooks', [TenantTtxController::class, 'storePlaybook'])->name('ttx.playbooks.store');
             Route::post('/ttx/runbooks', [TenantTtxController::class, 'storeRunbook'])->name('ttx.runbooks.store');
             

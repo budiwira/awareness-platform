@@ -24,6 +24,28 @@ class TtxController extends Controller
         ]);
     }
 
+    public function showPlaybook(Request $request, TtxPlaybook $playbook)
+    {
+        if ($playbook->tenant_id !== $request->user()->tenant_id) {
+            abort(403);
+        }
+
+        return Inertia::render('Tenant/Ttx/PlaybookShow', [
+            'playbook' => $playbook,
+        ]);
+    }
+
+    public function showRunbook(Request $request, TtxRunbook $runbook)
+    {
+        if ($runbook->tenant_id !== $request->user()->tenant_id) {
+            abort(403);
+        }
+
+        return Inertia::render('Tenant/Ttx/RunbookShow', [
+            'runbook' => $runbook,
+        ]);
+    }
+
     public function storePlaybook(Request $request)
     {
         $validated = $request->validate([
