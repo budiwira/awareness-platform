@@ -3,7 +3,12 @@ import { computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({ stats: Object });
+const props = defineProps({ stats: Object });
+
+const tierPercent = (count) => {
+    const total = props.stats.tier_baik + props.stats.tier_cukup + props.stats.tier_perlu_perbaikan + props.stats.tier_belum_mengerjakan;
+    return total > 0 ? (count / total * 100).toFixed(1) : 0;
+};
 
 const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Organisasi');
 </script>
@@ -32,6 +37,86 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <div class="bg-white/10 rounded-xl px-5 py-3 text-center">
                     <div class="text-2xl font-bold">{{ stats.admins }}</div>
                     <div class="text-[11px] text-teal-200">Admin</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="text-xs mb-2" style="color: var(--muted)">Rata-rata Skor Kesadaran</div>
+                <div class="font-display text-4xl font-bold" style="color: var(--ink)">{{ stats.avg_awareness_score }}</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-xs mb-2" style="color: var(--muted)">Tingkat Penyelesaian</div>
+                <div class="font-display text-4xl font-bold" style="color: var(--ink)">{{ stats.completion_rate }}%</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-xs mb-3" style="color: var(--muted)">Distribusi Kesadaran</div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-teal-700">Baik</span>
+                        <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_baik }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-amber-700">Cukup</span>
+                        <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_cukup }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-rose-700">Perlu Perbaikan</span>
+                        <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_perlu_perbaikan }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">Belum Mengerjakan</span>
+                        <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_belum_mengerjakan }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 mb-8">
+            <div class="text-xs mb-3" style="color: var(--muted)">Distribusi Visual</div>
+            <div class="flex gap-1 h-8 rounded-lg overflow-hidden">
+                <div 
+                    v-if="stats.tier_baik > 0" 
+                    class="bg-teal-500 transition-all"
+                    :style="{ width: tierPercent(stats.tier_baik) + '%' }"
+                    :title="`Baik: ${stats.tier_baik}`"
+                ></div>
+                <div 
+                    v-if="stats.tier_cukup > 0" 
+                    class="bg-amber-500 transition-all"
+                    :style="{ width: tierPercent(stats.tier_cukup) + '%' }"
+                    :title="`Cukup: ${stats.tier_cukup}`"
+                ></div>
+                <div 
+                    v-if="stats.tier_perlu_perbaikan > 0" 
+                    class="bg-rose-500 transition-all"
+                    :style="{ width: tierPercent(stats.tier_perlu_perbaikan) + '%' }"
+                    :title="`Perlu Perbaikan: ${stats.tier_perlu_perbaikan}`"
+                ></div>
+                <div 
+                    v-if="stats.tier_belum_mengerjakan > 0" 
+                    class="bg-gray-300 transition-all"
+                    :style="{ width: tierPercent(stats.tier_belum_mengerjakan) + '%' }"
+                    :title="`Belum Mengerjakan: ${stats.tier_belum_mengerjakan}`"
+                ></div>
+            </div>
+            <div class="flex items-center gap-6 mt-4 text-xs flex-wrap">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded bg-teal-500"></div>
+                    <span style="color: var(--muted)">Baik (≥70)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded bg-amber-500"></div>
+                    <span style="color: var(--muted)">Cukup (40-69)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded bg-rose-500"></div>
+                    <span style="color: var(--muted)">Perlu Perbaikan (<40)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded bg-gray-300"></div>
+                    <span style="color: var(--muted)">Belum Mengerjakan (0)</span>
                 </div>
             </div>
         </div>

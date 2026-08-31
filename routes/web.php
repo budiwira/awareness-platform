@@ -123,11 +123,56 @@ Route::middleware('auth')->group(function () {
             Route::get('/dashboard', function (Request $request) {
                 $tenantId = $request->user()->tenant_id;
 
+                $users = User::where('tenant_id', $tenantId)->get();
+                $assignments = \App\Models\ModuleAssignment::where('tenant_id', $tenantId)->get();
+                $attempts = \App\Models\QuizAttempt::where('tenant_id', $tenantId)->get();
+                $totalCtfPoints = (int) \App\Models\CtfChallenge::where('is_active', true)->sum('points');
+
+                $gAssign = $assignments->groupBy('user_id');
+                $gQuiz = $attempts->groupBy('user_id');
+                $gCase = \App\Models\CaseParticipation::where('tenant_id', $tenantId)->get()->groupBy('user_id');
+                $gSolve = \App\Models\CtfSolve::where('tenant_id', $tenantId)->get()->groupBy('user_id');
+                $gTtx = \App\Models\TtxScore::where('tenant_id', $tenantId)->get()->groupBy('user_id');
+
+                $scorer = new \App\Support\Scoring\AwarenessScore;
+
+                // Hitung awareness score per user
+                $scores = $users->map(function ($u) use ($scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints) {
+                    $awareness = $scorer->compute(
+                        $gAssign->get($u->id, collect()),
+                        $gQuiz->get($u->id, collect()),
+                        $gCase->get($u->id, collect()),
+                        $gSolve->get($u->id, collect()),
+                        $gTtx->get($u->id, collect()),
+                        $totalCtfPoints
+                    );
+                    return $awareness['overall'];
+                });
+
+                $avgScore = $scores->count() > 0 ? (int) round($scores->avg()) : 0;
+
+                // Distribusi 4 tier
+                $baik = $scores->filter(fn($s) => $s >= 70)->count();
+                $cukup = $scores->filter(fn($s) => $s >= 40 && $s < 70)->count();
+                $perluPerbaikan = $scores->filter(fn($s) => $s > 0 && $s < 40)->count();
+                $belumMengerjakan = $scores->filter(fn($s) => $s === 0)->count();
+
+                // % penugasan completed
+                $completionRate = $assignments->count() > 0
+                    ? (int) round($assignments->where('status', 'completed')->count() / $assignments->count() * 100)
+                    : 0;
+
                 return Inertia::render('Tenant/Dashboard', [
                     'stats' => [
-                        'total_users' => User::where('tenant_id', $tenantId)->count(),
-                        'active_users' => User::where('tenant_id', $tenantId)->where('is_active', true)->count(),
-                        'admins' => User::where('tenant_id', $tenantId)->where('role', UserRole::TenantAdmin->value)->count(),
+                        'total_users' => $users->count(),
+                        'active_users' => $users->where('is_active', true)->count(),
+                        'admins' => $users->where('role', UserRole::TenantAdmin->value)->count(),
+                        'avg_awareness_score' => $avgScore,
+                        'completion_rate' => $completionRate,
+                        'tier_baik' => $baik,
+                        'tier_cukup' => $cukup,
+                        'tier_perlu_perbaikan' => $perluPerbaikan,
+                        'tier_belum_mengerjakan' => $belumMengerjakan,
                     ],
                 ]);
             })->name('dashboard');
