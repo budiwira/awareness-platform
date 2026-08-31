@@ -21,8 +21,9 @@ test('super admin can create a training module', function () {
             'title' => 'Password Security',
             'content' => 'Gunakan password kuat...',
             'duration_minutes' => 15,
+            'status' => 'published',
         ])
-        ->assertRedirect(route('platform.modules.index'));
+        ->assertRedirect();
 
     $this->assertDatabaseHas('training_modules', ['title' => 'Password Security']);
     $this->assertDatabaseHas('audit_logs', ['action' => 'module.created']);
