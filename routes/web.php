@@ -18,6 +18,8 @@ use App\Http\Controllers\Platform\ReportController as PlatformReportController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
 use App\Http\Controllers\Tenant\BillingController as TenantBillingController;
+use App\Http\Controllers\Platform\BillingRequestController as PlatformBillingRequestController;
+use App\Http\Controllers\Platform\UserController as PlatformUserController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -73,6 +75,7 @@ Route::middleware('auth')->group(function () {
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
             Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
+            Route::post('/tenants/set-plan', [PlatformTenantController::class, 'setPlan'])->name('tenants.set-plan');
             
             // Route Modules
             Route::get('/modules', [PlatformModuleController::class, 'index'])->name('modules.index');
@@ -102,6 +105,15 @@ Route::middleware('auth')->group(function () {
             // Route Plans
             Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
             Route::post('/plans', [PlatformPlanController::class, 'store'])->name('plans.store');
+
+            // Route Billing Requests
+            Route::get('/billing/requests', [PlatformBillingRequestController::class, 'index'])->name('billing.requests');
+            Route::post('/billing/approve', [PlatformBillingRequestController::class, 'approve'])->name('billing.approve');
+            Route::post('/billing/reject', [PlatformBillingRequestController::class, 'reject'])->name('billing.reject');
+
+            // Route Users (cross-tenant)
+            Route::get('/users', [PlatformUserController::class, 'index'])->name('users.index');
+            Route::post('/users/destroy', [PlatformUserController::class, 'destroy'])->name('users.destroy');
         });
 
     Route::middleware('can:access-tenant-dashboard')
