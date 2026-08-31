@@ -75,7 +75,23 @@ const menus = computed(() => {
 const isActive = (item) => {
     if (!item.route) return false;
     const path = route(item.route).replace(/^https?:\/\/[^/]+/, '');
-    return page.url === path || page.url.startsWith(path + '/');
+    const matches = page.url === path || page.url.startsWith(path + '/');
+    if (!matches) return false;
+    
+    // Longest-prefix wins: hitung semua item yang cocok, aktifkan yang path-nya terpanjang
+    const allMatches = menus.value.flatMap(g => g.items).filter(it => {
+        if (!it.route) return false;
+        const p = route(it.route).replace(/^https?:\/\/[^/]+/, '');
+        return page.url === p || page.url.startsWith(p + '/');
+    });
+    
+    if (allMatches.length === 0) return false;
+    const longest = allMatches.reduce((max, it) => {
+        const p = route(it.route).replace(/^https?:\/\/[^/]+/, '');
+        return p.length > route(max.route).replace(/^https?:\/\/[^/]+/, '').length ? it : max;
+    });
+    
+    return item.route === longest.route;
 };
 
 const logout = () => router.post(route('logout'));
