@@ -21,6 +21,7 @@ const initials = computed(() =>
 
 const menus = computed(() => {
     const role = user.value?.role;
+    const entitlements = page.props.entitlements;
 
     if (role === 'super_admin') {
         return [
@@ -53,8 +54,8 @@ const menus = computed(() => {
                 { label: 'Reports', route: 'tenant.reports' },
             ]},
             { section: 'Simulasi', items: [
-                { label: 'Tabletop (TTX)', route: 'tenant.ttx.index' },
-                { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index' },
+                { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', locked: !entitlements?.features?.includes('ttx') },
+                { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
             ]},
         ];
     }
@@ -66,8 +67,8 @@ const menus = computed(() => {
         ]},
         { section: 'Belajar', items: [
             { label: 'Training', route: 'user.training.index' },
-            { label: 'Case Studies', route: 'user.cases.index' },
-            { label: 'CTF', route: 'user.ctf.index' },
+            { label: 'Case Studies', route: 'user.cases.index', locked: !entitlements?.features?.includes('case_studies') },
+            { label: 'CTF', route: 'user.ctf.index', locked: !entitlements?.features?.includes('ctf') },
         ]},
     ];
 });
@@ -122,14 +123,17 @@ const logout = () => router.post(route('logout'));
                             v-for="item in group.items"
                             :key="item.route"
                             :href="route(item.route)"
-                            class="relative flex items-center px-3 py-2 rounded-lg text-sm transition-colors"
+                            class="relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
                             :class="isActive(item) ? 'bg-white/10 text-white font-medium' : 'hover:bg-white/5 hover:text-white'"
                         >
                             <span
                                 v-if="isActive(item)"
                                 class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-amber-400"
                             ></span>
-                            {{ item.label }}
+                            <span class="flex-1">{{ item.label }}</span>
+                            <svg v-if="item.locked" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                         </Link>
                     </div>
                 </div>
@@ -161,11 +165,14 @@ const logout = () => router.post(route('logout'));
                                 v-for="item in group.items"
                                 :key="item.route"
                                 :href="route(item.route)"
-                                class="flex items-center px-3 py-2 rounded-lg text-sm"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
                                 :class="isActive(item) ? 'bg-white/10 text-white font-medium' : 'hover:bg-white/5'"
                                 @click="showMobileNav = false"
                             >
-                                {{ item.label }}
+                                <span class="flex-1">{{ item.label }}</span>
+                                <svg v-if="item.locked" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
                             </Link>
                         </div>
                     </div>
