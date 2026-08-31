@@ -8,70 +8,167 @@ const props = defineProps({
     current_plan: Object,
     current_subscription: Object,
     user_count: Number,
+    requests: Array,
 });
 
 const errors = computed(() => usePage().props.errors ?? {});
+const flash = computed(() => usePage().props.flash ?? {});
 
-const choose = (planId) => {
-    router.post(route('tenant.billing.subscribe'), { plan_id: planId });
+const showRequestForm = ref(false);
+const requestForm = ref({ plan_id: '', note: '' });
+const submitting = ref(false);
+
+const submitRequest = () => {
+    submitting.value = true;
+    router.post(route('tenant.billing.request'), requestForm.value, {
+        onFinish: () => {
+            submitting.value = false;
+            showRequestForm.value = false;
+            requestForm.value = { plan_id: '', note: '' };
+        },
+    });
 };
 
 const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleString('id-ID') + '/bln');
+
+const statusBadge = (status) => {
+    const map = {
+        pending: 'bg-amber-100 text-amber-800',
+        approved: 'bg-teal-100 text-teal-800',
+        rejected: 'bg-rose-100 text-rose-800',
+    };
+    return map[status] || 'bg-gray-100 text-gray-800';
+};
+
+const statusLabel = (status) => {
+    const map = { pending: 'Menunggu', approved: 'Disetujui', rejected: 'Ditolak' };
+    return map[status] || status;
+};
+
+const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 </script>
 
 <template>
     <Head title="Billing" />
 
     <AppLayout title="Billing & Langganan">
+        <!-- Flash message -->
+        <div v-if="flash.success" class="mb-6 text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 fade-in">
+            {{ flash.success }}
+        </div>
+
+        <p v-if="errors.plan_id" class="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            {{ errors.plan_id }}
+        </p>
+
+        <!-- Kartu plan aktif (READ-ONLY) -->
         <div class="card p-6 mb-6 flex items-center justify-between">
             <div>
                 <div class="text-sm text-gray-500">Plan aktif saat ini</div>
-                <div class="text-xl font-bold text-gray-900">{{ current_plan?.name ?? 'Free' }}</div>
-                <div class="text-xs text-gray-400 mt-1">
-                    {{ user_count }} users terpakai · maks. {{ current_plan?.max_users }} users
+                <div class="text-xl font-display font-bold text-gray-900 mt-1">{{ current_plan?.name ?? 'Free' }}</div>
+                <div class="text-xs text-gray-500 mt-1">
+                    {{ user_count }} / {{ current_plan?.max_users }} users terpakai
                 </div>
             </div>
             <div class="text-right">
                 <div class="text-2xl font-bold text-indigo-600">{{ formatPrice(current_plan?.price_monthly ?? 0) }}</div>
-                <div v-if="current_subscription" class="text-xs text-gray-400 mt-1">
-                    sejak {{ new Date(current_subscription.started_at).toLocaleDateString('id-ID') }}
+                <div v-if="current_subscription" class="text-xs text-gray-500 mt-1">
+                    sejak {{ formatDate(current_subscription.started_at) }}
                 </div>
             </div>
         </div>
 
-        <p v-if="errors.plan_id" class="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-            {{ errors.plan_id }}
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div v-for="plan in plans" :key="plan.id"
-                class="card p-6 flex flex-col"
-                :class="plan.id === current_plan?.id ? 'ring-2 ring-indigo-500' : ''">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="font-semibold text-gray-900">{{ plan.name }}</h3>
-                    <span v-if="plan.id === current_plan?.id"
-                        class="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
-                        aktif
-                    </span>
-                </div>
-                <div class="text-2xl font-bold text-indigo-600 mb-3">{{ formatPrice(plan.price_monthly) }}</div>
-                <div class="text-xs text-gray-500 mb-3">Maks. {{ plan.max_users }} users</div>
-                <ul class="space-y-1 text-sm text-gray-600 flex-1 mb-4">
-                    <li v-for="(f, i) in plan.features" :key="i" class="flex items-start gap-2">
-                        <span class="text-emerald-500">✓</span> {{ f }}
-                    </li>
-                </ul>
-                <button
-                    v-if="plan.id !== current_plan?.id"
-                    @click="choose(plan.id)"
-                    class="btn btn-primary w-full">
-                    Pilih Plan Ini
+        <!-- Form ajukan perubahan plan -->
+        <div class="card p-6 mb-6">
+            <h2 class="text-lg font-display font-semibold text-gray-900 mb-4">Ajukan Perubahan Plan</h2>
+            
+            <div v-if="!showRequestForm">
+                <button @click="showRequestForm = true" class="btn btn-primary">
+                    Ajukan Permintaan
                 </button>
+            </div>
+
+            <form v-else @submit.prevent="submitRequest" class="space-y-4 fade-in">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Plan</label>
+                    <select v-model="requestForm.plan_id" required
+                        class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150">
+                        <option value="">-- Pilih Plan --</option>
+                        <option v-for="plan in plans" :key="plan.id" :value="plan.id">
+                            {{ plan.name }} ({{ formatPrice(plan.price_monthly) }})
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Catatan (opsional)</label>
+                    <textarea v-model="requestForm.note" rows="3" maxlength="500"
+                        class="w-full rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150"
+                        placeholder="Jelaskan alasan perubahan plan..."></textarea>
+                    <div class="text-xs text-gray-500 mt-1">{{ requestForm.note.length }} / 500 karakter</div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" :disabled="submitting" class="btn btn-primary">
+                        {{ submitting ? 'Mengirim...' : 'Kirim Permintaan' }}
+                    </button>
+                    <button type="button" @click="showRequestForm = false" class="btn btn-secondary">
+                        Batal
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Riwayat request -->
+        <div class="card p-6">
+            <h2 class="text-lg font-display font-semibold text-gray-900 mb-4">Riwayat Permintaan</h2>
+
+            <div v-if="!requests || requests.length === 0" class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-sm">Belum ada permintaan perubahan plan.</p>
+            </div>
+
+            <div v-else class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-xs uppercase text-gray-600 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left py-3 px-4">Tanggal</th>
+                            <th class="text-left py-3 px-4">Plan</th>
+                            <th class="text-left py-3 px-4">Catatan</th>
+                            <th class="text-left py-3 px-4">Diajukan Oleh</th>
+                            <th class="text-left py-3 px-4">Status</th>
+                            <th class="text-left py-3 px-4">Diproses Oleh</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="req in requests" :key="req.id" 
+                            class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="py-3 px-4 text-gray-600">{{ formatDate(req.created_at) }}</td>
+                            <td class="py-3 px-4 font-medium text-gray-900">{{ req.plan?.name }}</td>
+                            <td class="py-3 px-4 text-gray-600">
+                                <span v-if="req.note" class="max-w-xs truncate block">{{ req.note }}</span>
+                                <span v-else class="text-gray-400">—</span>
+                            </td>
+                            <td class="py-3 px-4 text-gray-600">{{ req.requested_by?.name }}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-medium" :class="statusBadge(req.status)">
+                                    {{ statusLabel(req.status) }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-gray-600">
+                                <span v-if="req.resolved_by">{{ req.resolved_by.name }}</span>
+                                <span v-else class="text-gray-400">—</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <p class="text-xs text-gray-400 mt-6">
-            * Simulasi billing untuk demo — tidak ada pembayaran sungguhan.
+            * Model bisnis managed: super admin yang menetapkan plan. Tenant mengajukan permintaan perubahan.
         </p>
     </AppLayout>
 </template>

@@ -154,6 +154,7 @@ Route::middleware('auth')->group(function () {
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
+            Route::post('/billing/request', [TenantBillingController::class, 'requestPlanChange'])->name('billing.request');
         });
 
     Route::middleware('can:access-user-dashboard')
