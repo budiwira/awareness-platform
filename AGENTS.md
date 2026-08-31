@@ -23,3 +23,14 @@ Profesional:
 - Angka rata kanan di tabel; tanggal format konsisten (d MMM yyyy).
 - Teks UI Bahasa Indonesia konsisten; jangan lorem ipsum.
 - Kontras aksesibel (WCAG AA) untuk teks dan badge.
+
+## Otonomi V2
+- Migration DIPERBOLEHKAN hanya bila brief tugas memuat spesifikasi migration
+  eksplisit; wajib meniru pola RLS migration existing; dilarang membuat policy
+  di luar spesifikasi brief.
+- Setiap fitur baru WAJIB menyertakan test Pest: happy path + otorisasi
+  lintas tenant (RLS) + penolakan role yang salah.
+- File app/Http/Middleware, policy, dan routes/web.php hanya berubah sesuai
+  spesifikasi brief.
+- Update test lama yang memang sengaja diubah perilakunya oleh brief,
+  dan sebutkan di laporan.
