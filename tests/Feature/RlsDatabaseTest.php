@@ -51,7 +51,8 @@ function rls_cleanup(array $fixtures): void
 {
     [$tenantA, $tenantB, $alice, $bob] = $fixtures;
 
-    User::on('pgsql_owner')->whereIn('id', [$alice->id, $bob->id])->delete();
+    // Soft delete users dulu (dengan withTrashed untuk forceDelete)
+    User::on('pgsql_owner')->whereIn('id', [$alice->id, $bob->id])->forceDelete();
     Tenant::on('pgsql_owner')->whereIn('id', [$tenantA->id, $tenantB->id])->delete();
 }
 
