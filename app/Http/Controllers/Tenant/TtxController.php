@@ -42,7 +42,7 @@ class TtxController extends Controller
 
         Audit::log('ttx.playbook_created', $playbook, ['title' => $playbook->title]);
 
-        return redirect()->route('tenant.ttx.index');
+                return redirect()->route('tenant.ttx.index')->with('success', 'Playbook tersimpan.');
     }
 
     public function storeRunbook(Request $request)
@@ -70,6 +70,6 @@ class TtxController extends Controller
 
         Audit::log('ttx.runbook_created', $runbook, ['title' => $runbook->title]);
 
-        return redirect()->route('tenant.ttx.index');
+        return redirect()->route('tenant.ttx.index')->with('success', 'Runbook tersimpan.');
     }
 }
