@@ -85,6 +85,7 @@ const statusBadge = (status) =>
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Users</th>
+                        <th class="px-6 py-3 font-medium">Plan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
                         <th class="px-6 py-3 font-medium">Aksi</th>
                     </tr>
@@ -94,6 +95,10 @@ const statusBadge = (status) =>
                         <td class="px-6 py-3 font-medium text-gray-900">{{ tenant.name }}</td>
                         <td class="px-6 py-3 text-gray-500">{{ tenant.slug }}</td>
                         <td class="px-6 py-3 text-gray-500">{{ tenant.users_count }}</td>
+                        <td class="px-6 py-3">
+                            <span v-if="tenant.current_plan" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_plan }}</span>
+                            <span v-else class="text-xs text-gray-400">—</span>
+                        </td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(tenant.status)">
                                 {{ tenant.status }}

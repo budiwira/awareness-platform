@@ -18,7 +18,14 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::withCount('users')->orderBy('name')->get();
+        $tenants = Tenant::withCount('users')->with('subscriptions.plan:id,name')->orderBy('name')->get()
+            ->map(function ($tenant) {
+                $current = $tenant->subscriptions->where('status', 'active')->sortByDesc('started_at')->first();
+                $data = $tenant->toArray();
+                $data['current_plan'] = $current?->plan?->name;
+                return $data;
+            });
+
         $plans = Plan::where('is_active', true)->orderBy('price_monthly')->get();
 
         return Inertia::render('Platform/Tenants/Index', [
@@ -103,7 +110,7 @@ class TenantController extends Controller
             ]);
         });
 
-        return redirect()->route('platform.tenants.index')->with('success', 'Plan berhasil diubah.');
+        return redirect()->route('platform.tenants.index')->with('success', "Plan '{$plan->name}' diaktifkan");
     }
 }
 

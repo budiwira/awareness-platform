@@ -114,6 +114,7 @@ Route::middleware('auth')->group(function () {
             // Route Plans
             Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
             Route::post('/plans', [PlatformPlanController::class, 'store'])->name('plans.store');
+            Route::put('/plans/{plan}', [PlatformPlanController::class, 'update'])->name('plans.update');
 
             // Route Billing Requests
             Route::get('/billing/requests', [PlatformBillingRequestController::class, 'index'])->name('billing.requests');
