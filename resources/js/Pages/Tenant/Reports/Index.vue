@@ -1,63 +1,93 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import StatCard from '@/Components/StatCard.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
-defineProps({ stats: Object, per_user: Array });
+const props = defineProps({ stats: Object, per_user: Array });
+
+const avgMemberScore = computed(() => {
+    if (props.per_user.length === 0) return 0;
+    const sum = props.per_user.reduce((acc, u) => acc + (u.awareness_score || 0), 0);
+    return Math.round(sum / props.per_user.length);
+});
+
+const totalMembers = computed(() => props.per_user.length);
+
+const completedAssignments = computed(() => {
+    return props.per_user.reduce((acc, u) => acc + (u.completed || 0), 0);
+});
+
+const progressBarColor = (score) => {
+    if (score >= 70) return '#0f766e';
+    if (score >= 40) return '#f59e0b';
+    return '#e11d48';
+};
+
+const badgeStyle = (score) => {
+    if (score >= 70) return { background: '#ccfbf1', color: '#115e59' };
+    if (score >= 40) return { background: '#fef3c7', color: '#92400e' };
+    return { background: '#fee2e2', color: '#991b1b' };
+};
 </script>
 
 <template>
     <Head title="Reports" />
 
     <AppLayout title="Laporan Training">
-        <div class="flex justify-end mb-4">
-            <a :href="route('tenant.reports.export')"
-                class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500">
-                ⬇ Download CSV
-            </a>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card p-6">
+                <div class="text-xs mb-2" style="color: var(--muted)">Rata-rata Skor Anggota</div>
+                <div class="font-display text-4xl font-bold" style="color: var(--ink)">{{ avgMemberScore }}</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-xs mb-2" style="color: var(--muted)">Jumlah Anggota</div>
+                <div class="font-display text-4xl font-bold" style="color: var(--ink)">{{ totalMembers }}</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-xs mb-2" style="color: var(--muted)">Penugasan Selesai</div>
+                <div class="font-display text-4xl font-bold" style="color: var(--ink)">{{ completedAssignments }}</div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
-            <StatCard label="Anggota" :value="stats.users" />
-            <StatCard label="Penugasan" :value="stats.assignments" />
-            <StatCard label="Completion" :value="stats.completion_rate + '%'" accent="text-emerald-600" />
-            <StatCard label="Pass Rate" :value="stats.pass_rate + '%'" accent="text-indigo-600" />
-            <StatCard label="Rata-rata Quiz" :value="stats.avg_score" />
-            <StatCard label="Awareness Org" :value="stats.org_avg" accent="text-indigo-700" border="border-2 border-indigo-200" />
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-            <div class="px-6 py-4 font-semibold text-gray-800 border-b border-gray-100">Progres per Anggota</div>
+        <div class="card overflow-hidden">
+            <div class="px-6 py-4 flex justify-between items-center border-b" style="border-color: var(--line)">
+                <div class="font-semibold" style="color: var(--ink)">Progres per Anggota</div>
+                <a :href="route('tenant.reports.export')" class="btn btn-secondary">
+                    Download CSV
+                </a>
+            </div>
             <table v-if="per_user.length > 0" class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
-                        <th class="px-6 py-3 font-medium">Nama</th>
-                        <th class="px-6 py-3 font-medium">Ditugaskan</th>
-                        <th class="px-6 py-3 font-medium">Selesai</th>
-                        <th class="px-6 py-3 font-medium">Percobaan</th>
-                        <th class="px-6 py-3 font-medium">Rata-rata Quiz</th>
-                        <th class="px-6 py-3 font-medium">Awareness Score</th>
+                    <tr class="text-left border-b" style="color: var(--muted); border-color: var(--line)">
+                        <th class="px-6 py-3 font-medium">Anggota</th>
+                        <th class="px-6 py-3 font-medium">Skor</th>
+                        <th class="px-6 py-3 font-medium">Status</th>
+                        <th class="px-6 py-3 font-medium text-right">Rata-rata</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in per_user" :key="row.id" class="border-b border-gray-50">
+                    <tr v-for="row in per_user" :key="row.id" class="border-b" style="border-color: var(--line)">
                         <td class="px-6 py-3">
-                            <div class="font-medium text-gray-900">{{ row.name }}</div>
-                            <div class="text-xs text-gray-500">{{ row.email }}</div>
-                        </td>
-                        <td class="px-6 py-3 text-gray-600">{{ row.assigned }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ row.completed }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ row.attempts }}</td>
-                        <td class="px-6 py-3 font-medium" :class="row.avg_score >= 70 ? 'text-emerald-600' : 'text-gray-600'">
-                            {{ row.avg_score }}
+                            <div class="font-medium" style="color: var(--ink)">{{ row.name }}</div>
+                            <div class="text-xs" style="color: var(--muted)">{{ row.email }}</div>
                         </td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                                  :class="row.awareness_score >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'">
-                                {{ row.awareness_score }}
+                            <div class="flex items-center gap-2">
+                                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden" style="width: 80px;">
+                                    <div
+                                        class="h-full rounded-full transition-all"
+                                        :style="{ width: row.awareness_score + '%', backgroundColor: progressBarColor(row.awareness_score) }"
+                                    ></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-3">
+                            <span class="badge" :style="badgeStyle(row.awareness_score)">
+                                {{ row.awareness_score >= 70 ? 'Baik' : row.awareness_score >= 40 ? 'Cukup' : 'Perlu Perbaikan' }}
                             </span>
                         </td>
+                        <td class="px-6 py-3 text-right font-semibold" style="color: var(--ink)">{{ row.awareness_score }}</td>
                     </tr>
                 </tbody>
             </table>
