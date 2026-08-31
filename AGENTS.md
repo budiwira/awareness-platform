@@ -34,3 +34,10 @@ Profesional:
   spesifikasi brief.
 - Update test lama yang memang sengaja diubah perilakunya oleh brief,
   dan sebutkan di laporan.
+
+## Definisi Selesai (KERAS)
+- Test lama gagal = tugas belum selesai: update test atau perbaiki kode.
+- DILARANG menghapus, men-skip, atau menandai incomplete test untuk
+  menghijaukan suite.
+- Jumlah passed TIDAK BOLEH turun dari baseline tanpa persetujuan reviewer.
+- Laporan wajib menyertakan baris ringkasan ASLI output php artisan test.
