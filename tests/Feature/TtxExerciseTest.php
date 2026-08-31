@@ -7,6 +7,16 @@ use App\Models\User;
 function makeTtxFixture(): array
 {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create([
+        'name' => 'Ttx-' . uniqid(),
+        'slug' => 'ttx-' . uniqid(),
+        'price_monthly' => 100,
+        'max_users' => 100,
+        'features' => ['ttx'],
+        'includes_all_modules' => false,
+        'is_active' => true,
+    ]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 

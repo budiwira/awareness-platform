@@ -11,7 +11,7 @@ test('super admin can create plan', function () {
             'name' => 'Business',
             'price_monthly' => 2000,
             'max_users' => 50,
-            'features' => "50 users\nAll features",
+            'features' => ['training', 'ttx'],
         ])
         ->assertRedirect(route('platform.plans.index'));
 

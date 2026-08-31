@@ -9,9 +9,11 @@ use App\Notifications\TrainingAssigned;
 
 test('assigning training creates notification for the user', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'N-' . uniqid(), 'slug' => 'n-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    $module = TrainingModule::create(['title' => 'Phishing 101', 'content' => 'x', 'duration_minutes' => 10]);
+    $module = TrainingModule::create(['title' => 'Phishing 101', 'content' => 'x', 'duration_minutes' => 10, 'status' => 'published', 'is_active' => true]);
 
     $this->actingAs($admin)->post(route('tenant.assignments.store'), [
         'user_id' => $user->id,

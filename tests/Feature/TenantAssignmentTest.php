@@ -26,9 +26,11 @@ test('tenant admin can view assignments for their users', function () {
 
 test('tenant admin can assign a module to a user', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'Ass-' . uniqid(), 'slug' => 'ass-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    $module = TrainingModule::create(['title' => 'Test', 'content' => '...', 'duration_minutes' => 10, 'is_active' => true]);
+    $module = TrainingModule::create(['title' => 'Test', 'content' => '...', 'duration_minutes' => 10, 'is_active' => true, 'status' => 'published']);
 
     $this->actingAs($admin)
         ->post(route('tenant.assignments.store'), [

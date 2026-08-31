@@ -9,6 +9,21 @@ use Inertia\Testing\AssertableInertia as Assert;
 function makeCtfFixture(): array
 {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create([
+        'name' => 'Ent-' . uniqid(),
+        'slug' => 'ent-' . uniqid(),
+        'price_monthly' => 100,
+        'max_users' => 100,
+        'features' => ['ctf'],
+        'includes_all_modules' => false,
+        'is_active' => true,
+    ]);
+    \App\Models\Subscription::create([
+        'tenant_id' => $tenant->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'started_at' => now(),
+    ]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $challenge = CtfChallenge::create([

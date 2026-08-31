@@ -7,6 +7,8 @@ use App\Models\User;
 
 test('full ttx lifecycle: create -> team -> advance -> evaluate -> completed', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'Lif-' . uniqid(), 'slug' => 'lif-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ttx'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $member = User::factory()->create(['tenant_id' => $tenant->id]);
 

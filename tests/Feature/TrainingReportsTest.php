@@ -34,6 +34,8 @@ test('user sees own score page with stats', function () {
 });
 test('tenant admin can export csv report', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'E-' . uniqid(), 'slug' => 'e-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training', 'reports_export'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Budi Export']);
 
