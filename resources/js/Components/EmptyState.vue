@@ -5,7 +5,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="px-6 py-10 text-center text-gray-500 text-sm">
+    <div class="px-6 py-10 text-center text-sm" style="color: var(--muted)">
         <div class="text-3xl mb-2">🗂️</div>
         {{ message }}
     </div>

@@ -8,8 +8,8 @@ defineProps({
 </script>
 
 <template>
-    <div class="bg-white rounded-xl shadow-sm p-5" :class="border">
-        <div class="text-xs text-gray-500 uppercase tracking-wide">{{ label }}</div>
+    <div class="card p-5" :class="border">
+        <div class="text-xs uppercase tracking-wide" style="color: var(--muted)">{{ label }}</div>
         <div class="text-2xl font-bold mt-1" :class="accent">{{ value }}</div>
     </div>
 </template>
