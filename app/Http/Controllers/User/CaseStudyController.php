@@ -15,6 +15,17 @@ class CaseStudyController extends Controller
 
     public function index(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur Studi Kasus Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.',
+                'cta' => 'Hubungi admin organisasi untuk upgrade',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
         $participations = CaseParticipation::where('user_id', $request->user()->id)
             ->get()
             ->keyBy('case_study_id');

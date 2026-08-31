@@ -13,6 +13,17 @@ class CtfController extends Controller
 {
     public function index(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ctf')) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur CTF Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Capture The Flag.',
+                'cta' => 'Hubungi admin organisasi untuk upgrade',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
         $solves = CtfSolve::where('user_id', $request->user()->id)
             ->get()
             ->keyBy('challenge_id');
@@ -38,6 +49,13 @@ class CtfController extends Controller
 
     public function submit(Request $request, CtfChallenge $challenge)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ctf')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur CTF.');
+        }
+
         if (! $challenge->is_active || $challenge->status !== 'published') {
             return redirect()->route('user.ctf.index');
         }

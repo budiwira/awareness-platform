@@ -13,6 +13,14 @@ class MyTrainingController extends Controller
     public function index(Request $request)
     {
         $userId = $request->user()->id;
+        $tenant = $request->user()->tenant;
+
+        if (!$tenant) {
+            abort(403, 'Anda tidak terikat pada organisasi.');
+        }
+
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
         // User hanya bisa melihat assignment miliknya sendiri,
         // termasuk info apakah modulnya punya quiz aktif
@@ -21,6 +29,7 @@ class MyTrainingController extends Controller
             'module.quiz:id,training_module_id',
         ])
             ->where('user_id', $userId)
+            ->whereIn('training_module_id', $entitledModuleIds)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -33,6 +42,17 @@ class MyTrainingController extends Controller
     {
         if ($assignment->user_id !== auth()->id()) {
             abort(403, 'Anda tidak berhak melihat assignment ini.');
+        }
+
+        $tenant = auth()->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+
+        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Modul Tidak Tersedia',
+                'message' => 'Organisasi Anda belum mengaktifkan modul ini.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse(request())->setStatusCode(403);
         }
 
         $assignment->load(['module:id,title,description,content,duration_minutes']);
