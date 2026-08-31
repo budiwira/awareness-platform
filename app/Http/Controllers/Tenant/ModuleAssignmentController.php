@@ -76,7 +76,7 @@ class ModuleAssignmentController extends Controller
         $module = TrainingModule::find($validated['training_module_id']);
         $targetUser->notify(new TrainingAssigned($module));
 
-        return redirect()->route('tenant.assignments.index');
+        return redirect()->route('tenant.assignments.index')->with('success', 'Modul berhasil ditugaskan.');
     }
 
     public function update(Request $request, ModuleAssignment $assignment)
@@ -97,6 +97,6 @@ class ModuleAssignmentController extends Controller
 
         Audit::log('assignment.updated', $assignment, ['status' => $validated['status']]);
 
-        return redirect()->route('tenant.assignments.index');
+        return redirect()->route('tenant.assignments.index')->with('success', 'Perubahan disimpan.');
     }
 }

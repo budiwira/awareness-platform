@@ -60,6 +60,6 @@ class BillingController extends Controller
 
         Audit::log('billing.plan_changed', $plan, ['tenant_id' => $tenant->id, 'plan' => $plan->slug]);
 
-        return redirect()->route('tenant.billing.index');
+        return redirect()->route('tenant.billing.index')->with('success', 'Plan berhasil diperbarui.');
     }
 }

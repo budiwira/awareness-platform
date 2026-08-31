@@ -46,6 +46,6 @@ class PlanController extends Controller
 
         Audit::log('plan.created', $plan, ['name' => $plan->name]);
 
-        return redirect()->route('platform.plans.index');
+        return redirect()->route('platform.plans.index')->with('success', 'Plan baru dibuat.');
     }
 }
