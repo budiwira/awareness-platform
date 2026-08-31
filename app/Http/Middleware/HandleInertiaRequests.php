@@ -16,6 +16,18 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        $entitlements = null;
+        
+        if ($request->user() && $request->user()->tenant) {
+            $entitlement = app(\App\Services\TenantEntitlement::class);
+            $tenant = $request->user()->tenant;
+            
+            $entitlements = [
+                'features' => $entitlement->getEntitledFeatures($tenant),
+                'module_ids' => $entitlement->getEntitledModuleIds($tenant),
+            ];
+        }
+
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user() ? array_merge(
@@ -28,6 +40,7 @@ class HandleInertiaRequests extends Middleware
                     ]
                 ) : null,
             ],
+            'entitlements' => $entitlements,
             'unread' => $request->user() ? $request->user()->unreadNotifications()->count() : 0,
             'flash' => [
                 'success' => $request->session()->get('success'),
