@@ -32,4 +32,9 @@ class TrainingModule extends Model
     {
         return $this->hasOne(Quiz::class, 'training_module_id');
     }
+
+    public function plans(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Plan::class, 'plan_module')->withTimestamps();
+    }
 }
