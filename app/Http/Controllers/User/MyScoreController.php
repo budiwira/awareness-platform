@@ -30,8 +30,10 @@ class MyScoreController extends Controller
         $ttx = TtxScore::where('user_id', $userId)->get();
 
         $totalCtfPoints = (int) CtfChallenge::where('is_active', true)->sum('points');
+        $tenant = $request->user()->tenant;
+        $entitlement = $tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($tenant) : null;
 
-        $score = (new AwarenessScore)->compute($assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints);
+        $score = (new AwarenessScore)->compute($assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints, $entitlement);
 
         $stats = [
             'assigned' => $assignments->count(),

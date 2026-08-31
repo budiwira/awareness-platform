@@ -70,6 +70,9 @@ class ReportController extends Controller
 
     private function buildReport(string $tenantId): array
     {
+        $tenant = \App\Models\Tenant::find($tenantId);
+        $entitlement = $tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($tenant) : null;
+
         $users = User::where('tenant_id', $tenantId)->get();
 
         $assignments = ModuleAssignment::with('user:id,name,email')->where('tenant_id', $tenantId)->get();
@@ -88,7 +91,7 @@ class ReportController extends Controller
         $completed = $assignments->where('status', 'completed')->count();
         $passedAttempts = $attempts->where('passed', true)->count();
 
-        $perUser = $users->map(function ($u) use ($assignments, $attempts, $scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints) {
+        $perUser = $users->map(function ($u) use ($assignments, $attempts, $scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints, $entitlement) {
             $uAssign = $assignments->where('user_id', $u->id);
             $uAttempts = $attempts->where('user_id', $u->id);
 
@@ -98,7 +101,8 @@ class ReportController extends Controller
                 $gCase->get($u->id, collect()),
                 $gSolve->get($u->id, collect()),
                 $gTtx->get($u->id, collect()),
-                $totalCtfPoints
+                $totalCtfPoints,
+                $entitlement
             );
 
             return [

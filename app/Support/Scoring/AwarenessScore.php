@@ -15,8 +15,18 @@ class AwarenessScore
         'ttx' => 0.20,
     ];
 
+    // Pemetaan signal key -> feature key
+    public const SIGNAL_FEATURES = [
+        'completion' => 'training',
+        'quiz' => 'training',
+        'case' => 'case_studies',
+        'ctf' => 'ctf',
+        'ttx' => 'ttx',
+    ];
+
     /**
      * Hitung awareness score yang explainable dari 5 sinyal.
+     * $entitledFeatures: array fitur yang aktif untuk tenant (null = full features).
      */
     public function compute(
         Collection $assignments,
@@ -24,7 +34,8 @@ class AwarenessScore
         Collection $caseParticipations,
         Collection $ctfSolves,
         Collection $ttxScores,
-        int $totalCtfPoints = 0
+        int $totalCtfPoints = 0,
+        ?array $entitledFeatures = null
     ): array {
         $completion = $this->completion($assignments);
         $quiz = $this->quizPerformance($quizAttempts);
@@ -32,34 +43,84 @@ class AwarenessScore
         $ctf = $this->ctfEngagement($ctfSolves, $totalCtfPoints);
         $ttx = $this->ttxPerformance($ttxScores);
 
-        $overall = (int) round(
-            $completion * self::WEIGHTS['completion'] +
-            $quiz * self::WEIGHTS['quiz'] +
-            $case * self::WEIGHTS['case'] +
-            $ctf * self::WEIGHTS['ctf'] +
-            $ttx * self::WEIGHTS['ttx']
-        );
+        $scores = [
+            'completion' => $completion,
+            'quiz' => $quiz,
+            'case' => $case,
+            'ctf' => $ctf,
+            'ttx' => $ttx,
+        ];
+
+        // Tentukan sinyal yang ter-entitle
+        $entitledSignals = $this->getEntitledSignals($entitledFeatures);
+        $lockedSignals = array_diff(array_keys(self::WEIGHTS), $entitledSignals);
+
+        // Hitung bobot ternormalisasi untuk sinyal ter-entitle
+        $entitledWeightSum = 0;
+        foreach ($entitledSignals as $key) {
+            $entitledWeightSum += self::WEIGHTS[$key];
+        }
+
+        $overall = 0;
+        $breakdown = [];
+
+        foreach (self::WEIGHTS as $key => $weight) {
+            $isLocked = in_array($key, $lockedSignals, true);
+            
+            if ($isLocked) {
+                $breakdown[] = [
+                    'key' => $key,
+                    'label' => $this->labelForKey($key),
+                    'score' => (int) round($scores[$key]),
+                    'weight' => (int) (self::WEIGHTS[$key] * 100),
+                    'locked' => true,
+                    'note' => 'Tidak termasuk dalam plan',
+                ];
+            } else {
+                $normalizedWeight = $entitledWeightSum > 0 ? $weight / $entitledWeightSum : 0;
+                $overall += $scores[$key] * $normalizedWeight;
+                
+                $breakdown[] = [
+                    'key' => $key,
+                    'label' => $this->labelForKey($key),
+                    'score' => (int) round($scores[$key]),
+                    'weight' => (int) round($normalizedWeight * 100),
+                    'locked' => false,
+                ];
+            }
+        }
 
         return [
-            'overall' => $overall,
-            'breakdown' => [
-                $this->row('completion', 'Training Completion', $completion),
-                $this->row('quiz', 'Quiz Performance', $quiz),
-                $this->row('case', 'Case Study Performance', $case),
-                $this->row('ctf', 'CTF Engagement', $ctf),
-                $this->row('ttx', 'TTX Performance', $ttx),
-            ],
+            'overall' => (int) round($overall),
+            'breakdown' => $breakdown,
         ];
     }
 
-    private function row(string $key, string $label, float $score): array
+    private function getEntitledSignals(?array $entitledFeatures): array
     {
-        return [
-            'key' => $key,
-            'label' => $label,
-            'score' => (int) round($score),
-            'weight' => (int) (self::WEIGHTS[$key] * 100),
-        ];
+        if ($entitledFeatures === null) {
+            return array_keys(self::WEIGHTS);
+        }
+
+        $signals = [];
+        foreach (self::SIGNAL_FEATURES as $signal => $feature) {
+            if (in_array($feature, $entitledFeatures, true)) {
+                $signals[] = $signal;
+            }
+        }
+
+        return $signals;
+    }
+
+    private function labelForKey(string $key): string
+    {
+        return match ($key) {
+            'completion' => 'Training Completion',
+            'quiz' => 'Quiz Performance',
+            'case' => 'Case Study Performance',
+            'ctf' => 'CTF Engagement',
+            'ttx' => 'TTX Performance',
+        };
     }
 
     private function completion(Collection $assignments): float

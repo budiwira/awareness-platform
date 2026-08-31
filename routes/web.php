@@ -145,16 +145,18 @@ Route::middleware('auth')->group(function () {
                 $gTtx = \App\Models\TtxScore::where('tenant_id', $tenantId)->get()->groupBy('user_id');
 
                 $scorer = new \App\Support\Scoring\AwarenessScore;
+                $entitlement = $request->user()->tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($request->user()->tenant) : null;
 
                 // Hitung awareness score per user
-                $scores = $users->map(function ($u) use ($scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints) {
+                $scores = $users->map(function ($u) use ($scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints, $entitlement) {
                     $awareness = $scorer->compute(
                         $gAssign->get($u->id, collect()),
                         $gQuiz->get($u->id, collect()),
                         $gCase->get($u->id, collect()),
                         $gSolve->get($u->id, collect()),
                         $gTtx->get($u->id, collect()),
-                        $totalCtfPoints
+                        $totalCtfPoints,
+                        $entitlement
                     );
                     return $awareness['overall'];
                 });
