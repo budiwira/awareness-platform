@@ -58,6 +58,12 @@ class CaseStudyController extends Controller
 
     public function start(Request $request, CaseStudy $caseStudy)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
         if (! $caseStudy->is_active || $caseStudy->status !== 'published') {
             return redirect()->route('user.cases.index');
         }
@@ -72,6 +78,12 @@ class CaseStudyController extends Controller
 
     public function run(Request $request, CaseParticipation $participation)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
         $this->ensureOwner($request, $participation);
 
         if ($participation->status === 'completed') {
@@ -98,6 +110,12 @@ class CaseStudyController extends Controller
 
     public function submit(Request $request, CaseParticipation $participation)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
         $this->ensureOwner($request, $participation);
 
         if ($participation->status === 'completed') {
@@ -150,6 +168,12 @@ class CaseStudyController extends Controller
 
     public function result(Request $request, CaseParticipation $participation)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
         $this->ensureOwner($request, $participation);
 
         $participation->load('caseStudy.scenes');

@@ -32,6 +32,8 @@ test('assigning training creates notification for the user', function () {
 
 test('adding ttx member creates notification', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'Nttx-'.uniqid(), 'slug' => 'nttx-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ttx'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $ex = TtxExercise::create(['tenant_id' => $tenant->id, 'title' => 'TTX Ransomware']);

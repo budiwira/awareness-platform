@@ -164,6 +164,8 @@ test('user cannot submit flag to draft ctf challenge', function () {
 
 test('user cannot start draft case study', function () {
     $tenant = \App\Models\Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'Sd-'.uniqid(), 'slug' => 'sd-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $case = \App\Models\CaseStudy::create([

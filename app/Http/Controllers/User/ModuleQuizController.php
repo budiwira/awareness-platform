@@ -15,6 +15,16 @@ class ModuleQuizController extends Controller
     {
         $this->ensureOwner($request, $assignment);
 
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Modul Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan modul ini.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse($request)->setStatusCode(403);
+        }
+
         $quiz = $assignment->module?->quiz;
 
         if (! $quiz || ! $quiz->is_active) {
@@ -39,6 +49,12 @@ class ModuleQuizController extends Controller
     public function submit(Request $request, ModuleAssignment $assignment)
     {
         $this->ensureOwner($request, $assignment);
+
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+            abort(403, 'Organisasi Anda belum mengaktifkan modul ini.');
+        }
 
         $quiz = $assignment->module?->quiz;
 

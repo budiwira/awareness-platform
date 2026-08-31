@@ -6,6 +6,8 @@ use App\Models\User;
 
 test('tenant admin can create playbook', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'TtxC-'.uniqid(), 'slug' => 'ttxc-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ttx'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
     $this->actingAs($admin)
@@ -20,6 +22,8 @@ test('tenant admin can create playbook', function () {
 
 test('tenant admin can create runbook with steps split by line', function () {
     $tenant = Tenant::factory()->create();
+    $plan = \App\Models\Plan::create(['name' => 'TtxR-'.uniqid(), 'slug' => 'ttxr-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ttx'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
     $this->actingAs($admin)
@@ -45,6 +49,8 @@ test('regular user cannot access ttx management', function () {
 test('tenant isolation: admin B tidak melihat playbook tenant A', function () {
     $tenantA = Tenant::factory()->create();
     $tenantB = Tenant::factory()->create();
+    $planB = \App\Models\Plan::create(['name' => 'TtxI-'.uniqid(), 'slug' => 'ttxi-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ttx'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenantB->id, 'plan_id' => $planB->id, 'status' => 'active', 'started_at' => now()]);
 
     TtxPlaybook::create(['tenant_id' => $tenantA->id, 'title' => 'PB A']);
 

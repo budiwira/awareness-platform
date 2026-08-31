@@ -94,6 +94,16 @@ class TtxExerciseController extends Controller
 
     public function show(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur TTX Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
+                'cta' => 'Ajukan Upgrade',
+            ])->toResponse($request)->setStatusCode(403);
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $exercise->load(['playbook:id,title', 'runbook:id,title', 'injects', 'teams.members.user:id,name,email']);
@@ -109,6 +119,12 @@ class TtxExerciseController extends Controller
 
     public function storeTeam(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $validated = $request->validate([
@@ -130,6 +146,12 @@ class TtxExerciseController extends Controller
 
     public function storeTeamMember(Request $request, TtxTeam $team)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $this->ensureTenant($request, $team->tenant_id);
 
         $validated = $request->validate([
@@ -160,6 +182,12 @@ class TtxExerciseController extends Controller
 
     public function advance(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $order = array_keys(self::PHASES);
@@ -176,6 +204,12 @@ class TtxExerciseController extends Controller
 
     public function storeInject(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $validated = $request->validate([
@@ -197,6 +231,16 @@ class TtxExerciseController extends Controller
 
     public function evaluateForm(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur TTX Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
+                'cta' => 'Ajukan Upgrade',
+            ])->toResponse($request)->setStatusCode(403);
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $exercise->load('teams.members.user:id,name,email');
@@ -215,6 +259,12 @@ class TtxExerciseController extends Controller
 
     public function evaluateStore(Request $request, TtxExercise $exercise)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $this->ensureTenant($request, $exercise->tenant_id);
 
         $validated = $request->validate([

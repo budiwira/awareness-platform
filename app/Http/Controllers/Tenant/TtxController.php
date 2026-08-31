@@ -13,6 +13,16 @@ class TtxController extends Controller
 {
     public function index(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Fitur TTX Terkunci',
+                'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
+                'cta' => 'Ajukan Upgrade',
+            ])->toResponse($request)->setStatusCode(403);
+        }
+
         $tenantId = $request->user()->tenant_id;
 
         $playbooks = TtxPlaybook::where('tenant_id', $tenantId)->orderBy('title')->get();
@@ -26,6 +36,12 @@ class TtxController extends Controller
 
     public function showPlaybook(Request $request, TtxPlaybook $playbook)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         if ($playbook->tenant_id !== $request->user()->tenant_id) {
             abort(403);
         }
@@ -37,6 +53,12 @@ class TtxController extends Controller
 
     public function showRunbook(Request $request, TtxRunbook $runbook)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         if ($runbook->tenant_id !== $request->user()->tenant_id) {
             abort(403);
         }
@@ -48,6 +70,12 @@ class TtxController extends Controller
 
     public function storePlaybook(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -69,6 +97,12 @@ class TtxController extends Controller
 
     public function storeRunbook(Request $request)
     {
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+            abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
