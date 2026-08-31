@@ -19,8 +19,12 @@ class TenantController extends Controller
     public function index()
     {
         $tenants = Tenant::withCount('users')->orderBy('name')->get();
+        $plans = Plan::where('is_active', true)->orderBy('price_monthly')->get();
 
-        return Inertia::render('Platform/Tenants/Index', ['tenants' => $tenants]);
+        return Inertia::render('Platform/Tenants/Index', [
+            'tenants' => $tenants,
+            'plans' => $plans,
+        ]);
     }
 
     public function store(Request $request)

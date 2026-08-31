@@ -29,6 +29,8 @@ const menus = computed(() => {
                 { label: 'Tenants', route: 'platform.tenants.index' },
                 { label: 'Reports', route: 'platform.reports' },
                 { label: 'Plans & Billing', route: 'platform.plans.index' },
+                { label: 'Billing Requests', route: 'platform.billing.requests' },
+                { label: 'Users', route: 'platform.users.index' },
             ]},
             { section: 'Konten', items: [
                 { label: 'Content Library', route: 'platform.modules.index' },
