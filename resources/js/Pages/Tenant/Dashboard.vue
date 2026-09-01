@@ -18,25 +18,25 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
 
     <AppLayout title="Dashboard Organisasi">
         <div
-            class="rounded-2xl p-8 text-white mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6"
-            style="background: linear-gradient(140deg, #0f766e 0%, #115e59 55%, #134e4a 100%)"
+            class="rounded-2xl p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative"
+            style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
         >
             <div>
-                <div class="text-teal-200 text-sm mb-1">Organisasi</div>
-                <h2 class="font-display text-2xl font-bold">{{ tenantName }}</h2>
-                <p class="text-teal-100 text-sm mt-2 max-w-xl">
+                <div class="text-sm mb-1 t-on-hero-muted">Organisasi</div>
+                <h2 class="font-display text-2xl font-bold t-on-hero">{{ tenantName }}</h2>
+                <p class="text-sm mt-2 max-w-xl t-on-hero-muted">
                     Pantau kesiapan keamanan anggota: tugaskan training, jalankan simulasi TTX,
                     dan ukur hasilnya lewat laporan awareness.
                 </p>
             </div>
             <div class="flex gap-4">
-                <div class="bg-surface/10 rounded-xl px-5 py-3 text-center">
-                    <div class="text-2xl font-bold">{{ stats.active_users }}<span class="text-teal-200 text-sm">/{{ stats.total_users }}</span></div>
-                    <div class="text-[11px] text-teal-200">Anggota Aktif</div>
+                <div class="rounded-xl px-5 py-3 text-center" style="background: rgba(237,233,254,.1)">
+                    <div class="text-2xl font-bold t-on-hero">{{ stats.active_users }}<span class="text-sm t-on-hero-muted">/{{ stats.total_users }}</span></div>
+                    <div class="text-[11px] t-on-hero-muted">Anggota Aktif</div>
                 </div>
-                <div class="bg-surface/10 rounded-xl px-5 py-3 text-center">
-                    <div class="text-2xl font-bold">{{ stats.admins }}</div>
-                    <div class="text-[11px] text-teal-200">Admin</div>
+                <div class="rounded-xl px-5 py-3 text-center" style="background: rgba(237,233,254,.1)">
+                    <div class="text-2xl font-bold t-on-hero">{{ stats.admins }}</div>
+                    <div class="text-[11px] t-on-hero-muted">Admin</div>
                 </div>
             </div>
         </div>

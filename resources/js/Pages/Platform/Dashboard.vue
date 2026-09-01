@@ -18,11 +18,11 @@ const statCards = [
 
     <AppLayout title="Dashboard Platform">
         <div
-            class="rounded-2xl p-8 text-white mb-8"
-            style="background: linear-gradient(140deg, #0f766e 0%, #115e59 55%, #134e4a 100%)"
+            class="rounded-2xl p-8 mb-8"
+            style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
         >
-            <h2 class="font-display text-2xl font-bold mb-1">Kesehatan Platform</h2>
-            <p class="text-teal-100 text-sm max-w-2xl">
+            <h2 class="font-display text-2xl font-bold mb-1 t-on-hero">Kesehatan Platform</h2>
+            <p class="text-sm max-w-2xl t-on-hero-muted">
                 Ringkasan seluruh organisasi terdaftar: adopsi, aktivitas, dan distribusi pengguna.
             </p>
         </div>

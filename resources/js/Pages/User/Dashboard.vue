@@ -7,7 +7,7 @@ import ScoreRing from '@/Components/ScoreRing.vue';
 defineProps({ tenant_name: String, score: Object, pending: Number, in_progress: Number });
 
 const userName = computed(() => usePage().props.auth?.user?.name ?? '');
-const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
+const barColor = (v) => (v >= 70 ? 'var(--ok)' : v >= 40 ? 'var(--warn)' : 'var(--danger)');
 </script>
 
 <template>
@@ -17,22 +17,22 @@ const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
         <!-- Hero -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div
-                class="lg:col-span-2 rounded-2xl p-8 text-white flex flex-col justify-between"
-                style="background: linear-gradient(140deg, #0f766e 0%, #115e59 55%, #134e4a 100%)"
+                class="lg:col-span-2 rounded-2xl p-8 flex flex-col justify-between"
+                style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
             >
                 <div>
-                    <div class="text-teal-200 text-sm mb-2">{{ tenant_name ?? 'Awareness Platform' }}</div>
-                    <h2 class="font-display text-3xl font-bold leading-tight mb-3">Halo, {{ userName }}.</h2>
-                    <p class="text-teal-100 max-w-lg">
+                    <div class="text-sm mb-2 t-on-hero-muted">{{ tenant_name ?? 'Awareness Platform' }}</div>
+                    <h2 class="font-display text-3xl font-bold leading-tight mb-3 t-on-hero">Halo, {{ userName }}.</h2>
+                    <p class="max-w-lg t-on-hero-muted">
                         Tingkatkan kesadaran keamanan Anda melalui training, case study, dan CTF.
                         Skor diperbarui otomatis dari lima komponen.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-6">
-                    <Link :href="route('user.training.index')" class="btn bg-surface hover:chip-brand" style="color: var(--brand-strong)">
+                    <Link :href="route('user.training.index')" class="btn btn-secondary" style="background: rgba(255,255,255,.15); color: var(--on-hero); border-color: transparent">
                         Lanjutkan Training
                     </Link>
-                    <Link :href="route('user.score')" class="btn bg-surface/10 text-white hover:bg-surface/20">
+                    <Link :href="route('user.score')" class="btn" style="background: rgba(255,255,255,.08); color: var(--on-hero); border-color: transparent">
                         Lihat Breakdown
                     </Link>
                 </div>
