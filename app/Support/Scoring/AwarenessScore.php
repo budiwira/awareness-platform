@@ -6,13 +6,14 @@ use Illuminate\Support\Collection;
 
 class AwarenessScore
 {
-    // Bobot 5 sinyal — didokumentasikan agar explainable
+    // Bobot 6 sinyal — didokumentasikan agar explainable
     public const WEIGHTS = [
-        'completion' => 0.25,
-        'quiz' => 0.25,
+        'completion' => 0.20,
+        'quiz' => 0.20,
         'case' => 0.15,
         'ctf' => 0.15,
-        'ttx' => 0.20,
+        'ttx' => 0.15,
+        'phishing_awareness' => 0.15,
     ];
 
     // Pemetaan signal key -> feature key
@@ -22,10 +23,11 @@ class AwarenessScore
         'case' => 'case_studies',
         'ctf' => 'ctf',
         'ttx' => 'ttx',
+        'phishing_awareness' => 'phishing',
     ];
 
     /**
-     * Hitung awareness score yang explainable dari 5 sinyal.
+     * Hitung awareness score yang explainable dari 6 sinyal.
      * $entitledFeatures: array fitur yang aktif untuk tenant (null = full features).
      */
     public function compute(
@@ -35,13 +37,15 @@ class AwarenessScore
         Collection $ctfSolves,
         Collection $ttxScores,
         int $totalCtfPoints = 0,
-        ?array $entitledFeatures = null
+        ?array $entitledFeatures = null,
+        Collection $phishingTargets = null
     ): array {
         $completion = $this->completion($assignments);
         $quiz = $this->quizPerformance($quizAttempts);
         $case = $this->casePerformance($caseParticipations);
         $ctf = $this->ctfEngagement($ctfSolves, $totalCtfPoints);
         $ttx = $this->ttxPerformance($ttxScores);
+        $phishingAwareness = $this->phishingAwareness($phishingTargets ?? collect());
 
         $scores = [
             'completion' => $completion,
@@ -49,6 +53,7 @@ class AwarenessScore
             'case' => $case,
             'ctf' => $ctf,
             'ttx' => $ttx,
+            'phishing_awareness' => $phishingAwareness,
         ];
 
         // Tentukan sinyal yang ter-entitle
@@ -120,6 +125,7 @@ class AwarenessScore
             'case' => 'Case Study Performance',
             'ctf' => 'CTF Engagement',
             'ttx' => 'TTX Performance',
+            'phishing_awareness' => 'Phishing Awareness',
         };
     }
 
@@ -174,5 +180,17 @@ class AwarenessScore
         }
 
         return $ttxScores->avg('score');
+    }
+
+    private function phishingAwareness(Collection $phishingTargets): float
+    {
+        if ($phishingTargets->count() === 0) {
+            return 100; // Belum diuji = asumsi aman
+        }
+
+        $clicked = $phishingTargets->where('status', 'clicked')->count();
+        $clickRate = ($clicked / $phishingTargets->count()) * 100;
+
+        return max(0, 100 - ($clickRate * 0.5));
     }
 }

@@ -7,6 +7,7 @@ use App\Models\CaseParticipation;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
 use App\Models\ModuleAssignment;
+use App\Models\PhishingTarget;
 use App\Models\QuizAttempt;
 use App\Models\TtxScore;
 use App\Support\Scoring\AwarenessScore;
@@ -28,12 +29,13 @@ class MyScoreController extends Controller
         $cases = CaseParticipation::where('user_id', $userId)->get();
         $solves = CtfSolve::where('user_id', $userId)->get();
         $ttx = TtxScore::where('user_id', $userId)->get();
+        $phishingTargets = PhishingTarget::where('user_id', $userId)->get();
 
         $totalCtfPoints = (int) CtfChallenge::where('is_active', true)->sum('points');
         $tenant = $request->user()->tenant;
         $entitlement = $tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($tenant) : null;
 
-        $score = (new AwarenessScore)->compute($assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints, $entitlement);
+        $score = (new AwarenessScore)->compute($assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints, $entitlement, $phishingTargets);
 
         $stats = [
             'assigned' => $assignments->count(),

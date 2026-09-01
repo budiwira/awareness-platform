@@ -258,10 +258,11 @@ Route::middleware('auth')->group(function () {
                 $cases = \App\Models\CaseParticipation::where('user_id', $user->id)->get();
                 $solves = \App\Models\CtfSolve::where('user_id', $user->id)->get();
                 $ttx = \App\Models\TtxScore::where('user_id', $user->id)->get();
+                $phishingTargets = \App\Models\PhishingTarget::where('user_id', $user->id)->get();
                 $totalCtfPoints = (int) \App\Models\CtfChallenge::where('is_active', true)->sum('points');
 
                 $score = (new \App\Support\Scoring\AwarenessScore)->compute(
-                    $assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints
+                    $assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints, null, $phishingTargets
                 );
 
                 $pending = $assignments->where('status', 'assigned')->count();
