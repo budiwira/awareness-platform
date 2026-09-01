@@ -41,3 +41,8 @@ Profesional:
   menghijaukan suite.
 - Jumlah passed TIDAK BOLEH turun dari baseline tanpa persetujuan reviewer.
 - Laporan wajib menyertakan baris ringkasan ASLI output php artisan test.
+
+## Aturan Kerja Hermes
+- Hermes HANYA dijalankan di repo lab (C:\Users\budii\awareness-lab).
+- DILARANG menjalankan hermes chat dari repo main.
+- Main hanya menerima merge dari reviewer setelah review kode.
