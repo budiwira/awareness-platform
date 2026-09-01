@@ -66,8 +66,17 @@ test('user earns perfect score badge', function () {
     
     DB::statement("SELECT set_config('app.tenant_id', '{$this->tenant->id}', false)");
     
+    // Create training module first
+    $module = TrainingModule::create([
+        'title' => 'Test Module',
+        'content' => 'Content',
+        'duration_minutes' => 10,
+        'status' => 'published',
+        'is_active' => true,
+    ]);
+    
     $quiz = \App\Models\Quiz::create([
-        'training_module_id' => 1,
+        'training_module_id' => $module->id,
         'title' => 'Test Quiz',
         'passing_score' => 70,
         'duration_minutes' => 30,
