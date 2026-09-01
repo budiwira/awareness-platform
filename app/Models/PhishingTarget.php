@@ -6,6 +6,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $campaign_id
+ * @property int $user_id
+ * @property string $token
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $clicked_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\PhishingCampaign $campaign
+ * @property-read \App\Models\User $user
+ */
 class PhishingTarget extends Model
 {
     use HasFactory;

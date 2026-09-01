@@ -7,6 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $tenant_id
+ * @property string $title
+ * @property string $sender_name
+ * @property string $subject
+ * @property string $body_template
+ * @property string $status
+ * @property int $created_by
+ * @property array|null $email_snapshot
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Tenant $tenant
+ * @property-read \App\Models\User $creator
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PhishingTarget> $targets
+ */
 class PhishingCampaign extends Model
 {
     use HasFactory;

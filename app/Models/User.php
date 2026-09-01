@@ -9,8 +9,38 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-class User extends Authenticatable
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property string $password
+ * @property string|null $remember_token
+ * @property string|null $avatar_path
+ * @property string|null $tenant_id
+ * @property \App\Enums\UserRole $role
+ * @property bool $is_active
+ * @property int $login_streak
+ * @property \Illuminate\Support\Carbon|null $last_login_date
+ * @property bool $show_on_leaderboard
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Tenant|null $tenant
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ModuleAssignment> $moduleAssignments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ModuleAssignment> $assignments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CaseParticipation> $caseParticipations
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CtfSolve> $ctfSolves
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TtxScore> $ttxScores
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\QuizAttempt> $quizAttempts
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PhishingTarget> $phishingTargets
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PhishingCampaign> $phishingCampaignsCreated
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserBadge> $userBadges
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Badge> $badges
+ */
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;

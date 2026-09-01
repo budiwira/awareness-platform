@@ -6,6 +6,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $tenant_id
+ * @property int $training_module_id
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property int|null $score
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\User $user
+ * @property-read \App\Models\TrainingModule $module
+ */
 class ModuleAssignment extends Model
 {
     use HasFactory;
