@@ -66,7 +66,7 @@ const hasAar = computed(() => {
 
         <!-- HERO -->
         <div class="card mb-6 overflow-hidden">
-            <div class="p-8" style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);">
+            <div class="p-8" style="background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);">
                 <div class="flex items-start justify-between mb-3">
                     <h1 class="font-display text-3xl font-bold text-white">{{ exercise.title }}</h1>
                     <span class="badge" style="background: rgb(251 191 36); color: rgb(120 53 15);">

@@ -11,7 +11,7 @@ const color = (v) => (v >= 70 ? 'var(--brand)' : v >= 40 ? 'var(--warn)' : 'var(
 <template>
     <div class="flex flex-col items-center">
         <svg :width="size" :height="size" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="52" fill="none" stroke="#26263A" stroke-width="10" />
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface-2)" stroke-width="10" />
             <circle
                 cx="60" cy="60" r="52" fill="none"
                 :stroke="color(value)" stroke-width="10" stroke-linecap="round"

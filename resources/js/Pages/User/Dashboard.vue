@@ -18,7 +18,7 @@ const barColor = (v) => (v >= 70 ? 'var(--ok)' : v >= 40 ? 'var(--warn)' : 'var(
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div
                 class="lg:col-span-2 rounded-2xl p-8 flex flex-col justify-between"
-                style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
+                style="background: linear-gradient(140deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-strong) 100%)"
             >
                 <div>
                     <div class="text-sm mb-2 t-on-hero-muted">{{ tenant_name ?? 'Awareness Platform' }}</div>

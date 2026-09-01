@@ -33,7 +33,7 @@ const submit = () => {
         <!-- Panel brand (desktop) -->
         <div
             class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative"
-            style="background: linear-gradient(160deg, #170722 0%, #0A0A0E 100%)"
+            style="background: linear-gradient(160deg, var(--brand-dark-1) 0%, var(--brand-dark-2) 100%)"
         >
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-lg" style="background: rgba(124,58,237,.2); color: var(--brand-strong)">SA</div>

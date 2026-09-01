@@ -40,17 +40,17 @@ const completedAssignments = computed(() => {
 });
 
 const progressBarColor = (score) => {
-    if (score >= 70) return '#0f766e';
-    if (score >= 40) return '#f59e0b';
-    if (score > 0) return '#e11d48';
-    return '#9ca3af';
+    if (score >= 70) return 'var(--brand)';
+    if (score >= 40) return 'var(--warn)';
+    if (score > 0) return 'var(--danger)';
+    return 'var(--muted)';
 };
 
 const badgeStyle = (score) => {
-    if (score >= 70) return { background: '#ccfbf1', color: '#115e59' };
-    if (score >= 40) return { background: '#fef3c7', color: '#92400e' };
-    if (score > 0) return { background: '#fee2e2', color: '#991b1b' };
-    return { background: '#f3f4f6', color: '#6b7280' };
+    if (score >= 70) return { background: 'var(--brand-soft)', color: 'var(--brand-strong)' };
+    if (score >= 40) return { background: 'var(--warn-bg)', color: 'var(--warn)' };
+    if (score > 0) return { background: 'var(--danger-bg)', color: 'var(--danger)' };
+    return { background: 'var(--surface-2)', color: 'var(--muted)' };
 };
 </script>
 

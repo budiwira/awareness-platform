@@ -11,9 +11,9 @@ const passedQuizCount = computed(() => props.attempts.filter(a => a.passed).leng
 const participationCount = computed(() => props.stats.completed);
 
 const progressBarColor = (score) => {
-    if (score >= 70) return '#0f766e';
-    if (score >= 40) return '#f59e0b';
-    return '#e11d48';
+    if (score >= 70) return 'var(--brand)';
+    if (score >= 40) return 'var(--warn)';
+    return 'var(--danger)';
 };
 </script>
 
@@ -71,7 +71,7 @@ const progressBarColor = (score) => {
                         <td class="px-6 py-3 font-medium" style="color: var(--ink)">{{ attempt.quiz?.title }}</td>
                         <td class="px-6 py-3" style="color: var(--ink)">{{ attempt.score }}</td>
                         <td class="px-6 py-3">
-                            <span class="badge" :style="{ background: attempt.passed ? 'var(--brand-soft)' : '#fee2e2', color: attempt.passed ? 'var(--brand-strong)' : '#991b1b' }">
+                            <span class="badge" :style="{ background: attempt.passed ? 'var(--brand-soft)' : 'var(--danger-bg)', color: attempt.passed ? 'var(--brand-strong)' : 'var(--danger)' }">
                                 {{ attempt.passed ? 'Lulus' : 'Gagal' }}
                             </span>
                         </td>

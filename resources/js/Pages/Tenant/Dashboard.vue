@@ -19,7 +19,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
     <AppLayout title="Dashboard Organisasi">
         <div
             class="rounded-2xl p-8 mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative"
-            style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
+            style="background: linear-gradient(140deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-strong) 100%)"
         >
             <div>
                 <div class="text-sm mb-1 t-on-hero-muted">Organisasi</div>

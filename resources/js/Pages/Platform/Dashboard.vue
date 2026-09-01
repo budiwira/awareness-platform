@@ -19,7 +19,7 @@ const statCards = [
     <AppLayout title="Dashboard Platform">
         <div
             class="rounded-2xl p-8 mb-8"
-            style="background: linear-gradient(140deg, #7C3AED 0%, #8B5CF6 55%, #6D28D9 100%)"
+            style="background: linear-gradient(140deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-strong) 100%)"
         >
             <h2 class="font-display text-2xl font-bold mb-1 t-on-hero">Kesehatan Platform</h2>
             <p class="text-sm max-w-2xl t-on-hero-muted">

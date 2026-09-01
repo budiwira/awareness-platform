@@ -57,7 +57,7 @@ const completionRate = computed(() => {
                 <button v-if="module.status === 'draft'" @click="publish" class="btn btn-primary">
                     Publish
                 </button>
-                <button v-if="module.status === 'published'" @click="archive" class="btn" style="background: #f59e0b; color: white;">
+                <button v-if="module.status === 'published'" @click="archive" class="btn" style="background: var(--warn); color: white;">
                     Archive
                 </button>
             </div>
