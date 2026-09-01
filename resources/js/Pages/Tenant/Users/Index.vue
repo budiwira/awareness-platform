@@ -98,7 +98,7 @@ const roleBadge = (role) =>
                 </div>
                 <button class="btn btn-primary">Upload & Import</button>
             </form>
-            <p class="text-xs text-gray-400 mt-3">
+            <p class="text-xs t-muted mt-3">
                 Maksimal 500 baris. Jika ada 1 baris error, seluruh import akan dibatalkan.
             </p>
         </div>
@@ -129,7 +129,7 @@ const roleBadge = (role) =>
                     <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>
-            <p class="text-xs text-gray-400 mt-3">
+            <p class="text-xs t-muted mt-3">
                 User baru dibuat dengan password sementara acak; akses diberikan lewat flow reset password.
             </p>
         </div>
@@ -165,7 +165,7 @@ const roleBadge = (role) =>
                             </td>
                             <td class="px-6 py-3 text-right space-x-2">
                                 <button @click="submitEdit(user)" class="text-indigo-600 text-sm font-medium">Simpan</button>
-                                <button @click="editingId = null" class="text-gray-400 text-sm">Batal</button>
+                                <button @click="editingId = null" class="t-muted text-sm">Batal</button>
                             </td>
                         </template>
                         <template v-else>

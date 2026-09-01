@@ -30,7 +30,7 @@ const difficultyBadge = (d) => ({
                     </span>
                 </div>
                 <p class="text-sm t-muted mb-4 flex-1">{{ c.description }}</p>
-                <div class="text-xs text-gray-400 mb-4">{{ c.scenes_count }} scene · {{ c.duration_minutes }} menit</div>
+                <div class="text-xs t-muted mb-4">{{ c.scenes_count }} scene · {{ c.duration_minutes }} menit</div>
 
                 <div class="flex items-center justify-between">
                     <span
@@ -40,7 +40,7 @@ const difficultyBadge = (d) => ({
                     >
                         {{ c.participation.status === 'completed' ? 'Selesai · Skor ' + c.participation.score : 'Sedang dikerjakan' }}
                     </span>
-                    <span v-else class="text-xs text-gray-400">Belum dimulai</span>
+                    <span v-else class="text-xs t-muted">Belum dimulai</span>
 
                     <button
                         v-if="!c.participation"

@@ -68,17 +68,17 @@ const completionRate = computed(() => {
             <div class="card p-6">
                 <div class="text-sm t-muted mb-1">Ditugaskan</div>
                 <div class="text-3xl font-display font-bold t-ink">{{ stats.assignments_count }}</div>
-                <div class="text-xs text-gray-400 mt-1">kali</div>
+                <div class="text-xs t-muted mt-1">kali</div>
             </div>
             <div class="card p-6">
                 <div class="text-sm t-muted mb-1">Completion Rate</div>
                 <div class="text-3xl font-display font-bold chip-brand">{{ completionRate }}%</div>
-                <div class="text-xs text-gray-400 mt-1">{{ stats.completed_count }} / {{ stats.assignments_count }} selesai</div>
+                <div class="text-xs t-muted mt-1">{{ stats.completed_count }} / {{ stats.assignments_count }} selesai</div>
             </div>
             <div class="card p-6">
                 <div class="text-sm t-muted mb-1">Rata-rata Skor</div>
                 <div class="text-3xl font-display font-bold text-indigo-600">{{ stats.avg_score }}</div>
-                <div class="text-xs text-gray-400 mt-1">dari kuis</div>
+                <div class="text-xs t-muted mt-1">dari kuis</div>
             </div>
         </div>
 
@@ -102,7 +102,7 @@ const completionRate = computed(() => {
                 >
                     Kelola Kuis
                 </Link>
-                <span v-else class="text-sm text-gray-400">Belum ada kuis</span>
+                <span v-else class="text-sm t-muted">Belum ada kuis</span>
             </div>
             <div v-if="module.quiz" class="bg-app rounded-lg p-4">
                 <div class="text-sm t-ink">

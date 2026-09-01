@@ -76,9 +76,9 @@ const roleBadge = (role) => {
                 </thead>
                 <tbody>
                     <tr v-if="users.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                        <td colspan="6" class="px-6 py-12 text-center t-muted">
                             <div class="flex flex-col items-center gap-2">
-                                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-12 h-12 t-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                                 <p>Tidak ada user ditemukan</p>

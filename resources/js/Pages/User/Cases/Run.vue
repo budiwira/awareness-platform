@@ -34,7 +34,7 @@ const submit = () => {
 
         <form @submit.prevent="submit" class="space-y-6">
             <div v-for="(scene, si) in scenes" :key="scene.id" class="card p-6">
-                <div class="text-xs uppercase tracking-wide text-gray-400 mb-2">Scene {{ si + 1 }}</div>
+                <div class="text-xs uppercase tracking-wide t-muted mb-2">Scene {{ si + 1 }}</div>
                 <div class="font-medium t-ink mb-4">{{ scene.situation }}</div>
                 <div class="space-y-2">
                     <label

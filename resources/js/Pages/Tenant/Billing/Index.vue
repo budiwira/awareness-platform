@@ -87,7 +87,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                 <svg v-if="!entitlements?.features?.includes(f)" class="w-6 h-6 mb-2" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span class="text-xs font-medium" :class="entitlements?.features?.includes(f) ? 't-ink' : 'text-gray-400'">{{ f }}</span>
+                <span class="text-xs font-medium" :class="entitlements?.features?.includes(f) ? 't-ink' : 't-muted'">{{ f }}</span>
                 <span v-if="!entitlements?.features?.includes(f)" class="text-xs badge-warn mt-1">Terkunci — Ajukan Upgrade</span>
             </div>
         </div>
@@ -138,7 +138,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
             <h2 class="text-lg font-display font-semibold t-ink mb-4">Riwayat Permintaan</h2>
 
             <div v-if="!requests || requests.length === 0" class="text-center py-8 t-muted">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-12 h-12 mx-auto mb-3 t-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <p class="text-sm">Belum ada permintaan perubahan plan.</p>
@@ -163,7 +163,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             <td class="py-3 px-4 font-medium t-ink">{{ req.plan?.name }}</td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.note" class="max-w-xs truncate block">{{ req.note }}</span>
-                                <span v-else class="text-gray-400">—</span>
+                                <span v-else class="t-muted">—</span>
                             </td>
                             <td class="py-3 px-4 t-muted">{{ req.requested_by?.name }}</td>
                             <td class="py-3 px-4">
@@ -173,7 +173,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             </td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.resolved_by">{{ req.resolved_by.name }}</span>
-                                <span v-else class="text-gray-400">—</span>
+                                <span v-else class="t-muted">—</span>
                             </td>
                         </tr>
                     </tbody>
@@ -181,7 +181,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
             </div>
         </div>
 
-        <p class="text-xs text-gray-400 mt-6">
+        <p class="text-xs t-muted mt-6">
             * Model bisnis managed: super admin yang menetapkan plan. Tenant mengajukan permintaan perubahan.
         </p>
     </AppLayout>

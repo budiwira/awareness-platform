@@ -95,8 +95,8 @@ const submit = () => {
                 >
                     {{ s.num }}
                 </div>
-                <span class="text-sm font-medium" :class="step >= s.num ? 't-ink' : 'text-gray-400'">{{ s.label }}</span>
-                <svg v-if="s.num < 4" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <span class="text-sm font-medium" :class="step >= s.num ? 't-ink' : 't-muted'">{{ s.label }}</span>
+                <svg v-if="s.num < 4" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 t-muted ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
             </div>

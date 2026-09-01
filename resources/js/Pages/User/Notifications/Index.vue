@@ -26,7 +26,7 @@ const markOne = (id) => router.patch(route('notifications.read', id));
                 @click="markOne(n.id)">
                 <div>
                     <div class="text-sm t-ink">{{ n.data.message }}</div>
-                    <div class="text-xs text-gray-400 mt-1">{{ new Date(n.created_at).toLocaleString('id-ID') }}</div>
+                    <div class="text-xs t-muted mt-1">{{ new Date(n.created_at).toLocaleString('id-ID') }}</div>
                 </div>
                 <span v-if="!n.read_at" class="mt-1 w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
             </div>

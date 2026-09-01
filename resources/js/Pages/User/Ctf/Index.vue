@@ -42,7 +42,7 @@ const difficultyBadge = (d) => ({
 
                 <p class="text-sm t-muted mb-2 flex-1">{{ c.description }}</p>
 
-                <div class="text-xs text-gray-400 mb-4">
+                <div class="text-xs t-muted mb-4">
                     {{ c.category }} · {{ c.points }} poin
                     <span v-if="c.hint" class="block mt-1 badge-warn">Hint: {{ c.hint }}</span>
                 </div>

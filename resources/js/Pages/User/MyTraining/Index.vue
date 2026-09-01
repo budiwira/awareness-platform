@@ -70,7 +70,7 @@ const markComplete = (assignment) => {
                             >
                                 Tandai Selesai
                             </button>
-                            <span v-else class="text-xs text-gray-400">✓ Selesai</span>
+                            <span v-else class="text-xs t-muted">✓ Selesai</span>
                         </td>
                     </tr>
                     <tr v-if="assignments.length === 0">

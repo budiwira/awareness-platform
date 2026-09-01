@@ -89,7 +89,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
           <select v-model="form.module_ids" multiple class="input mt-1 w-full h-28">
             <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }}</option>
           </select>
-          <p class="text-xs text-gray-400 mt-1">Pilih beberapa modul (Ctrl+klik)</p>
+          <p class="text-xs t-muted mt-1">Pilih beberapa modul (Ctrl+klik)</p>
         </div>
         <div class="md:col-span-2">
           <label class="text-sm t-muted">Fitur</label>
@@ -111,7 +111,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
       <div v-for="plan in plans" :key="plan.id" class="card p-6 flex flex-col">
         <div class="flex items-center justify-between mb-2">
           <h3 class="font-semibold t-ink">{{ plan.name }}</h3>
-          <span class="text-xs text-gray-400">{{ plan.subscriptions_count }} subscriber</span>
+          <span class="text-xs t-muted">{{ plan.subscriptions_count }} subscriber</span>
         </div>
         <div class="text-2xl font-bold text-indigo-600 mb-1">{{ formatPrice(plan.price_monthly) }}</div>
         <div class="text-xs t-muted mb-2">Maks. {{ plan.max_users }} users · {{ plan.includes_all_modules ? 'Semua modul published' : (plan.modules?.length ?? 0) + ' modul kurasi' }}</div>

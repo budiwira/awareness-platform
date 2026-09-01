@@ -88,7 +88,7 @@ const phaseBadge = (p) => ({
                     </span>
                 </div>
                 <p class="text-sm t-muted mb-3">{{ ex.scope }}</p>
-                <div class="text-xs text-gray-400 space-y-1">
+                <div class="text-xs t-muted space-y-1">
                     <div>Playbook: {{ ex.playbook?.title ?? '—' }}</div>
                     <div>Runbook: {{ ex.runbook?.title ?? '—' }}</div>
                     <div>Tim: {{ ex.teams?.length ?? 0 }}</div>

@@ -59,7 +59,7 @@ const qualityBadge = (q) => ({
         <div class="card p-6 mb-6">
             <h2 class="text-xl font-bold t-ink">{{ caseStudy.title }}</h2>
             <p class="text-sm t-muted mt-1">{{ caseStudy.description }}</p>
-            <p class="text-xs text-gray-400 mt-2">{{ caseStudy.difficulty }} · {{ caseStudy.duration_minutes }} menit · {{ caseStudy.scenes?.length ?? 0 }} scene</p>
+            <p class="text-xs t-muted mt-2">{{ caseStudy.difficulty }} · {{ caseStudy.duration_minutes }} menit · {{ caseStudy.scenes?.length ?? 0 }} scene</p>
         </div>
 
         <!-- Daftar scene (quality & feedback HANYA untuk super admin) -->

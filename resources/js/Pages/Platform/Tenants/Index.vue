@@ -97,7 +97,7 @@ const statusBadge = (status) =>
                         <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>
                         <td class="px-6 py-3">
                             <span v-if="tenant.current_plan" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_plan }}</span>
-                            <span v-else class="text-xs text-gray-400">—</span>
+                            <span v-else class="text-xs t-muted">—</span>
                         </td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(tenant.status)">
