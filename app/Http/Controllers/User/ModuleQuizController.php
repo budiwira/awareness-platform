@@ -25,7 +25,7 @@ class ModuleQuizController extends Controller
             ])->toResponse($request)->setStatusCode(403);
         }
 
-        $quiz = $assignment->module?->quiz;
+        $quiz = $assignment->module->quiz;
 
         if (! $quiz || ! $quiz->is_active) {
             return redirect()->route('user.training.index')->withErrors(['quiz' => 'Quiz belum tersedia untuk modul ini.']);
@@ -96,7 +96,7 @@ class ModuleQuizController extends Controller
             return response()->json(['message' => 'Organisasi Anda belum mengaktifkan modul ini.'], 403);
         }
 
-        $quiz = $assignment->module?->quiz;
+        $quiz = $assignment->module->quiz;
 
         if (!$quiz || !$quiz->is_active) {
             return response()->json(['message' => 'Quiz tidak aktif.'], 422);
