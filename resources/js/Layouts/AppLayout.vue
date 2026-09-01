@@ -229,7 +229,16 @@ const logout = () => router.post(route('logout'));
                     </span>
 
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center ring-2" style="background: var(--brand); color: var(--white); ring-color: var(--brand)">
+                        <div 
+                            v-if="user?.avatar_path"
+                            class="w-8 h-8 rounded-full ring-2 overflow-hidden bg-cover bg-center"
+                            :style="{ backgroundImage: `url(/storage/${user.avatar_path})`, ringColor: 'var(--brand)' }"
+                        ></div>
+                        <div 
+                            v-else
+                            class="w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center ring-2" 
+                            style="background: var(--brand); color: var(--white); ring-color: var(--brand)"
+                        >
                             {{ initials }}
                         </div>
                         <div class="hidden sm:block leading-tight">
