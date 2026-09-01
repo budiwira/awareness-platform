@@ -70,6 +70,7 @@ const menus = computed(() => {
             { section: 'Simulasi', items: [
                 { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', locked: !entitlements?.features?.includes('ttx') },
                 { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
+                { label: 'Simulasi Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
             ]},
         ];
     }
