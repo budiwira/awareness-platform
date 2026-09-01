@@ -2,7 +2,7 @@
 defineProps({
     label: String,
     value: [String, Number],
-    accent: { type: String, default: 'text-gray-900' },
+    accent: { type: String, default: 't-ink' },
     border: { type: String, default: '' },
 });
 </script>
