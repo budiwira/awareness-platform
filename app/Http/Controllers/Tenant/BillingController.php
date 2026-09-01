@@ -22,7 +22,7 @@ class BillingController extends Controller
         $entitlement = app(\App\Services\TenantEntitlement::class);
         $features = $entitlement->getEntitledFeatures($tenant);
         $moduleIds = $entitlement->getEntitledModuleIds($tenant);
-        $plan = $current?->plan ?? Plan::where('slug', 'starter')->first();
+        $plan = $current->plan ?? Plan::where('slug', 'starter')->first();
 
         return Inertia::render('Tenant/Billing/Index', [
             'plans' => Plan::where('is_active', true)->orderBy('price_monthly')->get(),

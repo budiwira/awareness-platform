@@ -1,0 +1,11 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app
+    level: 5
+    reportUnmatchedIgnoredErrors: false
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        - '#Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection<int,Illuminate\\Database\\Eloquent\\Model>::map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\).*Closure\(App\\Models\\(User|PhishingTarget), int\).*given#'

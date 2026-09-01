@@ -126,6 +126,7 @@ class AwarenessScore
             'ctf' => 'CTF Engagement',
             'ttx' => 'TTX Performance',
             'phishing_awareness' => 'Phishing Awareness',
+            default => 'Unknown Signal',
         };
     }
 

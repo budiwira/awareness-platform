@@ -45,7 +45,7 @@ class TenantReportService
         // Users at risk: completion < 50% OR quiz score < 60 OR phishing clicked
         $usersAtRisk = User::where('tenant_id', $tenantId)
             ->whereNull('deleted_at')
-            ->where(function ($q) use ($tenantId) {
+            ->where(function ($q) {
                 // Low completion
                 $q->whereHas('assignments', function ($subQ) {
                     $subQ->where('status', '!=', 'completed');

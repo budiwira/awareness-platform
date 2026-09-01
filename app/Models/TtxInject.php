@@ -2,6 +2,18 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int $id
+ * @property int $tenant_id
+ * @property int $exercise_id
+ * @property int $order
+ * @property string $title
+ * @property string $description
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read TtxExercise $exercise
+ */
 class TtxInject extends Model
 {
     protected $fillable = ['tenant_id', 'exercise_id', 'order', 'title', 'description'];

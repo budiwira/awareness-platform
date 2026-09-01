@@ -152,7 +152,7 @@ class TtxExerciseController extends Controller
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
-        $this->ensureTenant($request, $team->tenant_id);
+        $this->ensureTenant($request, (string) $team->tenant_id);
 
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],

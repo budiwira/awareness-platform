@@ -93,7 +93,7 @@ class PlatformAnalyticsService
                 'avg_score' => round($avgScore, 1),
                 'phishing_clicked' => $phishingClicked,
                 'risk_score' => round($riskScore, 1),
-                'current_plan' => $currentSubscription?->plan?->name ?? 'No Plan',
+                'current_plan' => $currentSubscription->plan->name ?? 'No Plan',
             ];
         }
         

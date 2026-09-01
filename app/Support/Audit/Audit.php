@@ -10,7 +10,7 @@ class Audit
     public static function log(string $action, ?Model $subject = null, array $properties = []): AuditLog
     {
         $request = request();
-        $user = $request?->user();
+        $user = $request->user();
 
         return AuditLog::create([
             'tenant_id' => $user?->tenant_id,

@@ -79,7 +79,7 @@ class TenantController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($tenant, $plan, $request) {
+        DB::transaction(function () use ($tenant, $plan) {
             // Batalkan subscription aktif lama
             Subscription::where('tenant_id', $tenant->id)
                 ->where('status', 'active')

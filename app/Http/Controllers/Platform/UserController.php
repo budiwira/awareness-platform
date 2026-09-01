@@ -32,7 +32,7 @@ class UserController extends Controller
                 'name' => $u->name,
                 'email' => $u->email,
                 'role' => $u->role->value,
-                'tenant_name' => $u->tenant?->name ?? '-',
+                'tenant_name' => $u->tenant->name ?? '-',
                 'tenant_id' => $u->tenant_id,
                 'is_active' => $u->is_active,
                 'deleted_at' => $u->deleted_at?->format('d M Y'),

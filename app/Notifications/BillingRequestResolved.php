@@ -24,7 +24,7 @@ class BillingRequestResolved extends Notification
 
     public function toArray(object $notifiable): array
     {
-        $planName = $this->plan?->name ?? $this->planRequest?->plan->name ?? 'Unknown';
+        $planName = $this->plan->name ?? $this->planRequest->plan->name ?? 'Unknown';
         
         if ($this->status === 'approved') {
             $message = "Permintaan plan Anda telah disetujui. Plan baru: {$planName}";
