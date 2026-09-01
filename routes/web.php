@@ -29,9 +29,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/', function (Request $request) {
+    return Inertia::render('Public/Landing', [
+        'auth' => [
+            'user' => $request->user(),
+        ],
+    ]);
+})->name('landing');
 
 Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
