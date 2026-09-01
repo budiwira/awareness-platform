@@ -242,6 +242,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
             Route::patch('/assignments/{assignment}', [TenantAssignmentController::class, 'update'])->name('assignments.update');
             Route::get('/reports/export', [TenantReportController::class, 'export'])->name('reports.export');
+            Route::get('/reports/users/{user}', [TenantReportController::class, 'showUser'])->name('reports.users.show');
             Route::get('/reports', [TenantReportController::class, 'index'])->name('reports');
 
             // Route TTX

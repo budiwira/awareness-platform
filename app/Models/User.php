@@ -90,4 +90,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(TtxScore::class);
     }
+
+    public function assignments()
+    {
+        return $this->hasMany(ModuleAssignment::class);
+    }
+
+    public function quizAttempts()
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
+    public function phishingTargets()
+    {
+        return $this->hasMany(PhishingTarget::class);
+    }
+
+    public function phishingCampaignsCreated()
+    {
+        return $this->hasMany(PhishingCampaign::class, 'created_by');
+    }
 }
