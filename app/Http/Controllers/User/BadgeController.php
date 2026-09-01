@@ -20,22 +20,16 @@ class BadgeController extends Controller
             ->orderBy('criteria_value')
             ->get();
 
-        // Ambil user_badges untuk user ini
-        $earnedBadgeIds = UserBadge::where('user_id', $user->id)
-            ->pluck('badge_id')
-            ->toArray();
+        // Preload user_badges untuk user ini (hindari N+1 di loop)
+        $userBadgesByBadgeId = UserBadge::where('user_id', $user->id)
+            ->get()
+            ->keyBy('badge_id');
+        $earnedBadgeIds = $userBadgesByBadgeId->keys()->toArray();
 
         // Format badges dengan status earned
-        $badges = $allBadges->map(function ($badge) use ($earnedBadgeIds, $user) {
-            $earned = in_array($badge->id, $earnedBadgeIds);
-            $earnedAt = null;
-
-            if ($earned) {
-                $userBadge = UserBadge::where('user_id', $user->id)
-                    ->where('badge_id', $badge->id)
-                    ->first();
-                $earnedAt = $userBadge?->earned_at;
-            }
+        $badges = $allBadges->map(function ($badge) use ($earnedBadgeIds, $userBadgesByBadgeId) {
+            $earned = in_array($badge->id, $earnedBadgeIds, true);
+            $earnedAt = $earned ? $userBadgesByBadgeId->get($badge->id)?->earned_at : null;
 
             return [
                 'id' => $badge->id,

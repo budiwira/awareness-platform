@@ -21,28 +21,35 @@ class LeaderboardController extends Controller
         $tenant = $user->tenant;
 
         // Ambil semua user dalam tenant (hanya yang show_on_leaderboard = true)
+        // Eager load relasi untuk hindari N+1 saat compute AwarenessScore per user
         $users = $tenant->users()
             ->where('is_active', true)
             ->where('show_on_leaderboard', true)
+            ->with([
+                'moduleAssignments',
+                'quizAttempts',
+                'caseParticipations',
+                'ctfSolves',
+                'ttxScores',
+                'phishingTargets',
+            ])
             ->get();
 
+        // Hoist queries yang tidak tergantung per-user keluar dari loop
+        $totalCtfPoints = DB::table('ctf_challenges')
+            ->where('is_active', true)
+            ->sum('points');
+        $subscription = $tenant->currentSubscription();
+        $entitledFeatures = $subscription?->plan?->features;
+
         // Hitung awareness score untuk setiap user
-        $leaderboard = $users->map(function (User $u, int $key) use ($tenant) {
+        $leaderboard = $users->map(function (User $u) use ($totalCtfPoints, $entitledFeatures) {
             $assignments = $u->moduleAssignments;
             $quizAttempts = $u->quizAttempts;
             $caseParticipations = $u->caseParticipations;
             $ctfSolves = $u->ctfSolves;
             $ttxScores = $u->ttxScores;
             $phishingTargets = $u->phishingTargets;
-
-            // Get total CTF points for this tenant
-            $totalCtfPoints = DB::table('ctf_challenges')
-                ->where('is_active', true)
-                ->sum('points');
-
-            // Get tenant entitled features
-            $subscription = $tenant->currentSubscription();
-            $entitledFeatures = $subscription?->plan?->features;
 
             $scoreData = $this->awarenessScore->compute(
                 $assignments,
