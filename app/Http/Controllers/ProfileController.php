@@ -18,9 +18,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        
+        // Hitung earned badges
+        $earnedBadges = \App\Models\UserBadge::where('user_id', $user->id)->count();
+        
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
+            'loginStreak' => $user->login_streak,
+            'earnedBadges' => $earnedBadges,
         ]);
     }
 
@@ -29,10 +36,17 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validated();
+        
+        $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
+        }
+
+        // Handle show_on_leaderboard if present
+        if ($request->has('show_on_leaderboard')) {
+            $request->user()->show_on_leaderboard = $request->boolean('show_on_leaderboard');
         }
 
         $request->user()->save();

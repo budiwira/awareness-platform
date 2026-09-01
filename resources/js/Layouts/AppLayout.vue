@@ -79,6 +79,8 @@ const menus = computed(() => {
         { section: 'Saya', items: [
             { label: 'Dashboard', route: 'user.dashboard' },
             { label: 'My Score', route: 'user.score' },
+            { label: 'Badge Saya', route: 'user.badges.index' },
+            { label: 'Leaderboard', route: 'user.leaderboard.index' },
         ]},
         { section: 'Belajar', items: [
             { label: 'Training', route: 'user.training.index' },
