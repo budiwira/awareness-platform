@@ -265,11 +265,11 @@ Route::middleware('auth')->group(function () {
             Route::patch('/training/{assignment}/complete', [UserTrainingController::class, 'markComplete'])->name('training.complete');
 
             // Route Quizzes for Users
-            Route::get('/training/{assignment}/quiz', [ModuleQuizController::class, 'show'])->name('training.quiz');
-            Route::post('/quiz/start', [ModuleQuizController::class, 'start'])->name('training.quiz.start');
-            Route::get('/quiz/attempt/{attempt}', [ModuleQuizController::class, 'attempt'])->name('training.quiz.attempt');
-            Route::post('/quiz/attempt/{attempt}/submit', [ModuleQuizController::class, 'submit'])->name('training.quiz.submit');
-            Route::get('/quiz-result/{attempt}', [ModuleQuizController::class, 'result'])->name('quiz.result');
+            Route::get('/training/{assignment}/quiz', [UserQuizController::class, 'show'])->name('training.quiz');
+            Route::post('/quiz/start', [UserQuizController::class, 'start'])->name('training.quiz.start');
+            Route::get('/quiz/attempt/{attempt}', [UserQuizController::class, 'attempt'])->name('training.quiz.attempt');
+            Route::post('/quiz/attempt/{attempt}/submit', [UserQuizController::class, 'submit'])->name('training.quiz.submit');
+            Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
             Route::get('/score', [UserScoreController::class, 'index'])->name('score');
             
             // Route Cases for Users

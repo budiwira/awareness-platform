@@ -9,7 +9,7 @@ use App\Models\TrainingModule;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
-function makeQuizFixture(): array
+function makeQuizCbtFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $plan = \App\Models\Plan::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
@@ -32,7 +32,7 @@ function makeQuizFixture(): array
 }
 
 test('start creates attempt with deadline and randomization', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $response = $this->actingAs($user)
         ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
@@ -52,7 +52,7 @@ test('start creates attempt with deadline and randomization', function () {
 });
 
 test('attempt payload does not contain correct_index', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $response = $this->actingAs($user)
         ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
@@ -66,7 +66,7 @@ test('attempt payload does not contain correct_index', function () {
 });
 
 test('submit before deadline creates submitted attempt with correct score', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $startResponse = $this->actingAs($user)
         ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
@@ -107,7 +107,7 @@ test('submit before deadline creates submitted attempt with correct score', func
 });
 
 test('submit after deadline creates expired attempt', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $startResponse = $this->actingAs($user)
         ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
@@ -133,7 +133,7 @@ test('submit after deadline creates expired attempt', function () {
 });
 
 test('expired in_progress attempt is finalized on next start', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     // Buat attempt pertama
     $firstResponse = $this->actingAs($user)
@@ -164,7 +164,7 @@ test('expired in_progress attempt is finalized on next start', function () {
 });
 
 test('cannot start quiz after passing', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     // Start dan lulus
     $startResponse = $this->actingAs($user)
@@ -198,7 +198,7 @@ test('cannot start quiz after passing', function () {
 });
 
 test('user cannot access another user attempt', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
     $other = User::factory()->create(['tenant_id' => $user->tenant_id]);
 
     $startResponse = $this->actingAs($user)
@@ -217,7 +217,7 @@ test('user cannot access another user attempt', function () {
 });
 
 test('continuing in_progress attempt returns same attempt', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $firstResponse = $this->actingAs($user)
         ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
@@ -236,7 +236,7 @@ test('continuing in_progress attempt returns same attempt', function () {
 });
 
 test('quiz show page indicates already passed', function () {
-    [$user, $quiz, $q1, $q2, $assignment] = makeQuizFixture();
+    [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     // Buat attempt lulus
     $startResponse = $this->actingAs($user)
