@@ -26,7 +26,7 @@ class LeaderboardController extends Controller
             ->get();
 
         // Hitung awareness score untuk setiap user
-        $leaderboard = $users->map(function ($u) use ($tenant) {
+        $leaderboard = $users->map(function (User $u) use ($tenant) {
             $assignments = $u->moduleAssignments;
             $quizAttempts = $u->quizAttempts;
             $caseParticipations = $u->caseParticipations;
