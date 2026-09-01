@@ -28,6 +28,18 @@
     --header: rgba(10,10,14,.85);
     --r-card: 24px;
     --glow: 0 0 24px -6px rgba(124,58,237,.45);
+    --input-bg: #101018;
+    --input-border: var(--line);
+    --track: var(--surface-2);
+    --overlay: var(--surface);
+    --backdrop: rgba(0,0,0,.5);
+    --skeleton-base: #181826;
+    --skeleton-shine: #1f1f2e;
+    --white: #FFFFFF;
+    --beam-glow: rgba(139,92,246,.5);
+    --card-hover: rgba(139,92,246,.3);
+    --hero-overlay-1: rgba(255,255,255,.15);
+    --hero-overlay-2: rgba(255,255,255,.08);
 }
 
 [data-theme="light"] {
@@ -54,6 +66,18 @@
     --sidebar: #ffffff;
     --header: rgba(255,255,255,.95);
     --glow: 0 0 24px -6px rgba(15,118,110,.35);
+    --input-bg: #FFFFFF;
+    --input-border: var(--line);
+    --track: #E5E7EB;
+    --overlay: #FFFFFF;
+    --backdrop: rgba(15,23,42,.4);
+    --skeleton-base: #e5e7eb;
+    --skeleton-shine: #f3f4f6;
+    --white: #FFFFFF;
+    --beam-glow: rgba(15,118,110,.5);
+    --card-hover: rgba(15,118,110,.3);
+    --hero-overlay-1: rgba(255,255,255,.15);
+    --hero-overlay-2: rgba(255,255,255,.08);
 }
 
 body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); background: var(--bg); transition: background-color .2s, color .2s; }
@@ -74,35 +98,36 @@ body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); backgroun
 .badge-warn { background: var(--warn-bg); color: var(--warn); }
 .badge-danger { background: var(--danger-bg); color: var(--danger); }
 .hero-brand { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%); }
-.beam { height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,.5) 50%, transparent 100%); }
+.beam { height: 1px; background: linear-gradient(90deg, transparent 0%, var(--beam-glow) 50%, transparent 100%); }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 600; font-size: .875rem; border-radius: 9999px; padding: .55rem 1.1rem; transition: all .15s ease; cursor: pointer; border: 1px solid transparent; }
 .btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary { background: var(--brand); color: var(--white); }
 .btn-primary:hover { background: var(--brand-strong); box-shadow: var(--glow); }
 .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
 .btn-secondary:hover { background: var(--surface-2); }
 .btn-ghost { background: transparent; color: var(--muted); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
-.btn-danger { background: #e11d48; color: #fff; }
+.btn-danger { background: var(--danger); color: var(--white); }
 .btn-danger:hover { background: var(--danger); }
 
-.input { width: 100%; border: 1px solid var(--line); border-radius: var(--r-card); padding: .55rem .8rem; font-size: .875rem; background: #101018; color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+.input { width: 100%; border: 1px solid var(--input-border); border-radius: var(--r-card); padding: .55rem .8rem; font-size: .875rem; background: var(--input-bg); color: var(--ink); transition: border-color .15s, box-shadow .15s; }
+.input::placeholder { color: var(--muted); }
 .input:focus { outline: none; border-color: var(--brand); box-shadow: var(--glow); }
 
 .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .15rem .6rem; font-size: .7rem; font-weight: 600; }
 
 .chip { display: inline-flex; align-items: center; border-radius: .5rem; padding: .35rem .75rem; font-size: .75rem; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--muted); transition: all .15s ease; cursor: pointer; }
 .chip:hover { background: var(--surface-2); border-color: var(--brand); color: var(--ink); }
-.chip-active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.chip-active { background: var(--brand); color: var(--white); border-color: var(--brand); }
 .chip-active:hover { background: var(--brand-strong); }
 
 /* === Motion & States (modern / dinamis / profesional) === */
 .card{transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease}
-.card:hover{border-color:rgba(139,92,246,.3)}
-.skeleton{border-radius:.5rem;background:linear-gradient(90deg,#181826 25%,#1f1f2e 37%,#181826 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite}
+.card:hover{border-color:var(--card-hover)}
+.skeleton{border-radius:.5rem;background:linear-gradient(90deg,var(--skeleton-base) 25%,var(--skeleton-shine) 37%,var(--skeleton-base) 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite}
 @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
 .fade-in{animation:fade-in .25s ease}
 @keyframes fade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}

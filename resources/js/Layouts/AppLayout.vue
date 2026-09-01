@@ -229,7 +229,7 @@ const logout = () => router.post(route('logout'));
                     </span>
 
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center ring-2" style="background: var(--brand); color: #fff; ring-color: var(--brand)">
+                        <div class="w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center ring-2" style="background: var(--brand); color: var(--white); ring-color: var(--brand)">
                             {{ initials }}
                         </div>
                         <div class="hidden sm:block leading-tight">

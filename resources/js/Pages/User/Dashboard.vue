@@ -29,10 +29,10 @@ const barColor = (v) => (v >= 70 ? 'var(--ok)' : v >= 40 ? 'var(--warn)' : 'var(
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-6">
-                    <Link :href="route('user.training.index')" class="btn btn-secondary" style="background: rgba(255,255,255,.15); color: var(--on-hero); border-color: transparent">
+                    <Link :href="route('user.training.index')" class="btn btn-secondary" style="background: var(--hero-overlay-1); color: var(--on-hero); border-color: transparent">
                         Lanjutkan Training
                     </Link>
-                    <Link :href="route('user.score')" class="btn" style="background: rgba(255,255,255,.08); color: var(--on-hero); border-color: transparent">
+                    <Link :href="route('user.score')" class="btn" style="background: var(--hero-overlay-2); color: var(--on-hero); border-color: transparent">
                         Lihat Breakdown
                     </Link>
                 </div>
