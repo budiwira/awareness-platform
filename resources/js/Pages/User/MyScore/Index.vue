@@ -1,5 +1,5 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ScoreRing from '@/Components/ScoreRing.vue';
@@ -62,20 +62,32 @@ const progressBarColor = (score) => {
                     <tr class="text-left border-b" style="color: var(--muted); border-color: var(--line)">
                         <th class="px-6 py-3 font-medium">Quiz</th>
                         <th class="px-6 py-3 font-medium">Skor</th>
-                        <th class="px-6 py-3 font-medium">Hasil</th>
+                        <th class="px-6 py-3 font-medium">Status</th>
                         <th class="px-6 py-3 font-medium">Tanggal</th>
+                        <th class="px-6 py-3 font-medium">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="attempt in attempts" :key="attempt.id" class="border-b" style="border-color: var(--line)">
                         <td class="px-6 py-3 font-medium" style="color: var(--ink)">{{ attempt.quiz?.title }}</td>
-                        <td class="px-6 py-3" style="color: var(--ink)">{{ attempt.score }}</td>
+                        <td class="px-6 py-3" style="color: var(--ink)">{{ attempt.score ?? '—' }}</td>
                         <td class="px-6 py-3">
                             <span class="badge" :style="{ background: attempt.passed ? 'var(--brand-soft)' : 'var(--danger-bg)', color: attempt.passed ? 'var(--brand-strong)' : 'var(--danger)' }">
-                                {{ attempt.passed ? 'Lulus' : 'Gagal' }}
+                                {{ attempt.status === 'submitted' ? (attempt.passed ? 'Lulus' : 'Gagal') : (attempt.status === 'expired' ? 'Expired' : 'Sedang berlangsung') }}
                             </span>
                         </td>
-                        <td class="px-6 py-3" style="color: var(--muted)">{{ new Date(attempt.created_at).toLocaleDateString('id-ID') }}</td>
+                        <td class="px-6 py-3" style="color: var(--muted)">{{ attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleDateString('id-ID') : '—' }}</td>
+                        <td class="px-6 py-3">
+                            <Link 
+                                v-if="attempt.status === 'submitted' || attempt.status === 'expired'"
+                                :href="route('user.training.quiz.review', attempt.id)"
+                                class="text-sm font-medium transition-colors"
+                                style="color: var(--brand)"
+                            >
+                                Review
+                            </Link>
+                            <span v-else style="color: var(--muted)">—</span>
+                        </td>
                     </tr>
                 </tbody>
             </table>

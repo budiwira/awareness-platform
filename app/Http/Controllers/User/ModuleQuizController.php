@@ -278,6 +278,65 @@ class ModuleQuizController extends Controller
         ]);
     }
 
+    public function review(Request $request, QuizAttempt $attempt)
+    {
+        // RLS: hanya pemilik attempt
+        if ($attempt->user_id !== $request->user()->id) {
+            abort(403, 'Anda tidak berhak melihat review ini.');
+        }
+
+        // Hanya attempt yang sudah selesai
+        if ($attempt->status === 'in_progress') {
+            abort(403, 'Review hanya tersedia untuk attempt yang sudah selesai.');
+        }
+
+        $quiz = $attempt->quiz;
+        $questions = $quiz->questions->keyBy('id');
+
+        // Susun soal sesuai urutan asli (BUKAN question_order)
+        $reviewQuestions = [];
+        foreach ($questions as $question) {
+            $optionOrder = $attempt->option_orders[$question->id] ?? [];
+            
+            // Susun opsi sesuai urutan asli (BUKAN teracak)
+            $originalOptions = $question->options;
+            
+            // Jawaban user (indeks teracak)
+            $userShuffledIndex = $attempt->answers[$question->id] ?? null;
+            
+            // Map ke indeks asli
+            $userOriginalIndex = null;
+            if ($userShuffledIndex !== null && isset($optionOrder[$userShuffledIndex])) {
+                $userOriginalIndex = $optionOrder[$userShuffledIndex];
+            }
+
+            $reviewQuestions[] = [
+                'id' => $question->id,
+                'question' => $question->question,
+                'options' => $originalOptions,
+                'user_answer_index' => $userOriginalIndex,
+                'correct_index' => $question->correct_index,
+                'explanation' => $question->explanation,
+            ];
+        }
+
+        return Inertia::render('User/MyTraining/Review', [
+            'attempt' => [
+                'id' => $attempt->id,
+                'score' => $attempt->score,
+                'passed' => $attempt->passed,
+                'status' => $attempt->status,
+                'submitted_at' => $attempt->submitted_at,
+            ],
+            'quiz' => [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'passing_score' => $quiz->passing_score,
+            ],
+            'questions' => $reviewQuestions,
+        ]);
+    }
+
     private function ensureOwner(Request $request, ModuleAssignment $assignment): void
     {
         if ($assignment->user_id !== $request->user()->id) {
