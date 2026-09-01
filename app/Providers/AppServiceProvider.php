@@ -3,7 +3,11 @@
 namespace App\Providers;
 
 use App\Enums\UserRole;
+use App\Models\ModuleAssignment;
+use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Observers\ModuleAssignmentObserver;
+use App\Observers\QuizAttemptObserver;
 use App\Support\Tenant\CurrentTenant;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -17,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Register observers
+        QuizAttempt::observe(QuizAttemptObserver::class);
+        ModuleAssignment::observe(ModuleAssignmentObserver::class);
+
         Gate::define('access-platform-dashboard', function (User $user): bool {
             return $user->is_active && $user->role === UserRole::SuperAdmin;
         });
