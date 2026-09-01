@@ -32,40 +32,42 @@ const submit = () => {
     <div class="min-h-screen flex bg-app">
         <!-- Panel brand (desktop) -->
         <div
-            class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
-            style="background: linear-gradient(160deg, #0f766e 0%, #115e59 60%, #134e4a 100%)"
+            class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative"
+            style="background: linear-gradient(160deg, #170722 0%, #0A0A0E 100%)"
         >
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-surface/10 flex items-center justify-center font-display font-bold text-lg">SA</div>
-                <span class="font-display font-semibold text-lg">Security Awareness Platform</span>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-lg" style="background: rgba(124,58,237,.2); color: var(--brand-strong)">SA</div>
+                <span class="font-display font-semibold text-lg t-on-hero">Security Awareness Platform</span>
             </div>
 
+            <div class="beam absolute left-12 right-12" style="top: 50%"></div>
+
             <div>
-                <h1 class="font-display text-4xl font-bold leading-tight mb-4">
+                <h1 class="font-display text-4xl font-bold leading-tight mb-4 t-on-hero">
                     Bangun budaya<br />keamanan siber<br />organisasi Anda.
                 </h1>
-                <p class="text-teal-100 max-w-md">
+                <p class="t-on-hero-muted max-w-md">
                     Training terukur, simulasi tabletop exercise, dan awareness score yang
                     explainable — dalam satu platform multi-tenant.
                 </p>
 
-                <div class="mt-8 space-y-3 text-sm text-teal-50">
+                <div class="mt-8 space-y-3 text-sm t-on-hero-muted">
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--brand-strong)"></span>
                         Training & quiz berbasis skenario dunia nyata
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--brand-strong)"></span>
                         Tabletop exercise 4 fase untuk tim respons insiden
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--brand-strong)"></span>
                         Awareness score 5 komponen yang transparan
                     </div>
                 </div>
             </div>
 
-            <p class="text-xs text-teal-200">Akses internal organisasi terdaftar.</p>
+            <p class="text-xs t-on-hero-muted">Akses internal organisasi terdaftar.</p>
         </div>
 
         <!-- Panel form -->
