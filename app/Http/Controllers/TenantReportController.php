@@ -26,7 +26,7 @@ class TenantReportController extends Controller
         
         $canExport = $this->entitlement->hasFeature($tenant, 'reports_export');
         
-        return Inertia::render('Tenant/Reports', [
+        return Inertia::render('Tenant/Reports/Index', [
             'summary' => $summary,
             'trend' => $trend,
             'risk_tiers' => $riskTiers,

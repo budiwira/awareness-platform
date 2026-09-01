@@ -175,7 +175,24 @@ test('tenant reports include phishing data in user list', function () {
 });
 
 test('CSV export does not include sensitive fields', function () {
+    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+        'name' => 'Pro',
+        'price_monthly' => 1500,
+        'max_users' => 100,
+        'features' => ['training', 'reports_export'],
+        'includes_all_modules' => true,
+        'is_active' => true,
+    ]);
+    
     $tenant = Tenant::factory()->create();
+    $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
+    Subscription::create([
+        'tenant_id' => $tenant->id,
+        'plan_id' => $proPlan->id,
+        'status' => 'active',
+        'started_at' => now(),
+    ]);
+    
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create([
         'tenant_id' => $tenant->id,
@@ -186,6 +203,5 @@ test('CSV export does not include sensitive fields', function () {
     
     $csv = $response->getContent();
     expect($csv)->not->toContain('secret123');
-    // CSV header contains "user_name" which has substring "password" - check actual password value not present
     expect($csv)->toContain('user_name,email,awareness_score');
 });

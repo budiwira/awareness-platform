@@ -40,11 +40,11 @@ test('tenant admin can export csv report', function () {
     User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Budi Export']);
 
     $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
-
+    
     $response->assertOk();
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-
-    $content = $response->streamedContent();
+    
+    $content = $response->getContent();
     expect($content)->toContain('Budi Export');
 });
 
