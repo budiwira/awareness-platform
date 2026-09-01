@@ -238,7 +238,7 @@ class ModuleQuizController extends Controller
             ->where('training_module_id', $quiz->training_module_id)
             ->first();
 
-        if ($assignment) {
+        if ($assignment instanceof ModuleAssignment) {
             $assignment->score = max((int) ($assignment->score ?? 0), $score);
 
             if ($passed && $assignment->status !== 'completed') {
