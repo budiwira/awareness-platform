@@ -266,7 +266,9 @@ Route::middleware('auth')->group(function () {
 
             // Route Quizzes for Users
             Route::get('/training/{assignment}/quiz', [UserQuizController::class, 'show'])->name('training.quiz');
-            Route::post('/training/{assignment}/quiz', [UserQuizController::class, 'submit'])->name('training.quiz.submit');
+            Route::post('/training/{assignment}/quiz/start', [UserQuizController::class, 'start'])->name('training.quiz.start');
+            Route::get('/quiz/attempt/{attempt}', [UserQuizController::class, 'attempt'])->name('training.quiz.attempt');
+            Route::post('/quiz/attempt/{attempt}/submit', [UserQuizController::class, 'submit'])->name('training.quiz.submit');
             Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
             Route::get('/score', [UserScoreController::class, 'index'])->name('score');
             
