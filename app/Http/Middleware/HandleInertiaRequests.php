@@ -31,7 +31,7 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user() ? array_merge(
-                    $request->user()->only(['id', 'name', 'email']),
+                    $request->user()->only(['id', 'name', 'email', 'avatar_path']),
                     [
                         'role' => $request->user()->role->value,
                         'role_label' => ucwords(str_replace('_', ' ', $request->user()->role->value)),
