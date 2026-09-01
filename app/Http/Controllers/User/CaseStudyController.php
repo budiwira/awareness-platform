@@ -126,7 +126,8 @@ class CaseStudyController extends Controller
             'answers' => ['required', 'array'],
         ]);
 
-        $scenes = $participation->caseStudy()->with('scenes')->first()->scenes;
+        $caseStudy = $participation->caseStudy;
+        $scenes = $caseStudy->scenes;
 
         foreach ($scenes as $scene) {
             $given = $validated['answers'][$scene->id] ?? null;
