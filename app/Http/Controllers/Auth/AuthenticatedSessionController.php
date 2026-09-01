@@ -33,7 +33,40 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Update login streak
+        $this->updateLoginStreak($request->user());
+
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Update user login streak.
+     */
+    private function updateLoginStreak($user): void
+    {
+        $today = now()->toDateString();
+        $lastLogin = $user->last_login_date?->toDateString();
+
+        if ($lastLogin === $today) {
+            // Sudah login hari ini, tidak ada perubahan
+            return;
+        }
+
+        $yesterday = now()->subDay()->toDateString();
+
+        if ($lastLogin === $yesterday) {
+            // Login kemarin, increment streak
+            $user->login_streak += 1;
+        } else {
+            // Gap > 1 hari, reset streak ke 1
+            $user->login_streak = 1;
+        }
+
+        $user->last_login_date = now();
+        $user->save();
+
+        // Check badge untuk streak
+        app(\App\Services\BadgeAwardService::class)->checkStreak($user);
     }
 
     /**

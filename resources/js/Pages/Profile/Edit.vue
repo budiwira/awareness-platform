@@ -4,6 +4,7 @@ import DeleteUserForm from './Partials/DeleteUserForm.vue';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import UpdateAvatarForm from './Partials/UpdateAvatarForm.vue';
+import GamificationStats from './Partials/GamificationStats.vue';
 import { Head } from '@inertiajs/vue3';
 
 defineProps({
@@ -12,6 +13,14 @@ defineProps({
     },
     status: {
         type: String,
+    },
+    loginStreak: {
+        type: Number,
+        default: 0,
+    },
+    earnedBadges: {
+        type: Number,
+        default: 0,
     },
 });
 </script>
@@ -42,6 +51,16 @@ defineProps({
                     <UpdateProfileInformationForm
                         :must-verify-email="mustVerifyEmail"
                         :status="status"
+                        class="max-w-xl"
+                    />
+                </div>
+                
+                <div
+                    class="bg-surface p-4 shadow sm:rounded-lg sm:p-8"
+                >
+                    <GamificationStats 
+                        :login-streak="loginStreak"
+                        :earned-badges="earnedBadges"
                         class="max-w-xl"
                     />
                 </div>

@@ -332,6 +332,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/ctf/{challenge}/submit', [UserCtfController::class, 'submit'])
                 ->name('ctf.submit')
                 ->middleware('throttle:10,1');
+            
+            // Route Badges & Leaderboard
+            Route::get('/badges', [\App\Http\Controllers\User\BadgeController::class, 'index'])->name('badges.index');
+            Route::get('/leaderboard', [\App\Http\Controllers\User\LeaderboardController::class, 'index'])->name('leaderboard.index');
         });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
