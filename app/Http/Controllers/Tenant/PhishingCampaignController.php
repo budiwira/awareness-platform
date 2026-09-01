@@ -125,7 +125,7 @@ class PhishingCampaignController extends Controller
             ->orderBy('clicked_at', 'desc')
             ->orderBy('created_at')
             ->get()
-            ->map(fn (PhishingTarget $t) => [
+            ->map(fn (PhishingTarget $t, int $key) => [
                 'id' => $t->id,
                 'user_name' => $t->user->name,
                 'user_email' => $t->user->email,

@@ -127,17 +127,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(TtxScore::class);
     }
 
-    public function assignments()
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\ModuleAssignment, $this>
+     */
+    public function assignments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ModuleAssignment::class);
     }
 
-    public function quizAttempts()
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\QuizAttempt, $this>
+     */
+    public function quizAttempts(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(QuizAttempt::class);
     }
 
-    public function phishingTargets()
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\PhishingTarget, $this>
+     */
+    public function phishingTargets(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(PhishingTarget::class);
     }
