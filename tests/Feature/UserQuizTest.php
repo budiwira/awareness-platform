@@ -35,7 +35,7 @@ test('quiz payload never contains correct_index', function () {
 
     // Start quiz dulu untuk mendapatkan payload dengan questions
     $response = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $data = $response->json();
@@ -50,7 +50,7 @@ test('correct answers produce passing score and complete module', function () {
 
     // Start quiz
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -79,7 +79,7 @@ test('wrong answers produce failing score', function () {
 
     // Start quiz
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -106,7 +106,7 @@ test('unanswered quiz is rejected', function () {
 
     // Start quiz
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');

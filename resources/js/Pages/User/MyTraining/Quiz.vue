@@ -49,9 +49,7 @@ const startQuiz = async () => {
     submitting.value = true;
 
     try {
-        const response = await axios.post(route('user.training.quiz.start'), {
-            quiz_id: props.quiz.id,
-        });
+        const response = await axios.post(route('user.training.quiz.start', props.assignment.id));
 
         attemptId.value = response.data.attempt_id;
         questions.value = response.data.questions;

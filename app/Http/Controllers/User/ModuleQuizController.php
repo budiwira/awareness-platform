@@ -85,15 +85,20 @@ class ModuleQuizController extends Controller
         ]);
     }
 
-    public function start(Request $request)
+    public function start(Request $request, ModuleAssignment $assignment)
     {
-        $validated = $request->validate([
-            'quiz_id' => ['required', 'exists:quizzes,id'],
-        ]);
+        $this->ensureOwner($request, $assignment);
 
-        $quiz = \App\Models\Quiz::findOrFail($validated['quiz_id']);
+        $tenant = $request->user()->tenant;
+        $entitlement = app(\App\Services\TenantEntitlement::class);
+        
+        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+            return response()->json(['message' => 'Organisasi Anda belum mengaktifkan modul ini.'], 403);
+        }
 
-        if (!$quiz->is_active) {
+        $quiz = $assignment->module?->quiz;
+
+        if (!$quiz || !$quiz->is_active) {
             return response()->json(['message' => 'Quiz tidak aktif.'], 422);
         }
 

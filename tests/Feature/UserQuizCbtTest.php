@@ -35,7 +35,7 @@ test('start creates attempt with deadline and randomization', function () {
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $response = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $data = $response->json();
@@ -55,7 +55,7 @@ test('attempt payload does not contain correct_index', function () {
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $response = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $data = $response->json();
@@ -69,7 +69,7 @@ test('submit before deadline creates submitted attempt with correct score', func
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -110,7 +110,7 @@ test('submit after deadline creates expired attempt', function () {
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -137,7 +137,7 @@ test('expired in_progress attempt is finalized on next start', function () {
 
     // Buat attempt pertama
     $firstResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $firstAttemptId = $firstResponse->json('attempt_id');
@@ -148,7 +148,7 @@ test('expired in_progress attempt is finalized on next start', function () {
 
     // Start lagi
     $secondResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     // Attempt pertama harus expired
@@ -168,7 +168,7 @@ test('cannot start quiz after passing', function () {
 
     // Start dan lulus
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -192,7 +192,7 @@ test('cannot start quiz after passing', function () {
 
     // Coba start lagi
     $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertStatus(422)
         ->assertJson(['message' => 'Anda sudah lulus quiz ini.']);
 });
@@ -202,7 +202,7 @@ test('user cannot access another user attempt', function () {
     $other = User::factory()->create(['tenant_id' => $user->tenant_id]);
 
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
@@ -220,14 +220,14 @@ test('continuing in_progress attempt returns same attempt', function () {
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     $firstResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $firstAttemptId = $firstResponse->json('attempt_id');
 
     // Start lagi tanpa submit
     $secondResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $secondAttemptId = $secondResponse->json('attempt_id');
@@ -240,7 +240,7 @@ test('quiz show page indicates already passed', function () {
 
     // Buat attempt lulus
     $startResponse = $this->actingAs($user)
-        ->postJson(route('user.training.quiz.start'), ['quiz_id' => $quiz->id])
+        ->postJson(route('user.training.quiz.start', $assignment))
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
