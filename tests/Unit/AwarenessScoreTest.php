@@ -33,11 +33,11 @@ function makeTtxScore(int $score): TtxScore
 }
 
 test('no data scores 0', function () {
-    $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0);
-    expect($score['overall'])->toBe(0);
+    $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0, null, collect());
+    expect($score['overall'])->toBe(15); // phishing_awareness = 100 (belum diuji) * 0.15 = 15
 });
 
-test('perfect user scores 100 across all 5 signals with full entitlements', function () {
+test('perfect user scores 100 across all 6 signals with full entitlements', function () {
     $score = (new AwarenessScore)->compute(
         collect([makeAssignment('completed')]),
         collect([makeQuizAttempt(1, 100)]),
@@ -45,19 +45,21 @@ test('perfect user scores 100 across all 5 signals with full entitlements', func
         collect([makeSolve(200)]),
         collect([makeTtxScore(100)]),
         200,
-        ['training', 'case_studies', 'ctf', 'ttx', 'reports_export']
+        ['training', 'case_studies', 'ctf', 'ttx', 'phishing', 'reports_export'],
+        collect() // No phishing targets = 100
     );
 
     expect($score['overall'])->toBe(100);
 });
 
-test('weighted computation across 5 signals is correct with full entitlements', function () {
-    // completion: 1/2 = 50  -> *0.25 = 12.5
-    // quiz: best [80,60] avg 70 -> *0.25 = 17.5
+test('weighted computation across 6 signals is correct with full entitlements', function () {
+    // completion: 1/2 = 50  -> *0.20 = 10
+    // quiz: best [80,60] avg 70 -> *0.20 = 14
     // case: [100] avg 100 -> *0.15 = 15
     // ctf: 100/200 = 50 -> *0.15 = 7.5
-    // ttx: [90] avg 90 -> *0.20 = 18
-    // overall = 12.5+17.5+15+7.5+18 = 70.5 → round 71
+    // ttx: [90] avg 90 -> *0.15 = 13.5
+    // phishing: 100 (no targets) -> *0.15 = 15
+    // overall = 10+14+15+7.5+13.5+15 = 75
     $score = (new AwarenessScore)->compute(
         collect([makeAssignment('completed'), makeAssignment('assigned')]),
         collect([makeQuizAttempt(1, 80), makeQuizAttempt(2, 60)]),
@@ -65,15 +67,17 @@ test('weighted computation across 5 signals is correct with full entitlements', 
         collect([makeSolve(100)]),
         collect([makeTtxScore(90)]),
         200,
-        ['training', 'case_studies', 'ctf', 'ttx']
+        ['training', 'case_studies', 'ctf', 'ttx', 'phishing'],
+        collect() // No phishing targets
     );
 
-    expect($score['overall'])->toBe(71)
+    expect($score['overall'])->toBe(75)
         ->and($score['breakdown'][0]['score'])->toBe(50)
         ->and($score['breakdown'][1]['score'])->toBe(70)
         ->and($score['breakdown'][2]['score'])->toBe(100)
         ->and($score['breakdown'][3]['score'])->toBe(50)
-        ->and($score['breakdown'][4]['score'])->toBe(90);
+        ->and($score['breakdown'][4]['score'])->toBe(90)
+        ->and($score['breakdown'][5]['score'])->toBe(100);
 });
 
 test('ctf engagement capped at 100', function () {
@@ -81,26 +85,32 @@ test('ctf engagement capped at 100', function () {
         collect(), collect(), collect(),
         collect([makeSolve(500)]),
         collect(),
-        200
+        200,
+        null,
+        collect()
     );
 
     expect($score['breakdown'][3]['score'])->toBe(100);
 });
 
 test('breakdown is explainable with weights for full entitlements', function () {
-    $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0, ['training', 'case_studies', 'ctf', 'ttx']);
+    $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0, ['training', 'case_studies', 'ctf', 'ttx', 'phishing'], collect());
 
-    expect($score['breakdown'])->toHaveCount(5)
-        ->and($score['breakdown'][0]['weight'])->toBe(25)
-        ->and($score['breakdown'][1]['weight'])->toBe(25)
+    expect($score['breakdown'])->toHaveCount(6)
+        ->and($score['breakdown'][0]['weight'])->toBe(20)
+        ->and($score['breakdown'][1]['weight'])->toBe(20)
         ->and($score['breakdown'][2]['weight'])->toBe(15)
         ->and($score['breakdown'][3]['weight'])->toBe(15)
-        ->and($score['breakdown'][4]['weight'])->toBe(20);
+        ->and($score['breakdown'][4]['weight'])->toBe(15)
+        ->and($score['breakdown'][5]['weight'])->toBe(15);
 });
 
 test('renormalisasi untuk plan terbatas tanpa ctf dan case', function () {
-    // Starter tanpa ctf/case: hanya completion(25) + quiz(25) + ttx(20) = 70 bobot
-    // Nilai masing-masing 80 -> dinormalisasi: 80 * (0.25/0.70 + 0.25/0.70 + 0.20/0.70) = 80
+    // Starter tanpa ctf/case/phishing: hanya completion(20) + quiz(20) + ttx(15) = 55 bobot
+    // completion: 100 * 0.20/0.55 = 36.36
+    // quiz: 80 * 0.20/0.55 = 29.09
+    // ttx: 80 * 0.15/0.55 = 21.82
+    // overall = 87
     $score = (new AwarenessScore)->compute(
         collect([makeAssignment('completed')]),
         collect([makeQuizAttempt(1, 80)]),
@@ -108,13 +118,15 @@ test('renormalisasi untuk plan terbatas tanpa ctf dan case', function () {
         collect([makeSolve(100)]), // akan di-ignore
         collect([makeTtxScore(80)]),
         200,
-        ['training', 'ttx'] // Starter: tanpa ctf, case_studies
+        ['training', 'ttx'], // Starter: tanpa ctf, case_studies, phishing
+        collect()
     );
 
     expect($score['overall'])->toBe(87)
         ->and($score['breakdown'][2]['locked'])->toBeTrue()
         ->and($score['breakdown'][2]['note'])->toBe('Tidak termasuk dalam plan')
-        ->and($score['breakdown'][3]['locked'])->toBeTrue();
+        ->and($score['breakdown'][3]['locked'])->toBeTrue()
+        ->and($score['breakdown'][5]['locked'])->toBeTrue();
 });
 
 test('renormalisasi untuk plan training only', function () {
@@ -125,10 +137,11 @@ test('renormalisasi untuk plan training only', function () {
         collect([makeSolve(100)]),
         collect([makeTtxScore(90)]),
         200,
-        ['training']
+        ['training'],
+        collect()
     );
 
-    // completion 100 * 0.25/0.50 = 50, quiz 90 * 0.25/0.50 = 45 => overall 95
+    // completion 100 * 0.20/0.40 = 50, quiz 90 * 0.20/0.40 = 45 => overall 95
     expect($score['overall'])->toBe(95)
         ->and($score['breakdown'][0]['weight'])->toBe(50)
         ->and($score['breakdown'][1]['weight'])->toBe(50);
