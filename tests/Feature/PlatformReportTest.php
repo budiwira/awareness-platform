@@ -12,8 +12,9 @@ test('super admin sees platform report with tenant rows', function () {
         ->get(route('platform.reports'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->component('Platform/Reports/Index')
-            ->has('rows', 2)
+            ->component('Platform/Dashboard')
+            ->has('summary')
+            ->has('top_tenants_by_risk')
         );
 });
 

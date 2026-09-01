@@ -7,14 +7,14 @@ use App\Http\Controllers\User\MyTrainingController as UserTrainingController;
 use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
-use App\Http\Controllers\Tenant\ReportController as TenantReportController;
+use App\Http\Controllers\TenantReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
 use App\Http\Controllers\User\CtfController as UserCtfController;
 use App\Http\Controllers\Platform\PlanController as PlatformPlanController;
-use App\Http\Controllers\Platform\ReportController as PlatformReportController;
+use App\Http\Controllers\PlatformReportController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
 use App\Http\Controllers\Tenant\BillingController as TenantBillingController;
@@ -238,6 +238,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
             Route::patch('/assignments/{assignment}', [TenantAssignmentController::class, 'update'])->name('assignments.update');
             Route::get('/reports/export', [TenantReportController::class, 'export'])->name('reports.export');
+            Route::get('/reports/users/{user}', [TenantReportController::class, 'showUser'])->name('reports.users.show');
             Route::get('/reports', [TenantReportController::class, 'index'])->name('reports');
 
             // Route TTX
