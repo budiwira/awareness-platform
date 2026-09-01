@@ -20,6 +20,8 @@ use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseContro
 use App\Http\Controllers\Tenant\BillingController as TenantBillingController;
 use App\Http\Controllers\Platform\BillingRequestController as PlatformBillingRequestController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
+use App\Http\Controllers\Tenant\PhishingCampaignController as TenantPhishingController;
+use App\Http\Controllers\PhishingTrapController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
@@ -36,6 +38,9 @@ Route::get('/', function (Request $request) {
         ],
     ]);
 })->name('landing');
+
+// Public phishing trap
+Route::get('/phish/{token}', [PhishingTrapController::class, 'show'])->name('phishing.trap');
 
 Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -230,6 +235,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
             Route::post('/billing/request', [TenantBillingController::class, 'requestPlanChange'])->name('billing.request');
+            
+            // Route Phishing Campaigns
+            Route::get('/phishing', [TenantPhishingController::class, 'index'])->name('phishing.index');
+            Route::get('/phishing/create', [TenantPhishingController::class, 'create'])->name('phishing.create');
+            Route::post('/phishing', [TenantPhishingController::class, 'store'])->name('phishing.store');
+            Route::get('/phishing/{campaign}', [TenantPhishingController::class, 'show'])->name('phishing.show');
+            Route::post('/phishing/{campaign}/send', [TenantPhishingController::class, 'send'])->name('phishing.send');
         });
 
     Route::middleware('can:access-user-dashboard')
