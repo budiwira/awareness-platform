@@ -11,7 +11,7 @@ class Quiz extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['training_module_id', 'title', 'passing_score', 'is_active'];
+    protected $fillable = ['training_module_id', 'title', 'passing_score', 'duration_minutes', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 
