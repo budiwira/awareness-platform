@@ -152,12 +152,15 @@ Route::middleware('auth')->group(function () {
                 $gCase = \App\Models\CaseParticipation::where('tenant_id', $tenantId)->get()->groupBy('user_id');
                 $gSolve = \App\Models\CtfSolve::where('tenant_id', $tenantId)->get()->groupBy('user_id');
                 $gTtx = \App\Models\TtxScore::where('tenant_id', $tenantId)->get()->groupBy('user_id');
+                $gPhishing = \App\Models\PhishingTarget::whereHas('campaign', function($q) use ($tenantId) {
+                    $q->where('tenant_id', $tenantId);
+                })->get()->groupBy('user_id');
 
                 $scorer = new \App\Support\Scoring\AwarenessScore;
                 $entitlement = $request->user()->tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($request->user()->tenant) : null;
 
                 // Hitung awareness score per user
-                $scores = $users->map(function ($u) use ($scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $totalCtfPoints, $entitlement) {
+                $scores = $users->map(function ($u) use ($scorer, $gAssign, $gQuiz, $gCase, $gSolve, $gTtx, $gPhishing, $totalCtfPoints, $entitlement) {
                     $awareness = $scorer->compute(
                         $gAssign->get($u->id, collect()),
                         $gQuiz->get($u->id, collect()),
@@ -165,7 +168,8 @@ Route::middleware('auth')->group(function () {
                         $gSolve->get($u->id, collect()),
                         $gTtx->get($u->id, collect()),
                         $totalCtfPoints,
-                        $entitlement
+                        $entitlement,
+                        $gPhishing->get($u->id, collect())
                     );
                     return $awareness['overall'];
                 });
@@ -183,6 +187,34 @@ Route::middleware('auth')->group(function () {
                     ? (int) round($assignments->where('status', 'completed')->count() / $assignments->count() * 100)
                     : 0;
 
+                // Phishing awareness stats (jika tenant punya fitur phishing)
+                $phishingStats = null;
+                $hasPhishing = $entitlement && in_array('phishing', $entitlement, true);
+                if ($hasPhishing) {
+                    $allTargets = \App\Models\PhishingTarget::whereHas('campaign', function($q) use ($tenantId) {
+                        $q->where('tenant_id', $tenantId);
+                    })->get();
+                    
+                    $clickedCount = $allTargets->where('status', 'clicked')->count();
+                    $sentCount = $allTargets->whereIn('status', ['sent', 'clicked'])->count();
+                    $avgClickRate = $sentCount > 0 ? (int) round(($clickedCount / $sentCount) * 100) : 0;
+                    
+                    $campaignsCount = \App\Models\PhishingCampaign::where('tenant_id', $tenantId)->count();
+                    
+                    // Users at risk: click rate > 50%
+                    $atRiskUsers = $gPhishing->filter(function ($targets) {
+                        $clicked = $targets->where('status', 'clicked')->count();
+                        $total = $targets->count();
+                        return $total > 0 && ($clicked / $total) > 0.5;
+                    })->count();
+                    
+                    $phishingStats = [
+                        'avg_click_rate' => $avgClickRate,
+                        'campaigns_sent' => $campaignsCount,
+                        'users_at_risk' => $atRiskUsers,
+                    ];
+                }
+
                 return Inertia::render('Tenant/Dashboard', [
                     'stats' => [
                         'total_users' => $users->count(),
@@ -195,6 +227,7 @@ Route::middleware('auth')->group(function () {
                         'tier_perlu_perbaikan' => $perluPerbaikan,
                         'tier_belum_mengerjakan' => $belumMengerjakan,
                     ],
+                    'phishingStats' => $phishingStats,
                 ]);
             })->name('dashboard');
 
