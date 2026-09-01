@@ -95,7 +95,10 @@ const submit = () => {
             <div class="mt-4 flex items-center justify-end">
                 <Link
                     :href="route('login')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    class="rounded-md text-sm t-muted underline focus:outline-none focus:ring-2 focus:ring-offset-2"
+                    style="--tw-ring-color: var(--brand)"
+                    @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
+                    @mouseleave="$event.currentTarget.style.color = ''"
                 >
                     Already registered?
                 </Link>

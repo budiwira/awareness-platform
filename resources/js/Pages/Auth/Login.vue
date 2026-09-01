@@ -29,7 +29,7 @@ const submit = () => {
 <template>
     <Head title="Masuk" />
 
-    <div class="min-h-screen flex bg-gray-50">
+    <div class="min-h-screen flex bg-app">
         <!-- Panel brand (desktop) -->
         <div
             class="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white"
@@ -51,15 +51,15 @@ const submit = () => {
 
                 <div class="mt-8 space-y-3 text-sm text-teal-50">
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
                         Training & quiz berbasis skenario dunia nyata
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
                         Tabletop exercise 4 fase untuk tim respons insiden
                     </div>
                     <div class="flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="w-2 h-2 rounded-full" style="background: var(--warn)"></span>
                         Awareness score 5 komponen yang transparan
                     </div>
                 </div>
@@ -72,14 +72,14 @@ const submit = () => {
         <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
             <div class="w-full max-w-md">
                 <div class="lg:hidden mb-8 text-center">
-                    <div class="inline-flex w-12 h-12 rounded-xl bg-teal-700 text-white items-center justify-center font-display font-bold">SA</div>
-                    <h1 class="font-display text-xl font-bold mt-3 text-gray-900">Security Awareness Platform</h1>
+                    <div class="inline-flex w-12 h-12 rounded-xl text-white items-center justify-center font-display font-bold" style="background: var(--brand)">SA</div>
+                    <h1 class="font-display text-xl font-bold mt-3 t-ink">Security Awareness Platform</h1>
                 </div>
 
-                <h2 class="font-display text-2xl font-bold text-gray-900">Selamat datang kembali</h2>
+                <h2 class="font-display text-2xl font-bold t-ink">Selamat datang kembali</h2>
                 <p class="text-sm mt-1" style="color: var(--muted)">Masuk untuk melanjutkan ke dashboard Anda.</p>
 
-                <div v-if="status" class="mt-4 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-4 py-3">
+                <div v-if="status" class="mt-4 text-sm font-medium chip-brand rounded-lg px-4 py-3">
                     {{ status }}
                 </div>
 
@@ -96,7 +96,7 @@ const submit = () => {
                     <div>
                         <div class="flex items-center justify-between">
                             <InputLabel for="password" value="Password" />
-                            <Link v-if="canResetPassword" :href="route('password.request')" class="text-sm text-teal-700 hover:underline">
+                            <Link v-if="canResetPassword" :href="route('password.request')" class="text-sm hover:underline" style="color: var(--brand)">
                                 Lupa password?
                             </Link>
                         </div>
@@ -108,8 +108,11 @@ const submit = () => {
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 rounded"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 t-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded"
+                                style="--tw-ring-color: var(--brand)"
                                 :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                                @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
+                                @mouseleave="$event.currentTarget.style.color = ''"
                             >
                                 <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -125,7 +128,7 @@ const submit = () => {
 
                     <div class="flex items-center gap-2">
                         <Checkbox id="remember" v-model:checked="form.remember" />
-                        <label for="remember" class="text-sm text-gray-600">Ingat saya</label>
+                        <label for="remember" class="text-sm t-muted">Ingat saya</label>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-full" :disabled="form.processing">
