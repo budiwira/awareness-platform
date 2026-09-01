@@ -99,23 +99,23 @@ const logout = () => router.post(route('logout'));
 </script>
 
 <template>
-    <div class="min-h-screen flex bg-gray-50">
+    <div class="min-h-screen flex bg-app">
         <!-- Sidebar desktop -->
         <aside
-            class="hidden lg:flex lg:flex-col w-64 shrink-0 text-teal-100"
-            style="background: linear-gradient(180deg, #0c3b38 0%, #0a2f2d 100%)"
+            class="hidden lg:flex lg:flex-col w-64 shrink-0"
+            style="background: linear-gradient(180deg, var(--brand-strong) 0%, #0a2f2d 100%); color: #ccfbf1"
         >
             <div class="flex items-center gap-3 px-6 h-16 border-b border-white/10">
-                <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-display font-bold">SA</div>
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold" style="background: rgba(20, 184, 166, 0.2); color: #5eead4">SA</div>
                 <div>
-                    <div class="font-display font-semibold text-white leading-tight">Awareness</div>
-                    <div class="text-[11px] text-teal-300/70">Security Platform</div>
+                    <div class="font-display font-semibold leading-tight" style="color: var(--surface)">Awareness</div>
+                    <div class="text-[11px]" style="color: rgba(94, 234, 212, 0.7)">Security Platform</div>
                 </div>
             </div>
 
             <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
                 <div v-for="group in menus" :key="group.section">
-                    <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-teal-300/60">
+                    <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider" style="color: rgba(94, 234, 212, 0.6)">
                         {{ group.section }}
                     </div>
                     <div class="space-y-1">
@@ -124,14 +124,18 @@ const logout = () => router.post(route('logout'));
                             :key="item.route"
                             :href="route(item.route)"
                             class="relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-                            :class="isActive(item) ? 'bg-white/10 text-white font-medium' : 'hover:bg-white/5 hover:text-white'"
+                            :class="isActive(item) ? 'font-medium' : ''"
+                            :style="isActive(item) ? 'background: rgba(255,255,255,0.1); color: var(--surface)' : ''"
+                            @mouseenter="$event.currentTarget.style.background = 'rgba(255,255,255,0.05)'; $event.currentTarget.style.color = 'var(--surface)'"
+                            @mouseleave="!isActive(item) && ($event.currentTarget.style.background = '', $event.currentTarget.style.color = '')"
                         >
                             <span
                                 v-if="isActive(item)"
-                                class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-amber-400"
+                                class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r"
+                                style="background: var(--warn)"
                             ></span>
                             <span class="flex-1">{{ item.label }}</span>
-                            <svg v-if="item.locked" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg v-if="item.locked" class="w-4 h-4" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                         </Link>
@@ -139,7 +143,7 @@ const logout = () => router.post(route('logout'));
                 </div>
             </nav>
 
-            <div class="px-6 py-4 border-t border-white/10 text-[11px] text-teal-300/60">
+            <div class="px-6 py-4 border-t border-white/10 text-[11px]" style="color: rgba(94, 234, 212, 0.6)">
                 {{ user?.tenant_name ?? 'Platform Operations' }}
             </div>
         </aside>
@@ -148,16 +152,16 @@ const logout = () => router.post(route('logout'));
         <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
             <div class="absolute inset-0 bg-black/50" @click="showMobileNav = false"></div>
             <aside
-                class="absolute inset-y-0 left-0 w-72 flex flex-col text-teal-100"
-                style="background: linear-gradient(180deg, #0c3b38 0%, #0a2f2d 100%)"
+                class="absolute inset-y-0 left-0 w-72 flex flex-col"
+                style="background: linear-gradient(180deg, var(--brand-strong) 0%, #0a2f2d 100%); color: #ccfbf1"
             >
                 <div class="flex items-center justify-between px-6 h-16 border-b border-white/10">
-                    <div class="font-display font-semibold text-white">Awareness</div>
-                    <button class="text-teal-200" @click="showMobileNav = false">✕</button>
+                    <div class="font-display font-semibold" style="color: var(--surface)">Awareness</div>
+                    <button class="t-muted" @click="showMobileNav = false">✕</button>
                 </div>
                 <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
                     <div v-for="group in menus" :key="group.section">
-                        <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-teal-300/60">
+                        <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider" style="color: rgba(94, 234, 212, 0.6)">
                             {{ group.section }}
                         </div>
                         <div class="space-y-1">
@@ -166,11 +170,12 @@ const logout = () => router.post(route('logout'));
                                 :key="item.route"
                                 :href="route(item.route)"
                                 class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                                :class="isActive(item) ? 'bg-white/10 text-white font-medium' : 'hover:bg-white/5'"
+                                :class="isActive(item) ? 'font-medium' : ''"
+                                :style="isActive(item) ? 'background: rgba(255,255,255,0.1); color: var(--surface)' : ''"
                                 @click="showMobileNav = false"
                             >
                                 <span class="flex-1">{{ item.label }}</span>
-                                <svg v-if="item.locked" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg v-if="item.locked" class="w-4 h-4" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                             </Link>
@@ -182,38 +187,39 @@ const logout = () => router.post(route('logout'));
 
         <!-- Konten -->
         <div class="flex-1 flex flex-col min-w-0">
-            <header class="h-16 bg-white/80 backdrop-blur border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+            <header class="h-16 flex items-center justify-between px-6 sticky top-0 z-30 bg-surface/80 backdrop-blur border-b b-line">
                 <div class="flex items-center gap-3">
-                    <button class="lg:hidden text-gray-500" @click="showMobileNav = true">☰</button>
-                    <h1 class="font-display text-lg font-bold text-gray-900">{{ title }}</h1>
+                    <button class="lg:hidden t-muted" @click="showMobileNav = true">☰</button>
+                    <h1 class="font-display text-lg font-bold t-ink">{{ title }}</h1>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <Link :href="route('notifications.index')" class="relative text-gray-500 hover:text-gray-800 transition-colors">
+                    <Link :href="route('notifications.index')" class="relative t-muted transition-colors" style="--hover-color: var(--ink)" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
                         <span
                             v-if="unread > 0"
-                            class="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5"
+                            class="absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5"
+                            style="background: var(--warn)"
                         >{{ unread }}</span>
                     </Link>
 
-                    <span v-if="user?.tenant_name" class="badge bg-teal-50 text-teal-700 border border-teal-200 hidden sm:inline-flex">
+                    <span v-if="user?.tenant_name" class="badge chip-brand hidden sm:inline-flex">
                         {{ user.tenant_name }}
                     </span>
 
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-teal-700 text-white text-xs font-bold flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center" style="background: var(--brand)">
                             {{ initials }}
                         </div>
                         <div class="hidden sm:block leading-tight">
-                            <div class="text-sm font-medium text-gray-900">{{ user?.name }}</div>
+                            <div class="text-sm font-medium t-ink">{{ user?.name }}</div>
                             <div class="text-[11px]" style="color: var(--muted)">{{ user?.role_label }}</div>
                         </div>
                     </div>
 
-                    <button class="text-gray-400 hover:text-rose-600 transition-colors" title="Keluar" @click="logout">
+                    <button class="transition-colors" style="color: var(--muted)" title="Keluar" @click="logout" @mouseenter="$event.currentTarget.style.color = '#e11d48'" @mouseleave="$event.currentTarget.style.color = ''">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
