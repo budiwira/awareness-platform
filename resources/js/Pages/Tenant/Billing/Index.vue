@@ -34,9 +34,9 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
 
 const statusBadge = (status) => {
     const map = {
-        pending: 'bg-amber-100 text-amber-800',
-        approved: 'bg-teal-100 text-teal-800',
-        rejected: 'bg-rose-100 text-rose-800',
+        pending: 'badge-warn',
+        approved: 'chip-brand',
+        rejected: 'badge-danger',
     };
     return map[status] || 'bg-surface2 t-ink';
 };
@@ -54,7 +54,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
 
     <AppLayout title="Billing & Langganan">
         <!-- Flash message -->
-        <div v-if="flash.success" class="mb-6 text-sm chip-brand chip-brand border border-teal-200 rounded-xl px-4 py-3 fade-in">
+        <div v-if="flash.success" class="mb-6 text-sm chip-brand chip-brand  rounded-xl px-4 py-3 fade-in">
             {{ flash.success }}
         </div>
 
@@ -71,7 +71,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     {{ user_count }} / {{ current_plan?.max_users }} users terpakai · {{ entitlements?.module_info }}
                 </div>
                 <div v-if="entitlements?.features?.length" class="flex flex-wrap gap-1 mt-2">
-                    <span v-for="f in entitlements.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand chip-brand border border-teal-200">{{ f }}</span>
+                    <span v-for="f in entitlements.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand chip-brand ">{{ f }}</span>
                 </div>
             </div>
             <div class="text-right">
@@ -84,7 +84,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
         <!-- Kartu fitur terkunci -->
         <div v-if="plans.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div v-for="f in ['training','reports_export','ttx','case_studies','ctf']" :key="f" class="card p-4 flex flex-col items-center text-center" :class="entitlements?.features?.includes(f) ? 'bg-surface' : 'bg-app border-dashed'">
-                <svg v-if="!entitlements?.features?.includes(f)" class="w-6 h-6 text-amber-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg v-if="!entitlements?.features?.includes(f)" class="w-6 h-6 mb-2" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <span class="text-xs font-medium" :class="entitlements?.features?.includes(f) ? 't-ink' : 'text-gray-400'">{{ f }}</span>

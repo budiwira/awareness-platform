@@ -55,7 +55,7 @@ const statCards = [
                         <td class="px-6 py-3">
                             <span
                                 class="badge"
-                                :class="t.status === 'active' ? 'chip-brand chip-brand border border-teal-200' : 'bg-surface2 t-muted'"
+                                :class="t.status === 'active' ? 'chip-brand chip-brand ' : 'bg-surface2 t-muted'"
                             >{{ t.status }}</span>
                         </td>
                         <td class="px-6 py-3 text-right font-medium t-ink">{{ t.users_count }}</td>

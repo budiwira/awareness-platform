@@ -106,7 +106,7 @@ const statusLabel = (status) => {
                     </tr>
                     <tr v-for="module in filteredModules" :key="module.id" class="border-b b-line hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
-                            <Link :href="route('platform.modules.show', module.id)" class="font-medium t-ink hover:text-teal-600 transition-colors">
+                            <Link :href="route('platform.modules.show', module.id)" class="font-medium t-ink hover:chip-brand transition-colors">
                                 {{ module.title }}
                             </Link>
                             <div class="text-xs t-muted mt-0.5">{{ module.description?.substring(0, 60) }}{{ module.description?.length > 60 ? '...' : '' }}</div>

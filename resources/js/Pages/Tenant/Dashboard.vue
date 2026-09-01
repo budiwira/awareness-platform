@@ -78,44 +78,48 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
             <div class="flex gap-1 h-8 rounded-lg overflow-hidden">
                 <div 
                     v-if="stats.tier_baik > 0" 
-                    class="bg-teal-500 transition-all"
+                    class="transition-all"
+                    style="background: var(--ok)"
                     :style="{ width: tierPercent(stats.tier_baik) + '%' }"
                     :title="`Baik: ${stats.tier_baik}`"
                 ></div>
                 <div 
                     v-if="stats.tier_cukup > 0" 
-                    class="bg-amber-500 transition-all"
+                    class="transition-all"
+                    style="background: var(--warn)"
                     :style="{ width: tierPercent(stats.tier_cukup) + '%' }"
                     :title="`Cukup: ${stats.tier_cukup}`"
                 ></div>
                 <div 
                     v-if="stats.tier_perlu_perbaikan > 0" 
-                    class="bg-rose-500 transition-all"
+                    class="transition-all"
+                    style="background: var(--danger)"
                     :style="{ width: tierPercent(stats.tier_perlu_perbaikan) + '%' }"
                     :title="`Perlu Perbaikan: ${stats.tier_perlu_perbaikan}`"
                 ></div>
                 <div 
                     v-if="stats.tier_belum_mengerjakan > 0" 
-                    class="bg-gray-300 transition-all"
+                    class="transition-all"
+                    style="background: var(--line)"
                     :style="{ width: tierPercent(stats.tier_belum_mengerjakan) + '%' }"
                     :title="`Belum Mengerjakan: ${stats.tier_belum_mengerjakan}`"
                 ></div>
             </div>
             <div class="flex items-center gap-6 mt-4 text-xs flex-wrap">
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded bg-teal-500"></div>
-                    <span style="color: var(--muted)">Baik (≥70)</span>
+                    <div class="w-3 h-3 rounded" style="background: var(--ok)"></div>
+                    <span class="text-xs t-muted">Baik ({{ stats.tier_baik }})</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded bg-amber-500"></div>
-                    <span style="color: var(--muted)">Cukup (40-69)</span>
+                    <div class="w-3 h-3 rounded" style="background: var(--warn)"></div>
+                    <span class="text-xs t-muted">Cukup ({{ stats.tier_cukup }})</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded bg-rose-500"></div>
-                    <span style="color: var(--muted)">Perlu Perbaikan (<40)</span>
+                    <div class="w-3 h-3 rounded" style="background: var(--danger)"></div>
+                    <span class="text-xs t-muted">Perlu Perbaikan ({{ stats.tier_perlu_perbaikan }})</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded bg-gray-300"></div>
+                    <div class="w-3 h-3 rounded" style="background: var(--line)"></div>
                     <span style="color: var(--muted)">Belum Mengerjakan (0)</span>
                 </div>
             </div>
@@ -125,28 +129,28 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
             <Link :href="route('tenant.assignments.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Penugasan Training</div>
-                    <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Tugaskan modul ke anggota.</p>
             </Link>
             <Link :href="route('tenant.ttx.exercises.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Simulasi TTX</div>
-                    <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
             </Link>
             <Link :href="route('tenant.reports')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Laporan</div>
-                    <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Skor awareness + ekspor CSV.</p>
             </Link>
             <Link :href="route('tenant.billing.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Billing</div>
-                    <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Plan & langganan organisasi.</p>
             </Link>

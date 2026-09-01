@@ -72,7 +72,7 @@ const completionRate = computed(() => {
             </div>
             <div class="card p-6">
                 <div class="text-sm t-muted mb-1">Completion Rate</div>
-                <div class="text-3xl font-display font-bold text-teal-600">{{ completionRate }}%</div>
+                <div class="text-3xl font-display font-bold chip-brand">{{ completionRate }}%</div>
                 <div class="text-xs text-gray-400 mt-1">{{ stats.completed_count }} / {{ stats.assignments_count }} selesai</div>
             </div>
             <div class="card p-6">
@@ -109,7 +109,7 @@ const completionRate = computed(() => {
                     <strong>{{ module.quiz.questions?.length || 0 }}</strong> pertanyaan tersedia
                 </div>
             </div>
-            <div v-else class="badge-warn border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+            <div v-else class="badge-warn  rounded-lg p-4 text-sm badge-warn">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>

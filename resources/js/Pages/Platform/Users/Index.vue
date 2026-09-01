@@ -128,7 +128,7 @@ const roleBadge = (role) => {
                     User ini tidak akan bisa login lagi.
                 </p>
                 <div class="flex gap-3 justify-end">
-                    <button @click="showDeleteModal = false" class="btn bg-surface2 hover:bg-gray-200 t-ink">
+                    <button @click="showDeleteModal = false" class="btn bg-surface2 hover:bg-surface2 t-ink">
                         Batal
                     </button>
                     <button @click="confirmDelete" class="btn btn-danger">

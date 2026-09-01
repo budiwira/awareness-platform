@@ -58,7 +58,7 @@ const submit = () => {
                         :class="oi === q.correct_index ? 'badge-ok badge-ok font-medium' : 't-muted'"
                     >
                         {{ String.fromCharCode(65 + oi) }}. {{ opt }}
-                        <span v-if="oi === q.correct_index" class="ml-2 text-[10px] uppercase bg-emerald-100 px-2 py-0.5 rounded-full">kunci</span>
+                        <span v-if="oi === q.correct_index" class="ml-2 text-[10px] uppercase px-2 py-0.5 rounded-full" style="background: var(--ok-bg); color: var(--ok)">kunci</span>
                     </li>
                 </ul>
             </div>

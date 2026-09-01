@@ -116,7 +116,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
         <div class="text-2xl font-bold text-indigo-600 mb-1">{{ formatPrice(plan.price_monthly) }}</div>
         <div class="text-xs t-muted mb-2">Maks. {{ plan.max_users }} users · {{ plan.includes_all_modules ? 'Semua modul published' : (plan.modules?.length ?? 0) + ' modul kurasi' }}</div>
         <div class="flex flex-wrap gap-1 mb-3">
-          <span v-for="f in plan.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand dark:bg-teal-900/30 chip-brand dark:text-teal-300 border border-teal-200 dark:border-teal-800">{{ f }}</span>
+          <span v-for="f in plan.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand dark:bg-teal-900/30 chip-brand dark:text-teal-300  dark:border-teal-800">{{ f }}</span>
         </div>
         <ul class="space-y-1 text-sm t-muted flex-1">
           <li v-for="m in plan.modules" :key="m.id" class="flex items-start gap-2 text-xs">📚 {{ m.title }}</li>

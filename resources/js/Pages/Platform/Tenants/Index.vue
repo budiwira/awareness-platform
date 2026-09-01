@@ -129,7 +129,7 @@ const statusBadge = (status) =>
                         </select>
                     </div>
                     <div class="flex gap-3 justify-end">
-                        <button type="button" @click="showSetPlan = false" class="btn bg-surface2 hover:bg-gray-200 t-ink">
+                        <button type="button" @click="showSetPlan = false" class="btn bg-surface2 hover:bg-surface2 t-ink">
                             Batal
                         </button>
                         <button type="submit" class="btn btn-primary">
