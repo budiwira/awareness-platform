@@ -18,8 +18,8 @@ const archive = () => {
 const statusBadge = computed(() => {
     const map = {
         draft: 'bg-surface2 t-ink',
-        published: 'bg-emerald-100 badge-ok',
-        archived: 'bg-amber-100 badge-warn',
+        published: 'badge-ok',
+        archived: 'badge-warn',
     };
     return map[props.module.status] || 'bg-surface2 t-ink';
 });

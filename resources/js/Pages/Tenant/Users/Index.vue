@@ -54,7 +54,7 @@ const submitEdit = (user) => {
 };
 
 const roleBadge = (role) =>
-    role === 'tenant_admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 badge-ok';
+    role === 'tenant_admin' ? 'bg-indigo-100 text-indigo-700' : 'badge-ok';
 </script>
 
 <template>
@@ -138,7 +138,7 @@ const roleBadge = (role) =>
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Email</th>
                         <th class="px-6 py-3 font-medium">Role</th>
@@ -147,7 +147,7 @@ const roleBadge = (role) =>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="user in users" :key="user.id" class="border-b border-gray-50">
+                    <tr v-for="user in users" :key="user.id" class="border-b b-line">
                         <template v-if="editingId === user.id">
                             <td class="px-6 py-3"><input v-model="editForm.name" class="input w-full" /></td>
                             <td class="px-6 py-3"><input v-model="editForm.email" type="email" class="input w-full" /></td>
@@ -179,7 +179,7 @@ const roleBadge = (role) =>
                             <td class="px-6 py-3">
                                 <span
                                     class="px-2 py-0.5 rounded-full text-xs font-medium"
-                                    :class="user.is_active ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700'"
+                                    :class="user.is_active ? 'badge-ok' : 'bg-red-100 text-red-700'"
                                 >
                                     {{ user.is_active ? 'Active' : 'Disabled' }}
                                 </span>

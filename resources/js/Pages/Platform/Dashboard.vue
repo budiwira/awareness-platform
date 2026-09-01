@@ -9,7 +9,7 @@ const statCards = [
     { key: 'tenants', label: 'Total Tenant', accent: 't-ink' },
     { key: 'active_tenants', label: 'Tenant Aktif', accent: 'chip-brand' },
     { key: 'users', label: 'Total User', accent: 't-ink' },
-    { key: 'tenant_admins', label: 'Tenant Admin', accent: 'text-amber-600' },
+    { key: 'tenant_admins', label: 'Tenant Admin', accent: 'badge-warn' },
 ];
 </script>
 
@@ -35,13 +35,13 @@ const statCards = [
         </div>
 
         <div class="card overflow-hidden">
-            <div class="px-6 py-4 font-display font-semibold t-ink border-b border-gray-100 flex items-center justify-between">
+            <div class="px-6 py-4 font-display font-semibold t-ink border-b b-line flex items-center justify-between">
                 <span>Organisasi Terdaftar</span>
                 <Link :href="route('platform.tenants.index')" class="text-sm chip-brand hover:underline">Kelola →</Link>
             </div>
             <table v-if="tenants.length > 0" class="w-full text-sm">
                 <thead>
-                    <tr class="text-left border-b border-gray-100" style="color: var(--muted)">
+                    <tr class="text-left border-b b-line" style="color: var(--muted)">
                         <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -49,7 +49,7 @@ const statCards = [
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="t in tenants" :key="t.slug" class="border-b border-gray-50 hover:bg-app/60 transition-colors">
+                    <tr v-for="t in tenants" :key="t.slug" class="border-b b-line hover:bg-app/60 transition-colors">
                         <td class="px-6 py-3 font-medium t-ink">{{ t.name }}</td>
                         <td class="px-6 py-3 font-mono text-xs" style="color: var(--muted)">{{ t.slug }}</td>
                         <td class="px-6 py-3">

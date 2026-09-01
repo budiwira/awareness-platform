@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 defineProps({ case_title: String, score: Number, breakdown: Array });
 
 const qualityBadge = (q) => ({
-    best: 'bg-emerald-100 badge-ok',
+    best: 'badge-ok',
     acceptable: 'bg-yellow-100 text-yellow-700',
     poor: 'bg-red-100 text-red-700',
 }[q] ?? 'bg-surface2 t-ink');
@@ -19,7 +19,7 @@ const qualityBadge = (q) => ({
             <div class="card p-8 text-center mb-6">
                 <div
                     class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold mb-3"
-                    :class="score >= 70 ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700'"
+                    :class="score >= 70 ? 'badge-ok' : 'bg-red-100 text-red-700'"
                 >
                     {{ score }}
                 </div>
@@ -30,7 +30,7 @@ const qualityBadge = (q) => ({
                 <div v-for="(row, i) in breakdown" :key="i" class="card p-6">
                     <div class="font-medium t-ink mb-3">{{ i + 1 }}. {{ row.situation }}</div>
 
-                    <div v-if="row.chosen" class="text-sm border border-gray-100 rounded-lg p-3 mb-2">
+                    <div v-if="row.chosen" class="text-sm border b-line rounded-lg p-3 mb-2">
                         <div class="flex items-center justify-between">
                             <span class="t-ink">Pilihan Anda: {{ row.chosen.text }}</span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase" :class="qualityBadge(row.chosen.quality)">

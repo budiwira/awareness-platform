@@ -40,7 +40,7 @@ const submit = () => {
 };
 
 const qualityBadge = (q) => ({
-    best: 'bg-emerald-100 badge-ok',
+    best: 'badge-ok',
     acceptable: 'bg-yellow-100 text-yellow-700',
     poor: 'bg-red-100 text-red-700',
 }[q] ?? 'bg-surface2 t-ink');
@@ -67,7 +67,7 @@ const qualityBadge = (q) => ({
             <div v-for="(scene, si) in caseStudy.scenes" :key="scene.id" class="card p-6">
                 <div class="font-medium t-ink mb-3">Scene {{ si + 1 }}: {{ scene.situation }}</div>
                 <ul class="space-y-2">
-                    <li v-for="(opt, oi) in scene.options" :key="oi" class="text-sm border border-gray-100 rounded-lg p-3">
+                    <li v-for="(opt, oi) in scene.options" :key="oi" class="text-sm border b-line rounded-lg p-3">
                         <div class="flex items-center justify-between">
                             <span class="t-ink">{{ String.fromCharCode(65 + oi) }}. {{ opt.text }}</span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase" :class="qualityBadge(opt.quality)">
@@ -96,7 +96,7 @@ const qualityBadge = (q) => ({
                 <div>
                     <label class="text-sm t-muted">Opsi Keputusan (2–4)</label>
                     <div class="mt-1 space-y-3">
-                        <div v-for="(opt, i) in form.options" :key="i" class="border border-gray-100 rounded-lg p-3 space-y-2">
+                        <div v-for="(opt, i) in form.options" :key="i" class="border b-line rounded-lg p-3 space-y-2">
                             <input v-model="opt.text" type="text" required :placeholder="'Teks opsi ' + String.fromCharCode(65 + i)" class="input w-full" />
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 <select v-model="opt.quality" class="input">

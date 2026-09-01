@@ -67,7 +67,7 @@ const submitRunbook = () => {
                     <Link v-for="pb in playbooks" :key="pb.id" :href="route('tenant.ttx.playbooks.show', pb.id)" class="card p-5 border-l-4 border-indigo-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium t-ink">{{ pb.title }}</h3>
-                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 badge-ok">aktif</span>
+                            <span class="px-2 py-0.5 rounded-full text-xs badge-ok">aktif</span>
                         </div>
                         <p class="text-sm t-muted mt-1">{{ pb.description }}</p>
                     </Link>
@@ -103,7 +103,7 @@ const submitRunbook = () => {
                     <Link v-for="rb in runbooks" :key="rb.id" :href="route('tenant.ttx.runbooks.show', rb.id)" class="card p-5 border-l-4 border-emerald-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
                             <h3 class="font-medium t-ink">{{ rb.title }}</h3>
-                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 badge-ok">aktif</span>
+                            <span class="px-2 py-0.5 rounded-full text-xs badge-ok">aktif</span>
                         </div>
                         <p class="text-sm t-muted mt-1">{{ rb.description }}</p>
                         <ol class="mt-2 space-y-1 text-sm t-muted list-decimal list-inside">

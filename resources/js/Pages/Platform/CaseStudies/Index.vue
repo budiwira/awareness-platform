@@ -45,7 +45,7 @@ const archive = (id) => {
 };
 
 const difficultyBadge = (d) => ({
-    beginner: 'bg-emerald-100 badge-ok',
+    beginner: 'badge-ok',
     intermediate: 'bg-yellow-100 text-yellow-700',
     advanced: 'bg-red-100 text-red-700',
 }[d] ?? 'bg-surface2 t-ink');
@@ -53,8 +53,8 @@ const difficultyBadge = (d) => ({
 const statusBadge = (status) => {
     const map = {
         draft: 'bg-surface2 t-ink',
-        published: 'bg-emerald-100 badge-ok',
-        archived: 'bg-amber-100 badge-warn',
+        published: 'badge-ok',
+        archived: 'badge-warn',
     };
     return map[status] || 'bg-surface2 t-ink';
 };
@@ -117,7 +117,7 @@ const statusLabel = (status) => {
                 :key="key"
                 @click="statusFilter = key"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
+                :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
@@ -126,7 +126,7 @@ const statusLabel = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Kesulitan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -146,7 +146,7 @@ const statusLabel = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="c in filteredCases" :key="c.id" class="border-b border-gray-50 hover:bg-app/50 transition-colors">
+                    <tr v-for="c in filteredCases" :key="c.id" class="border-b b-line hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
                             <Link :href="route('platform.cases.show', c.id)" class="text-indigo-600 font-medium hover:underline">
                                 {{ c.title }}
@@ -165,8 +165,8 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 t-muted">{{ c.scenes_count }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.duration_minutes }} menit</td>
                         <td class="px-6 py-3 text-right space-x-3">
-                            <button v-if="c.status === 'draft'" @click="publish(c.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>
-                            <button v-if="c.status === 'published'" @click="archive(c.id)" class="text-amber-600 text-sm font-medium hover:underline">Archive</button>
+                            <button v-if="c.status === 'draft'" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
+                            <button v-if="c.status === 'published'" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
                         </td>
                     </tr>
                 </tbody>

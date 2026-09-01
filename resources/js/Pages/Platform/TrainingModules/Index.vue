@@ -44,8 +44,8 @@ const destroy = (id) => {
 const statusBadge = (status) => {
     const map = {
         draft: 'bg-surface2 t-ink',
-        published: 'bg-emerald-100 badge-ok',
-        archived: 'bg-amber-100 badge-warn',
+        published: 'badge-ok',
+        archived: 'badge-warn',
     };
     return map[status] || 'bg-surface2 t-ink';
 };
@@ -76,7 +76,7 @@ const statusLabel = (status) => {
                 :key="key"
                 @click="statusFilter = key"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
+                :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
@@ -85,7 +85,7 @@ const statusLabel = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Durasi</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -104,7 +104,7 @@ const statusLabel = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="module in filteredModules" :key="module.id" class="border-b border-gray-50 hover:bg-app/50 transition-colors">
+                    <tr v-for="module in filteredModules" :key="module.id" class="border-b b-line hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
                             <Link :href="route('platform.modules.show', module.id)" class="font-medium t-ink hover:text-teal-600 transition-colors">
                                 {{ module.title }}
@@ -120,8 +120,8 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 text-right t-muted">{{ module.assignments_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
-                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>
-                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="text-amber-600 text-sm font-medium hover:underline">Archive</button>
+                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
+                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
                             <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline">Hapus</button>
                         </td>
                     </tr>

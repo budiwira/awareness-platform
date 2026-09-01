@@ -26,7 +26,7 @@ const reject = (requestId) => {
 
 const statusBadge = (status) => {
     if (status === 'pending') return 'bg-yellow-100 text-yellow-700';
-    if (status === 'approved') return 'bg-emerald-100 badge-ok';
+    if (status === 'approved') return 'badge-ok';
     return 'bg-red-100 text-red-700';
 };
 </script>
@@ -48,7 +48,7 @@ const statusBadge = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Tenant</th>
                         <th class="px-6 py-3 font-medium">Plan Diminta</th>
                         <th class="px-6 py-3 font-medium">Note</th>
@@ -69,7 +69,7 @@ const statusBadge = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="req in requests" :key="req.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
+                    <tr v-for="req in requests" :key="req.id" class="border-b b-line hover:bg-surface2 transition-all">
                         <td class="px-6 py-3 font-medium t-ink">{{ req.tenant_name }}</td>
                         <td class="px-6 py-3">
                             <span class="font-medium text-indigo-600">{{ req.plan_name }}</span>

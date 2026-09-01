@@ -65,7 +65,7 @@ const roleBadge = (role) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Email</th>
                         <th class="px-6 py-3 font-medium">Role</th>
@@ -85,7 +85,7 @@ const roleBadge = (role) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="user in users" :key="user.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
+                    <tr v-for="user in users" :key="user.id" class="border-b b-line hover:bg-surface2 transition-all">
                         <td class="px-6 py-3 font-medium t-ink">{{ user.name }}</td>
                         <td class="px-6 py-3 t-muted">{{ user.email }}</td>
                         <td class="px-6 py-3">
@@ -98,7 +98,7 @@ const roleBadge = (role) => {
                             <span v-if="user.deleted_at" class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                                 Dihapus {{ user.deleted_at }}
                             </span>
-                            <span v-else-if="user.is_active" class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 badge-ok">
+                            <span v-else-if="user.is_active" class="px-2 py-0.5 rounded-full text-xs font-medium badge-ok">
                                 Aktif
                             </span>
                             <span v-else class="px-2 py-0.5 rounded-full text-xs font-medium bg-surface2 t-ink">

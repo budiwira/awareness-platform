@@ -7,7 +7,7 @@ defineProps({ cases: Array });
 const start = (id) => router.post(route('user.cases.start', id));
 
 const difficultyBadge = (d) => ({
-    beginner: 'bg-emerald-100 badge-ok',
+    beginner: 'badge-ok',
     intermediate: 'bg-yellow-100 text-yellow-700',
     advanced: 'bg-red-100 text-red-700',
 }[d] ?? 'bg-surface2 t-ink');
@@ -36,7 +36,7 @@ const difficultyBadge = (d) => ({
                     <span
                         v-if="c.participation"
                         class="text-xs font-medium"
-                        :class="c.participation.status === 'completed' ? 'text-emerald-600' : 'text-blue-600'"
+                        :class="c.participation.status === 'completed' ? 'badge-ok' : 'text-blue-600'"
                     >
                         {{ c.participation.status === 'completed' ? 'Selesai · Skor ' + c.participation.score : 'Sedang dikerjakan' }}
                     </span>

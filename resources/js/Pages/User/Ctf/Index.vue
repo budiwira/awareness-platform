@@ -17,7 +17,7 @@ const submit = (id) => {
 };
 
 const difficultyBadge = (d) => ({
-    beginner: 'bg-emerald-100 badge-ok',
+    beginner: 'badge-ok',
     intermediate: 'bg-yellow-100 text-yellow-700',
     advanced: 'bg-red-100 text-red-700',
 }[d] ?? 'bg-surface2 t-ink');
@@ -44,10 +44,10 @@ const difficultyBadge = (d) => ({
 
                 <div class="text-xs text-gray-400 mb-4">
                     {{ c.category }} · {{ c.points }} poin
-                    <span v-if="c.hint" class="block mt-1 text-amber-600">Hint: {{ c.hint }}</span>
+                    <span v-if="c.hint" class="block mt-1 badge-warn">Hint: {{ c.hint }}</span>
                 </div>
 
-                <div v-if="c.solved" class="flex items-center gap-2 text-emerald-600 text-sm font-medium">
+                <div v-if="c.solved" class="flex items-center gap-2 badge-ok text-sm font-medium">
                     ✓ Solved · +{{ c.solved_points }} poin
                 </div>
 

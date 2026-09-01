@@ -91,7 +91,7 @@ const submit = () => {
             <div v-for="s in steps" :key="s.num" class="flex items-center gap-2">
                 <div
                     class="flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all"
-                    :class="step >= s.num ? 'bg-teal-600 text-white' : 'bg-gray-200 t-muted'"
+                    :class="step >= s.num ? 'chip-active' : 'bg-gray-200 t-muted'"
                 >
                     {{ s.num }}
                 </div>

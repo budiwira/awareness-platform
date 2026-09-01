@@ -92,7 +92,7 @@ const updateStatus = (assignment, status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">User</th>
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Tanggal Penugasan</th>
@@ -101,7 +101,7 @@ const updateStatus = (assignment, status) => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="assignment in sortedAssignments" :key="assignment.id" class="border-b border-gray-50">
+                    <tr v-for="assignment in sortedAssignments" :key="assignment.id" class="border-b b-line">
                         <td class="px-6 py-3">
                             <div class="font-medium t-ink">{{ assignment.user.name }}</div>
                             <div class="text-xs t-muted">{{ assignment.user.email }}</div>
@@ -113,7 +113,7 @@ const updateStatus = (assignment, status) => {
                                   :class="{
                                       'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
                                       'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
-                                      'bg-emerald-100 badge-ok': assignment.status === 'completed'
+                                      'badge-ok': assignment.status === 'completed'
                                   }">
                                 {{ assignment.status.replace('_', ' ') }}
                             </span>
@@ -121,7 +121,7 @@ const updateStatus = (assignment, status) => {
                         <td class="px-6 py-3 text-right space-x-2">
                             <button v-if="assignment.status !== 'completed'" 
                                     @click="updateStatus(assignment, 'completed')" 
-                                    class="text-emerald-600 text-sm font-medium hover:badge-ok transition-colors">
+                                    class="badge-ok text-sm font-medium hover:badge-ok transition-colors">
                                 Tandai Selesai
                             </button>
                         </td>

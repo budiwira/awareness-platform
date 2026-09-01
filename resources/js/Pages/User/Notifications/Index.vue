@@ -21,7 +21,7 @@ const markOne = (id) => router.patch(route('notifications.read', id));
 
         <div class="card overflow-hidden">
             <div v-for="n in notifications" :key="n.id"
-                class="flex items-start justify-between px-6 py-4 border-b border-gray-50 cursor-pointer hover:bg-app"
+                class="flex items-start justify-between px-6 py-4 border-b b-line cursor-pointer hover:bg-app"
                 :class="n.read_at ? 'opacity-60' : ''"
                 @click="markOne(n.id)">
                 <div>

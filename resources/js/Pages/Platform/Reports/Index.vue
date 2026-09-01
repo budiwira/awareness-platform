@@ -20,7 +20,7 @@ defineProps({ rows: Array, platform_avg: Number });
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Organisasi</th>
                         <th class="px-6 py-3 font-medium">Anggota</th>
                         <th class="px-6 py-3 font-medium">Penugasan</th>
@@ -29,14 +29,14 @@ defineProps({ rows: Array, platform_avg: Number });
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="row in rows" :key="row.id" class="border-b border-gray-50">
+                    <tr v-for="row in rows" :key="row.id" class="border-b b-line">
                         <td class="px-6 py-3 font-medium t-ink">{{ row.name }}</td>
                         <td class="px-6 py-3 t-muted">{{ row.users }}</td>
                         <td class="px-6 py-3 t-muted">{{ row.assignments }}</td>
                         <td class="px-6 py-3 t-muted">{{ row.completion_rate }}%</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                                  :class="row.avg_awareness >= 70 ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700'">
+                                  :class="row.avg_awareness >= 70 ? 'badge-ok' : 'bg-red-100 text-red-700'">
                                 {{ row.avg_awareness }}
                             </span>
                         </td>

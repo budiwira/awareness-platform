@@ -21,7 +21,7 @@ const phaseBadge = (p) => ({
     preparation: 'bg-blue-100 text-blue-700',
     execution: 'bg-yellow-100 text-yellow-700',
     evaluation: 'bg-purple-100 text-purple-700',
-    completed: 'bg-emerald-100 badge-ok',
+    completed: 'badge-ok',
 }[p] ?? 'bg-surface2 t-ink');
 </script>
 

@@ -10,7 +10,7 @@ const props = defineProps({
 const isCompleted = ref(props.assignment.status === 'completed');
 
 const statusBadgeClass = computed(() => {
-    if (isCompleted.value) return 'bg-emerald-100 badge-ok';
+    if (isCompleted.value) return 'badge-ok';
     if (props.assignment.status === 'in_progress') return 'bg-blue-100 text-blue-700';
     return 'bg-yellow-100 text-yellow-700';
 });
@@ -72,7 +72,7 @@ const markComplete = () => {
                 </button>
                 <span
                     v-else
-                    class="px-6 py-2 rounded-lg bg-emerald-100 badge-ok text-sm font-medium flex items-center gap-2"
+                    class="px-6 py-2 rounded-lg badge-ok text-sm font-medium flex items-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />

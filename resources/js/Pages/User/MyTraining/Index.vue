@@ -22,7 +22,7 @@ const markComplete = (assignment) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Durasi</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -30,7 +30,7 @@ const markComplete = (assignment) => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="assignment in assignments" :key="assignment.id" class="border-b border-gray-50">
+                    <tr v-for="assignment in assignments" :key="assignment.id" class="border-b b-line">
                         <td class="px-6 py-3">
                             <Link
                                 :href="route('user.training.show', assignment.id)"
@@ -46,7 +46,7 @@ const markComplete = (assignment) => {
                                 :class="{
                                     'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
                                     'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
-                                    'bg-emerald-100 badge-ok': assignment.status === 'completed'
+                                    'badge-ok': assignment.status === 'completed'
                                 }"
                             >
                                 {{ assignment.status === 'completed' ? 'Selesai' : (assignment.status === 'in_progress' ? 'Sedang Dikerjakan' : 'Ditugaskan') }}
@@ -66,7 +66,7 @@ const markComplete = (assignment) => {
                             <button
                                 v-if="assignment.status !== 'completed'"
                                 @click="markComplete(assignment)"
-                                class="text-emerald-600 text-xs font-medium"
+                                class="badge-ok text-xs font-medium"
                             >
                                 Tandai Selesai
                             </button>

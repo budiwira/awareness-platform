@@ -61,7 +61,7 @@ const submit = () => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Quiz</th>
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Jumlah Soal</th>
@@ -69,7 +69,7 @@ const submit = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="quiz in quizzes" :key="quiz.id" class="border-b border-gray-50">
+                    <tr v-for="quiz in quizzes" :key="quiz.id" class="border-b b-line">
                         <td class="px-6 py-3">
                             <Link :href="route('platform.quizzes.show', quiz.id)" class="text-indigo-600 font-medium hover:underline">
                                 {{ quiz.title }}

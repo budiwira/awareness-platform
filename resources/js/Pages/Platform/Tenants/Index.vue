@@ -38,7 +38,7 @@ const submitSetPlan = () => {
 };
 
 const statusBadge = (status) =>
-    status === 'active' ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700';
+    status === 'active' ? 'badge-ok' : 'bg-red-100 text-red-700';
 </script>
 
 <template>
@@ -81,7 +81,7 @@ const statusBadge = (status) =>
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left t-muted border-b border-gray-100">
+                    <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Users</th>
@@ -91,7 +91,7 @@ const statusBadge = (status) =>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="tenant in tenants" :key="tenant.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
+                    <tr v-for="tenant in tenants" :key="tenant.id" class="border-b b-line hover:bg-surface2 transition-all">
                         <td class="px-6 py-3 font-medium t-ink">{{ tenant.name }}</td>
                         <td class="px-6 py-3 t-muted">{{ tenant.slug }}</td>
                         <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>

@@ -39,7 +39,7 @@ defineProps({ runbook: Object });
                 <div class="bg-app rounded-lg p-6 border b-line">
                     <ol class="space-y-3">
                         <li v-for="(step, i) in runbook.steps" :key="i" class="flex gap-3">
-                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-teal-600 text-white text-xs font-bold flex items-center justify-center">{{ i + 1 }}</span>
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full chip-active text-xs font-bold flex items-center justify-center">{{ i + 1 }}</span>
                             <span class="text-sm t-ink pt-0.5">{{ step }}</span>
                         </li>
                     </ol>
