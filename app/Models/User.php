@@ -28,6 +28,9 @@ class User extends Authenticatable
         'tenant_id',
         'role',
         'is_active',
+        'login_streak',
+        'last_login_date',
+        'show_on_leaderboard',
     ];
 
     /**
@@ -52,6 +55,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'login_streak' => 'integer',
+            'last_login_date' => 'date',
+            'show_on_leaderboard' => 'boolean',
         ];
     }
 
@@ -109,5 +115,17 @@ class User extends Authenticatable
     public function phishingCampaignsCreated()
     {
         return $this->hasMany(PhishingCampaign::class, 'created_by');
+    }
+
+    public function userBadges()
+    {
+        return $this->hasMany(UserBadge::class);
+    }
+
+    public function badges()
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->withTimestamps()
+            ->withPivot('earned_at');
     }
 }
