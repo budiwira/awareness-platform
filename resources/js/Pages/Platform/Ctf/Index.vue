@@ -54,18 +54,18 @@ const archive = (id) => {
 };
 
 const difficultyBadge = (d) => ({
-    beginner: 'bg-emerald-100 text-emerald-700',
+    beginner: 'bg-emerald-100 badge-ok',
     intermediate: 'bg-yellow-100 text-yellow-700',
     advanced: 'bg-red-100 text-red-700',
-}[d] ?? 'bg-gray-100 text-gray-700');
+}[d] ?? 'bg-surface2 t-ink');
 
 const statusBadge = (status) => {
     const map = {
-        draft: 'bg-gray-100 text-gray-700',
-        published: 'bg-emerald-100 text-emerald-700',
-        archived: 'bg-amber-100 text-amber-700',
+        draft: 'bg-surface2 t-ink',
+        published: 'bg-emerald-100 badge-ok',
+        archived: 'bg-amber-100 badge-warn',
     };
-    return map[status] || 'bg-gray-100 text-gray-700';
+    return map[status] || 'bg-surface2 t-ink';
 };
 
 const statusLabel = (status) => {
@@ -79,7 +79,7 @@ const statusLabel = (status) => {
 
     <AppLayout title="CTF Challenge Builder">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Buat challenge gamifikasi. Flag diverifikasi server-side dan tidak pernah dikirim ke browser.
             </p>
             <button
@@ -93,16 +93,16 @@ const statusLabel = (status) => {
         <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Judul</label>
+                    <label class="text-sm t-muted">Judul</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Deskripsi Tantangan</label>
+                    <label class="text-sm t-muted">Deskripsi Tantangan</label>
                     <textarea v-model="form.description" rows="2" class="input mt-1 w-full"></textarea>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Kategori</label>
+                    <label class="text-sm t-muted">Kategori</label>
                     <select v-model="form.category" class="input mt-1 w-full">
                         <option value="general">General</option>
                         <option value="phishing">Phishing</option>
@@ -112,7 +112,7 @@ const statusLabel = (status) => {
                     </select>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Kesulitan</label>
+                    <label class="text-sm t-muted">Kesulitan</label>
                     <select v-model="form.difficulty" class="input mt-1 w-full">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
@@ -120,16 +120,16 @@ const statusLabel = (status) => {
                     </select>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Poin</label>
+                    <label class="text-sm t-muted">Poin</label>
                     <input v-model.number="form.points" type="number" min="10" max="1000" required class="input mt-1 w-full" />
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Flag (rahasia)</label>
+                    <label class="text-sm t-muted">Flag (rahasia)</label>
                     <input v-model="form.flag" type="text" required placeholder="FLAG{contoh_flag}" class="input mt-1 w-full font-mono" />
                     <p v-if="errors.flag" class="text-xs text-red-600 mt-1">{{ errors.flag }}</p>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Hint (opsional)</label>
+                    <label class="text-sm t-muted">Hint (opsional)</label>
                     <input v-model="form.hint" type="text" class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
@@ -145,7 +145,7 @@ const statusLabel = (status) => {
                 :key="key"
                 @click="statusFilter = key"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
@@ -154,7 +154,7 @@ const statusLabel = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Kategori</th>
                         <th class="px-6 py-3 font-medium">Kesulitan</th>
@@ -175,9 +175,9 @@ const statusLabel = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="c in filteredChallenges" :key="c.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ c.title }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ c.category }}</td>
+                    <tr v-for="c in filteredChallenges" :key="c.id" class="border-b border-gray-50 hover:bg-app/50 transition-colors">
+                        <td class="px-6 py-3 font-medium t-ink">{{ c.title }}</td>
+                        <td class="px-6 py-3 t-muted">{{ c.category }}</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
                                 {{ c.difficulty }}
@@ -188,8 +188,8 @@ const statusLabel = (status) => {
                                 {{ statusLabel(c.status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ c.points }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ c.solves_count }}</td>
+                        <td class="px-6 py-3 t-muted">{{ c.points }}</td>
+                        <td class="px-6 py-3 t-muted">{{ c.solves_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <button v-if="c.status === 'draft'" @click="publish(c.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>
                             <button v-if="c.status === 'published'" @click="archive(c.id)" class="text-amber-600 text-sm font-medium hover:underline">Archive</button>

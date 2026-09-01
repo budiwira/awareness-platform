@@ -40,10 +40,10 @@ const submit = () => {
 };
 
 const qualityBadge = (q) => ({
-    best: 'bg-emerald-100 text-emerald-700',
+    best: 'bg-emerald-100 badge-ok',
     acceptable: 'bg-yellow-100 text-yellow-700',
     poor: 'bg-red-100 text-red-700',
-}[q] ?? 'bg-gray-100 text-gray-700');
+}[q] ?? 'bg-surface2 t-ink');
 </script>
 
 <template>
@@ -57,44 +57,44 @@ const qualityBadge = (q) => ({
         </div>
 
         <div class="card p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900">{{ caseStudy.title }}</h2>
-            <p class="text-sm text-gray-500 mt-1">{{ caseStudy.description }}</p>
+            <h2 class="text-xl font-bold t-ink">{{ caseStudy.title }}</h2>
+            <p class="text-sm t-muted mt-1">{{ caseStudy.description }}</p>
             <p class="text-xs text-gray-400 mt-2">{{ caseStudy.difficulty }} · {{ caseStudy.duration_minutes }} menit · {{ caseStudy.scenes?.length ?? 0 }} scene</p>
         </div>
 
         <!-- Daftar scene (quality & feedback HANYA untuk super admin) -->
         <div class="space-y-4 mb-8">
             <div v-for="(scene, si) in caseStudy.scenes" :key="scene.id" class="card p-6">
-                <div class="font-medium text-gray-900 mb-3">Scene {{ si + 1 }}: {{ scene.situation }}</div>
+                <div class="font-medium t-ink mb-3">Scene {{ si + 1 }}: {{ scene.situation }}</div>
                 <ul class="space-y-2">
                     <li v-for="(opt, oi) in scene.options" :key="oi" class="text-sm border border-gray-100 rounded-lg p-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-gray-700">{{ String.fromCharCode(65 + oi) }}. {{ opt.text }}</span>
+                            <span class="t-ink">{{ String.fromCharCode(65 + oi) }}. {{ opt.text }}</span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-medium uppercase" :class="qualityBadge(opt.quality)">
                                 {{ opt.quality }}
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">{{ opt.feedback }}</p>
+                        <p class="text-xs t-muted mt-1">{{ opt.feedback }}</p>
                     </li>
                 </ul>
             </div>
-            <div v-if="(caseStudy.scenes?.length ?? 0) === 0" class="card p-8 text-center text-gray-500 text-sm">
+            <div v-if="(caseStudy.scenes?.length ?? 0) === 0" class="card p-8 text-center t-muted text-sm">
                 Belum ada scene. Tambahkan di bawah.
             </div>
         </div>
 
         <!-- Form tambah scene -->
         <div class="card p-6">
-            <div class="font-semibold text-gray-800 mb-4">Tambah Scene</div>
+            <div class="font-semibold t-ink mb-4">Tambah Scene</div>
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
-                    <label class="text-sm text-gray-600">Situasi</label>
+                    <label class="text-sm t-muted">Situasi</label>
                     <textarea v-model="form.situation" rows="2" required class="input mt-1 w-full"></textarea>
                     <p v-if="errors.situation" class="text-xs text-red-600 mt-1">{{ errors.situation }}</p>
                 </div>
 
                 <div>
-                    <label class="text-sm text-gray-600">Opsi Keputusan (2–4)</label>
+                    <label class="text-sm t-muted">Opsi Keputusan (2–4)</label>
                     <div class="mt-1 space-y-3">
                         <div v-for="(opt, i) in form.options" :key="i" class="border border-gray-100 rounded-lg p-3 space-y-2">
                             <input v-model="opt.text" type="text" required :placeholder="'Teks opsi ' + String.fromCharCode(65 + i)" class="input w-full" />

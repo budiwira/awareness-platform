@@ -38,7 +38,7 @@ const submitSetPlan = () => {
 };
 
 const statusBadge = (status) =>
-    status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
+    status === 'active' ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700';
 </script>
 
 <template>
@@ -46,7 +46,7 @@ const statusBadge = (status) =>
 
     <AppLayout title="Organizations">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Provisioning organisasi pelanggan. Setiap tenant terisolasi penuh oleh RLS.
             </p>
             <button
@@ -60,7 +60,7 @@ const statusBadge = (status) =>
         <div v-if="showCreate" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Nama Organisasi</label>
+                    <label class="text-sm t-muted">Nama Organisasi</label>
                     <input
                         v-model="form.name"
                         type="text"
@@ -81,7 +81,7 @@ const statusBadge = (status) =>
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Users</th>
@@ -92,9 +92,9 @@ const statusBadge = (status) =>
                 </thead>
                 <tbody>
                     <tr v-for="tenant in tenants" :key="tenant.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ tenant.name }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ tenant.slug }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ tenant.users_count }}</td>
+                        <td class="px-6 py-3 font-medium t-ink">{{ tenant.name }}</td>
+                        <td class="px-6 py-3 t-muted">{{ tenant.slug }}</td>
+                        <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>
                         <td class="px-6 py-3">
                             <span v-if="tenant.current_plan" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_plan }}</span>
                             <span v-else class="text-xs text-gray-400">—</span>
@@ -120,7 +120,7 @@ const statusBadge = (status) =>
                 <h3 class="text-lg font-semibold mb-4">Set Plan untuk {{ selectedTenant?.name }}</h3>
                 <form @submit.prevent="submitSetPlan" class="space-y-4">
                     <div>
-                        <label class="text-sm text-gray-600">Pilih Plan</label>
+                        <label class="text-sm t-muted">Pilih Plan</label>
                         <select v-model="planForm.plan_id" required class="input mt-1 w-full">
                             <option :value="null" disabled>-- Pilih Plan --</option>
                             <option v-for="plan in plans" :key="plan.id" :value="plan.id">
@@ -129,7 +129,7 @@ const statusBadge = (status) =>
                         </select>
                     </div>
                     <div class="flex gap-3 justify-end">
-                        <button type="button" @click="showSetPlan = false" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700">
+                        <button type="button" @click="showSetPlan = false" class="btn bg-surface2 hover:bg-gray-200 t-ink">
                             Batal
                         </button>
                         <button type="submit" class="btn btn-primary">

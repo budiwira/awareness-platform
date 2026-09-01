@@ -10,7 +10,7 @@ const props = defineProps({
 const isCompleted = ref(props.assignment.status === 'completed');
 
 const statusBadgeClass = computed(() => {
-    if (isCompleted.value) return 'bg-emerald-100 text-emerald-700';
+    if (isCompleted.value) return 'bg-emerald-100 badge-ok';
     if (props.assignment.status === 'in_progress') return 'bg-blue-100 text-blue-700';
     return 'bg-yellow-100 text-yellow-700';
 });
@@ -48,16 +48,16 @@ const markComplete = () => {
         <div class="card p-8">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">{{ assignment.module.title }}</h2>
-                    <p class="text-sm text-gray-500 mt-1">Durasi: {{ assignment.module.duration_minutes }} menit</p>
+                    <h2 class="text-2xl font-bold t-ink">{{ assignment.module.title }}</h2>
+                    <p class="text-sm t-muted mt-1">Durasi: {{ assignment.module.duration_minutes }} menit</p>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-medium" :class="statusBadgeClass">
                     {{ statusLabel }}
                 </span>
             </div>
 
-            <div v-if="assignment.module.description" class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <p class="text-sm text-gray-700">{{ assignment.module.description }}</p>
+            <div v-if="assignment.module.description" class="mb-6 p-4 bg-app rounded-lg">
+                <p class="text-sm t-ink">{{ assignment.module.description }}</p>
             </div>
 
             <div class="prose max-w-none mb-8" v-html="assignment.module.content"></div>
@@ -72,7 +72,7 @@ const markComplete = () => {
                 </button>
                 <span
                     v-else
-                    class="px-6 py-2 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium flex items-center gap-2"
+                    class="px-6 py-2 rounded-lg bg-emerald-100 badge-ok text-sm font-medium flex items-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />

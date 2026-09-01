@@ -22,7 +22,7 @@ const submit = () => {
 
     <AppLayout title="Quiz Builder">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Buat quiz per modul training. Kunci jawaban tidak pernah dikirim ke browser user.
             </p>
             <button
@@ -36,7 +36,7 @@ const submit = () => {
         <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
-                    <label class="text-sm text-gray-600">Modul</label>
+                    <label class="text-sm t-muted">Modul</label>
                     <select v-model="form.training_module_id" required class="input mt-1 w-full">
                         <option value="" disabled>-- Pilih Modul --</option>
                         <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }}</option>
@@ -44,12 +44,12 @@ const submit = () => {
                     <p v-if="errors.training_module_id" class="text-xs text-red-600 mt-1">{{ errors.training_module_id }}</p>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Judul Quiz</label>
+                    <label class="text-sm t-muted">Judul Quiz</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Passing Score (%)</label>
+                    <label class="text-sm t-muted">Passing Score (%)</label>
                     <input v-model.number="form.passing_score" type="number" min="1" max="100" required class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-3 flex justify-end">
@@ -61,7 +61,7 @@ const submit = () => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Quiz</th>
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Jumlah Soal</th>
@@ -75,12 +75,12 @@ const submit = () => {
                                 {{ quiz.title }}
                             </Link>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ quiz.module?.title }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ quiz.questions?.length ?? 0 }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ quiz.passing_score }}%</td>
+                        <td class="px-6 py-3 t-muted">{{ quiz.module?.title }}</td>
+                        <td class="px-6 py-3 t-muted">{{ quiz.questions?.length ?? 0 }}</td>
+                        <td class="px-6 py-3 t-muted">{{ quiz.passing_score }}%</td>
                     </tr>
                     <tr v-if="quizzes.length === 0">
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Belum ada quiz.</td>
+                        <td colspan="4" class="px-6 py-8 text-center t-muted">Belum ada quiz.</td>
                     </tr>
                 </tbody>
             </table>

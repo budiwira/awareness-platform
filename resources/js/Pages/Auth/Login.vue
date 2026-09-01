@@ -36,7 +36,7 @@ const submit = () => {
             style="background: linear-gradient(160deg, #0f766e 0%, #115e59 60%, #134e4a 100%)"
         >
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-display font-bold text-lg">SA</div>
+                <div class="w-10 h-10 rounded-xl bg-surface/10 flex items-center justify-center font-display font-bold text-lg">SA</div>
                 <span class="font-display font-semibold text-lg">Security Awareness Platform</span>
             </div>
 

@@ -136,7 +136,7 @@ const badgeStyle = (score) => {
                         </td>
                         <td class="px-6 py-3">
                             <div class="flex items-center gap-2">
-                                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden" style="width: 80px;">
+                                <div class="h-1.5 bg-surface2 rounded-full overflow-hidden" style="width: 80px;">
                                     <div
                                         class="h-full rounded-full transition-all"
                                         :style="{ width: row.awareness_score + '%', backgroundColor: progressBarColor(row.awareness_score) }"

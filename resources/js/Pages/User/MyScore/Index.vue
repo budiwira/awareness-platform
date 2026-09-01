@@ -46,7 +46,7 @@ const progressBarColor = (score) => {
             <div v-for="b in score.breakdown" :key="b.key" class="card p-4">
                 <div class="text-xs mb-1" style="color: var(--muted)">{{ b.label }}</div>
                 <div class="font-display text-3xl font-bold mb-2" style="color: var(--ink)">{{ b.score }}</div>
-                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-1.5 bg-surface2 rounded-full overflow-hidden">
                     <div
                         class="h-full rounded-full transition-all"
                         :style="{ width: b.score + '%', backgroundColor: progressBarColor(b.score) }"

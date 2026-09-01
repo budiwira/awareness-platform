@@ -43,11 +43,11 @@ const destroy = (id) => {
 
 const statusBadge = (status) => {
     const map = {
-        draft: 'bg-gray-100 text-gray-700',
-        published: 'bg-emerald-100 text-emerald-700',
-        archived: 'bg-amber-100 text-amber-700',
+        draft: 'bg-surface2 t-ink',
+        published: 'bg-emerald-100 badge-ok',
+        archived: 'bg-amber-100 badge-warn',
     };
-    return map[status] || 'bg-gray-100 text-gray-700';
+    return map[status] || 'bg-surface2 t-ink';
 };
 
 const statusLabel = (status) => {
@@ -61,7 +61,7 @@ const statusLabel = (status) => {
 
     <AppLayout title="Studio Konten">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Pipeline authoring konten — Draft, Published, Archived.
             </p>
             <Link :href="route('platform.modules.create')" class="btn btn-primary">
@@ -76,7 +76,7 @@ const statusLabel = (status) => {
                 :key="key"
                 @click="statusFilter = key"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
@@ -85,7 +85,7 @@ const statusLabel = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Durasi</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -104,20 +104,20 @@ const statusLabel = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="module in filteredModules" :key="module.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <tr v-for="module in filteredModules" :key="module.id" class="border-b border-gray-50 hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
-                            <Link :href="route('platform.modules.show', module.id)" class="font-medium text-gray-900 hover:text-teal-600 transition-colors">
+                            <Link :href="route('platform.modules.show', module.id)" class="font-medium t-ink hover:text-teal-600 transition-colors">
                                 {{ module.title }}
                             </Link>
-                            <div class="text-xs text-gray-500 mt-0.5">{{ module.description?.substring(0, 60) }}{{ module.description?.length > 60 ? '...' : '' }}</div>
+                            <div class="text-xs t-muted mt-0.5">{{ module.description?.substring(0, 60) }}{{ module.description?.length > 60 ? '...' : '' }}</div>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ module.duration_minutes }} menit</td>
+                        <td class="px-6 py-3 t-muted">{{ module.duration_minutes }} menit</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(module.status)">
                                 {{ statusLabel(module.status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-right text-gray-500">{{ module.assignments_count }}</td>
+                        <td class="px-6 py-3 text-right t-muted">{{ module.assignments_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
                             <button v-if="module.status === 'draft'" @click="publish(module.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>

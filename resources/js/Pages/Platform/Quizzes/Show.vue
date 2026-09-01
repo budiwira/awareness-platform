@@ -37,8 +37,8 @@ const submit = () => {
         <div class="card p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-900">{{ quiz.title }}</h2>
-                    <p class="text-sm text-gray-500 mt-1">Modul: {{ quiz.module?.title }} · Passing: {{ quiz.passing_score }}%</p>
+                    <h2 class="text-xl font-bold t-ink">{{ quiz.title }}</h2>
+                    <p class="text-sm t-muted mt-1">Modul: {{ quiz.module?.title }} · Passing: {{ quiz.passing_score }}%</p>
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
                     {{ quiz.questions?.length ?? 0 }} soal
@@ -49,36 +49,36 @@ const submit = () => {
         <!-- Daftar pertanyaan (kunci jawaban HANYA terlihat oleh super admin) -->
         <div class="space-y-4 mb-8">
             <div v-for="(q, qi) in quiz.questions" :key="q.id" class="card p-6">
-                <div class="font-medium text-gray-900 mb-3">{{ qi + 1 }}. {{ q.question }}</div>
+                <div class="font-medium t-ink mb-3">{{ qi + 1 }}. {{ q.question }}</div>
                 <ul class="space-y-1">
                     <li
                         v-for="(opt, oi) in q.options"
                         :key="oi"
                         class="text-sm px-3 py-1.5 rounded-lg"
-                        :class="oi === q.correct_index ? 'bg-emerald-50 text-emerald-700 font-medium' : 'text-gray-600'"
+                        :class="oi === q.correct_index ? 'badge-ok badge-ok font-medium' : 't-muted'"
                     >
                         {{ String.fromCharCode(65 + oi) }}. {{ opt }}
                         <span v-if="oi === q.correct_index" class="ml-2 text-[10px] uppercase bg-emerald-100 px-2 py-0.5 rounded-full">kunci</span>
                     </li>
                 </ul>
             </div>
-            <div v-if="(quiz.questions?.length ?? 0) === 0" class="card p-8 text-center text-gray-500 text-sm">
+            <div v-if="(quiz.questions?.length ?? 0) === 0" class="card p-8 text-center t-muted text-sm">
                 Belum ada pertanyaan. Tambahkan di bawah.
             </div>
         </div>
 
         <!-- Form tambah pertanyaan -->
         <div class="card p-6">
-            <div class="font-semibold text-gray-800 mb-4">Tambah Pertanyaan</div>
+            <div class="font-semibold t-ink mb-4">Tambah Pertanyaan</div>
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
-                    <label class="text-sm text-gray-600">Pertanyaan</label>
+                    <label class="text-sm t-muted">Pertanyaan</label>
                     <textarea v-model="form.question" rows="2" required class="input mt-1 w-full"></textarea>
                     <p v-if="errors.question" class="text-xs text-red-600 mt-1">{{ errors.question }}</p>
                 </div>
 
                 <div>
-                    <label class="text-sm text-gray-600">Pilihan Jawaban (tandai kunci dengan radio)</label>
+                    <label class="text-sm t-muted">Pilihan Jawaban (tandai kunci dengan radio)</label>
                     <div class="mt-1 space-y-2">
                         <div v-for="(opt, i) in form.options" :key="i" class="flex items-center gap-2">
                             <input type="radio" :value="i" v-model="form.correct_index" class="text-indigo-600" :title="'Jadikan ' + String.fromCharCode(65 + i) + ' kunci jawaban'" />

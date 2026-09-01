@@ -29,10 +29,10 @@ const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-6">
-                    <Link :href="route('user.training.index')" class="btn bg-white text-teal-800 hover:bg-teal-50">
+                    <Link :href="route('user.training.index')" class="btn bg-surface text-teal-800 hover:chip-brand">
                         Lanjutkan Training
                     </Link>
-                    <Link :href="route('user.score')" class="btn bg-white/10 text-white hover:bg-white/20">
+                    <Link :href="route('user.score')" class="btn bg-surface/10 text-white hover:bg-surface/20">
                         Lihat Breakdown
                     </Link>
                 </div>
@@ -41,13 +41,13 @@ const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
             <div class="card p-6 flex flex-col items-center justify-center">
                 <ScoreRing :value="score.overall" />
                 <div class="mt-4 grid grid-cols-2 gap-3 w-full text-center">
-                    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                        <div class="text-lg font-bold text-amber-700">{{ pending }}</div>
-                        <div class="text-[11px] text-amber-700">Menunggu</div>
+                    <div class="rounded-lg badge-warn border border-amber-200 px-3 py-2">
+                        <div class="text-lg font-bold badge-warn">{{ pending }}</div>
+                        <div class="text-[11px] badge-warn">Menunggu</div>
                     </div>
-                    <div class="rounded-lg bg-teal-50 border border-teal-200 px-3 py-2">
-                        <div class="text-lg font-bold text-teal-700">{{ in_progress }}</div>
-                        <div class="text-[11px] text-teal-700">Berjalan</div>
+                    <div class="rounded-lg chip-brand border border-teal-200 px-3 py-2">
+                        <div class="text-lg font-bold chip-brand">{{ in_progress }}</div>
+                        <div class="text-[11px] chip-brand">Berjalan</div>
                     </div>
                 </div>
             </div>
@@ -60,8 +60,8 @@ const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <div v-for="b in score.breakdown" :key="b.key" class="card p-4">
                 <div class="text-xs mb-1" style="color: var(--muted)">{{ b.label }}</div>
-                <div class="text-xl font-bold text-gray-900 mb-2">{{ b.score }}</div>
-                <div class="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div class="text-xl font-bold t-ink mb-2">{{ b.score }}</div>
+                <div class="h-1.5 rounded-full bg-surface2 overflow-hidden">
                     <div class="h-full rounded-full" :style="{ width: b.score + '%', background: barColor(b.score) }"></div>
                 </div>
             </div>
@@ -71,21 +71,21 @@ const barColor = (v) => (v >= 70 ? '#0f766e' : v >= 40 ? '#f59e0b' : '#e11d48');
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link :href="route('user.cases.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Case Study</div>
+                    <div class="font-display font-semibold t-ink">Case Study</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Latihan keputusan berbasis skenario.</p>
             </Link>
             <Link :href="route('user.ctf.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Capture The Flag</div>
+                    <div class="font-display font-semibold t-ink">Capture The Flag</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Pecahkan tantangan, kumpulkan poin.</p>
             </Link>
             <Link :href="route('notifications.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Notifikasi</div>
+                    <div class="font-display font-semibold t-ink">Notifikasi</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Penugasan baru dan undangan TTX.</p>

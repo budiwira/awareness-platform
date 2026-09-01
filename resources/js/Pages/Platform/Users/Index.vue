@@ -35,7 +35,7 @@ const confirmDelete = () => {
 const roleBadge = (role) => {
     if (role === 'super_admin') return 'bg-purple-100 text-purple-700';
     if (role === 'tenant_admin') return 'bg-blue-100 text-blue-700';
-    return 'bg-gray-100 text-gray-700';
+    return 'bg-surface2 t-ink';
 };
 </script>
 
@@ -65,7 +65,7 @@ const roleBadge = (role) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Email</th>
                         <th class="px-6 py-3 font-medium">Role</th>
@@ -86,22 +86,22 @@ const roleBadge = (role) => {
                         </td>
                     </tr>
                     <tr v-for="user in users" :key="user.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ user.name }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ user.email }}</td>
+                        <td class="px-6 py-3 font-medium t-ink">{{ user.name }}</td>
+                        <td class="px-6 py-3 t-muted">{{ user.email }}</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="roleBadge(user.role)">
                                 {{ user.role }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ user.tenant_name }}</td>
+                        <td class="px-6 py-3 t-muted">{{ user.tenant_name }}</td>
                         <td class="px-6 py-3">
                             <span v-if="user.deleted_at" class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                                 Dihapus {{ user.deleted_at }}
                             </span>
-                            <span v-else-if="user.is_active" class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                            <span v-else-if="user.is_active" class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 badge-ok">
                                 Aktif
                             </span>
-                            <span v-else class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            <span v-else class="px-2 py-0.5 rounded-full text-xs font-medium bg-surface2 t-ink">
                                 Nonaktif
                             </span>
                         </td>
@@ -123,12 +123,12 @@ const roleBadge = (role) => {
         <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in">
             <div class="card p-6 max-w-md w-full mx-4">
                 <h3 class="text-lg font-semibold mb-2">Konfirmasi Hapus User</h3>
-                <p class="text-sm text-gray-600 mb-4">
+                <p class="text-sm t-muted mb-4">
                     Anda yakin ingin menghapus user <strong>{{ userToDelete?.name }}</strong> ({{ userToDelete?.email }})?
                     User ini tidak akan bisa login lagi.
                 </p>
                 <div class="flex gap-3 justify-end">
-                    <button @click="showDeleteModal = false" class="btn bg-gray-100 hover:bg-gray-200 text-gray-700">
+                    <button @click="showDeleteModal = false" class="btn bg-surface2 hover:bg-gray-200 t-ink">
                         Batal
                     </button>
                     <button @click="confirmDelete" class="btn btn-danger">

@@ -36,7 +36,7 @@ const submitRunbook = () => {
     <Head title="Tabletop Exercise" />
 
     <AppLayout title="Tabletop Exercise (TTX)">
-        <p class="text-sm text-gray-500 mb-6">
+        <p class="text-sm t-muted mb-6">
             Kelola playbook & runbook sebagai fondasi simulasi tabletop penanganan insiden.
         </p>
 
@@ -44,7 +44,7 @@ const submitRunbook = () => {
             <!-- PLAYBOOKS -->
             <div>
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="font-semibold text-gray-800">Playbook</h2>
+                    <h2 class="font-semibold t-ink">Playbook</h2>
                     <button @click="showPlaybookForm = !showPlaybookForm"
                         class="btn btn-primary">
                         + Playbook
@@ -66,12 +66,12 @@ const submitRunbook = () => {
                 <div class="space-y-3">
                     <Link v-for="pb in playbooks" :key="pb.id" :href="route('tenant.ttx.playbooks.show', pb.id)" class="card p-5 border-l-4 border-indigo-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
-                            <h3 class="font-medium text-gray-900">{{ pb.title }}</h3>
-                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
+                            <h3 class="font-medium t-ink">{{ pb.title }}</h3>
+                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 badge-ok">aktif</span>
                         </div>
-                        <p class="text-sm text-gray-500 mt-1">{{ pb.description }}</p>
+                        <p class="text-sm t-muted mt-1">{{ pb.description }}</p>
                     </Link>
-                    <div v-if="playbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
+                    <div v-if="playbooks.length === 0" class="card p-6 text-center t-muted text-sm">
                         Belum ada playbook.
                     </div>
                 </div>
@@ -80,7 +80,7 @@ const submitRunbook = () => {
             <!-- RUNBOOKS -->
             <div>
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="font-semibold text-gray-800">Runbook</h2>
+                    <h2 class="font-semibold t-ink">Runbook</h2>
                     <button @click="showRunbookForm = !showRunbookForm"
                         class="btn btn-primary">
                         + Runbook
@@ -102,15 +102,15 @@ const submitRunbook = () => {
                 <div class="space-y-3">
                     <Link v-for="rb in runbooks" :key="rb.id" :href="route('tenant.ttx.runbooks.show', rb.id)" class="card p-5 border-l-4 border-emerald-500 block hover:shadow-md transition">
                         <div class="flex items-center justify-between">
-                            <h3 class="font-medium text-gray-900">{{ rb.title }}</h3>
-                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">aktif</span>
+                            <h3 class="font-medium t-ink">{{ rb.title }}</h3>
+                            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 badge-ok">aktif</span>
                         </div>
-                        <p class="text-sm text-gray-500 mt-1">{{ rb.description }}</p>
-                        <ol class="mt-2 space-y-1 text-sm text-gray-600 list-decimal list-inside">
+                        <p class="text-sm t-muted mt-1">{{ rb.description }}</p>
+                        <ol class="mt-2 space-y-1 text-sm t-muted list-decimal list-inside">
                             <li v-for="(step, i) in rb.steps" :key="i">{{ step }}</li>
                         </ol>
                     </Link>
-                    <div v-if="runbooks.length === 0" class="card p-6 text-center text-gray-500 text-sm">
+                    <div v-if="runbooks.length === 0" class="card p-6 text-center t-muted text-sm">
                         Belum ada runbook.
                     </div>
                 </div>

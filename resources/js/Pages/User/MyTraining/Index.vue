@@ -15,14 +15,14 @@ const markComplete = (assignment) => {
     <Head title="My Training" />
 
     <AppLayout title="Training Saya">
-        <p class="text-sm text-gray-500 mb-6">
+        <p class="text-sm t-muted mb-6">
             Modul training yang ditugaskan kepada Anda. Klik judul untuk membaca materi.
         </p>
 
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Durasi</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -39,19 +39,19 @@ const markComplete = (assignment) => {
                                 {{ assignment.module.title }}
                             </Link>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ assignment.module.duration_minutes }} menit</td>
+                        <td class="px-6 py-3 t-muted">{{ assignment.module.duration_minutes }} menit</td>
                         <td class="px-6 py-3">
                             <span
                                 class="px-2 py-0.5 rounded-full text-xs font-medium"
                                 :class="{
                                     'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
                                     'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
-                                    'bg-emerald-100 text-emerald-700': assignment.status === 'completed'
+                                    'bg-emerald-100 badge-ok': assignment.status === 'completed'
                                 }"
                             >
                                 {{ assignment.status === 'completed' ? 'Selesai' : (assignment.status === 'in_progress' ? 'Sedang Dikerjakan' : 'Ditugaskan') }}
                             </span>
-                            <span v-if="assignment.score !== null" class="ml-2 text-xs text-gray-500">
+                            <span v-if="assignment.score !== null" class="ml-2 text-xs t-muted">
                                 Skor: {{ assignment.score }}
                             </span>
                         </td>
@@ -74,7 +74,7 @@ const markComplete = (assignment) => {
                         </td>
                     </tr>
                     <tr v-if="assignments.length === 0">
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">Belum ada training yang ditugaskan.</td>
+                        <td colspan="4" class="px-6 py-8 text-center t-muted">Belum ada training yang ditugaskan.</td>
                     </tr>
                 </tbody>
             </table>

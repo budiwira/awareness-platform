@@ -26,7 +26,7 @@ const reject = (requestId) => {
 
 const statusBadge = (status) => {
     if (status === 'pending') return 'bg-yellow-100 text-yellow-700';
-    if (status === 'approved') return 'bg-emerald-100 text-emerald-700';
+    if (status === 'approved') return 'bg-emerald-100 badge-ok';
     return 'bg-red-100 text-red-700';
 };
 </script>
@@ -36,7 +36,7 @@ const statusBadge = (status) => {
 
     <AppLayout title="Billing Requests">
         <div class="mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Permintaan perubahan plan dari tenant. Approve atau reject berdasarkan kebijakan bisnis.
             </p>
         </div>
@@ -48,7 +48,7 @@ const statusBadge = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Tenant</th>
                         <th class="px-6 py-3 font-medium">Plan Diminta</th>
                         <th class="px-6 py-3 font-medium">Note</th>
@@ -70,13 +70,13 @@ const statusBadge = (status) => {
                         </td>
                     </tr>
                     <tr v-for="req in requests" :key="req.id" class="border-b border-gray-50 hover:bg-gray-25 transition-all">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ req.tenant_name }}</td>
+                        <td class="px-6 py-3 font-medium t-ink">{{ req.tenant_name }}</td>
                         <td class="px-6 py-3">
                             <span class="font-medium text-indigo-600">{{ req.plan_name }}</span>
                         </td>
-                        <td class="px-6 py-3 text-gray-500 max-w-xs truncate">{{ req.note || '-' }}</td>
-                        <td class="px-6 py-3 text-gray-600">{{ req.requested_by }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ req.requested_at }}</td>
+                        <td class="px-6 py-3 t-muted max-w-xs truncate">{{ req.note || '-' }}</td>
+                        <td class="px-6 py-3 t-muted">{{ req.requested_by }}</td>
+                        <td class="px-6 py-3 t-muted">{{ req.requested_at }}</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(req.status)">
                                 {{ req.status }}
@@ -99,7 +99,7 @@ const statusBadge = (status) => {
                                     Reject
                                 </button>
                             </div>
-                            <div v-else class="text-xs text-gray-500">
+                            <div v-else class="text-xs t-muted">
                                 {{ req.resolved_by }} - {{ req.resolved_at }}
                             </div>
                         </td>

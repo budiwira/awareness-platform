@@ -30,11 +30,11 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 </p>
             </div>
             <div class="flex gap-4">
-                <div class="bg-white/10 rounded-xl px-5 py-3 text-center">
+                <div class="bg-surface/10 rounded-xl px-5 py-3 text-center">
                     <div class="text-2xl font-bold">{{ stats.active_users }}<span class="text-teal-200 text-sm">/{{ stats.total_users }}</span></div>
                     <div class="text-[11px] text-teal-200">Anggota Aktif</div>
                 </div>
-                <div class="bg-white/10 rounded-xl px-5 py-3 text-center">
+                <div class="bg-surface/10 rounded-xl px-5 py-3 text-center">
                     <div class="text-2xl font-bold">{{ stats.admins }}</div>
                     <div class="text-[11px] text-teal-200">Admin</div>
                 </div>
@@ -54,19 +54,19 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <div class="text-xs mb-3" style="color: var(--muted)">Distribusi Kesadaran</div>
                 <div class="space-y-2">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-teal-700">Baik</span>
+                        <span class="chip-brand">Baik</span>
                         <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_baik }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-amber-700">Cukup</span>
+                        <span class="badge-warn">Cukup</span>
                         <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_cukup }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-rose-700">Perlu Perbaikan</span>
+                        <span class="badge-danger">Perlu Perbaikan</span>
                         <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_perlu_perbaikan }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-500">Belum Mengerjakan</span>
+                        <span class="t-muted">Belum Mengerjakan</span>
                         <span class="font-semibold" style="color: var(--ink)">{{ stats.tier_belum_mengerjakan }}</span>
                     </div>
                 </div>
@@ -124,28 +124,28 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link :href="route('tenant.assignments.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Penugasan Training</div>
+                    <div class="font-display font-semibold t-ink">Penugasan Training</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Tugaskan modul ke anggota.</p>
             </Link>
             <Link :href="route('tenant.ttx.exercises.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Simulasi TTX</div>
+                    <div class="font-display font-semibold t-ink">Simulasi TTX</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
             </Link>
             <Link :href="route('tenant.reports')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Laporan</div>
+                    <div class="font-display font-semibold t-ink">Laporan</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Skor awareness + ekspor CSV.</p>
             </Link>
             <Link :href="route('tenant.billing.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
-                    <div class="font-display font-semibold text-gray-900">Billing</div>
+                    <div class="font-display font-semibold t-ink">Billing</div>
                     <span class="text-teal-600 group-hover:translate-x-1 transition">→</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Plan & langganan organisasi.</p>

@@ -91,11 +91,11 @@ const submit = () => {
             <div v-for="s in steps" :key="s.num" class="flex items-center gap-2">
                 <div
                     class="flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all"
-                    :class="step >= s.num ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-500'"
+                    :class="step >= s.num ? 'bg-teal-600 text-white' : 'bg-gray-200 t-muted'"
                 >
                     {{ s.num }}
                 </div>
-                <span class="text-sm font-medium" :class="step >= s.num ? 'text-gray-900' : 'text-gray-400'">{{ s.label }}</span>
+                <span class="text-sm font-medium" :class="step >= s.num ? 't-ink' : 'text-gray-400'">{{ s.label }}</span>
                 <svg v-if="s.num < 4" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -106,13 +106,13 @@ const submit = () => {
             <!-- Step 1: Info Dasar -->
             <div v-if="step === 1" class="space-y-4 fade-in">
                 <div>
-                    <label class="text-sm font-medium text-gray-700">Judul Modul</label>
+                    <label class="text-sm font-medium t-ink">Judul Modul</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" placeholder="Contoh: Phishing Awareness Fundamentals" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Kategori</label>
+                        <label class="text-sm font-medium t-ink">Kategori</label>
                         <select class="input mt-1 w-full">
                             <option>General Security</option>
                             <option>Phishing</option>
@@ -120,29 +120,29 @@ const submit = () => {
                         </select>
                     </div>
                     <div>
-                        <label class="text-sm font-medium text-gray-700">Durasi (menit)</label>
+                        <label class="text-sm font-medium t-ink">Durasi (menit)</label>
                         <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
                     </div>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-gray-700">Deskripsi Singkat</label>
+                    <label class="text-sm font-medium t-ink">Deskripsi Singkat</label>
                     <textarea v-model="form.description" rows="3" class="input mt-1 w-full" placeholder="Ringkasan untuk katalog..."></textarea>
                 </div>
             </div>
 
             <!-- Step 2: Materi -->
             <div v-if="step === 2" class="space-y-4 fade-in">
-                <p class="text-sm text-gray-500 mb-4">Susun blok konten secara berurutan. Gunakan tombol untuk menambah, hapus, atau menggeser urutan.</p>
-                <div v-for="(block, i) in contentBlocks" :key="block.id" class="border border-gray-200 rounded-lg p-4 bg-gray-50 space-y-2">
+                <p class="text-sm t-muted mb-4">Susun blok konten secara berurutan. Gunakan tombol untuk menambah, hapus, atau menggeser urutan.</p>
+                <div v-for="(block, i) in contentBlocks" :key="block.id" class="border b-line rounded-lg p-4 bg-app space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-gray-500">Blok {{ i + 1 }}</span>
+                        <span class="text-xs font-semibold t-muted">Blok {{ i + 1 }}</span>
                         <div class="flex gap-1">
-                            <button @click="moveUp(i)" :disabled="i === 0" class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30" title="Naik">
+                            <button @click="moveUp(i)" :disabled="i === 0" class="p-1 t-muted hover:t-ink disabled:opacity-30" title="Naik">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
                                 </svg>
                             </button>
-                            <button @click="moveDown(i)" :disabled="i === contentBlocks.length - 1" class="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30" title="Turun">
+                            <button @click="moveDown(i)" :disabled="i === contentBlocks.length - 1" class="p-1 t-muted hover:t-ink disabled:opacity-30" title="Turun">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -161,10 +161,10 @@ const submit = () => {
 
             <!-- Step 3: Evaluasi -->
             <div v-if="step === 3" class="space-y-4 fade-in">
-                <p class="text-sm text-gray-500">
+                <p class="text-sm t-muted">
                     Kuis untuk modul ini dikelola di halaman <strong>Quizzes</strong>. Passing score bisa diatur di sana.
                 </p>
-                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+                <div class="badge-warn border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -174,29 +174,29 @@ const submit = () => {
 
             <!-- Step 4: Review & Publish -->
             <div v-if="step === 4" class="space-y-6 fade-in">
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                    <div class="font-display text-xl font-bold text-gray-900 mb-2">{{ form.title }}</div>
-                    <div class="text-sm text-gray-600 mb-4">{{ form.description }}</div>
-                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                <div class="bg-app border b-line rounded-lg p-6">
+                    <div class="font-display text-xl font-bold t-ink mb-2">{{ form.title }}</div>
+                    <div class="text-sm t-muted mb-4">{{ form.description }}</div>
+                    <div class="flex items-center gap-4 text-xs t-muted">
                         <span>⏱ {{ form.duration_minutes }} menit</span>
                         <span>📄 {{ contentBlocks.filter(b => b.text.trim()).length }} blok konten</span>
                     </div>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-gray-700">Status Publikasi</label>
+                    <label class="text-sm font-medium t-ink">Status Publikasi</label>
                     <div class="mt-2 space-y-2">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="radio" v-model="form.status" value="draft" class="text-teal-600" />
                             <div>
-                                <div class="text-sm font-medium text-gray-900">Draft</div>
-                                <div class="text-xs text-gray-500">Simpan sebagai draft, tidak terlihat tenant.</div>
+                                <div class="text-sm font-medium t-ink">Draft</div>
+                                <div class="text-xs t-muted">Simpan sebagai draft, tidak terlihat tenant.</div>
                             </div>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="radio" v-model="form.status" value="published" class="text-teal-600" />
                             <div>
-                                <div class="text-sm font-medium text-gray-900">Published</div>
-                                <div class="text-xs text-gray-500">Publikasikan, tenant bisa menugaskan ke user.</div>
+                                <div class="text-sm font-medium t-ink">Published</div>
+                                <div class="text-xs t-muted">Publikasikan, tenant bisa menugaskan ke user.</div>
                             </div>
                         </label>
                     </div>
@@ -204,7 +204,7 @@ const submit = () => {
             </div>
 
             <!-- Navigation -->
-            <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
+            <div class="flex justify-between mt-8 pt-6 border-t b-line">
                 <button v-if="step > 1" @click="prev" class="btn btn-secondary">← Sebelumnya</button>
                 <div v-else></div>
                 <button v-if="step < 4" @click="next" :disabled="!canNext" class="btn btn-primary">Lanjut →</button>

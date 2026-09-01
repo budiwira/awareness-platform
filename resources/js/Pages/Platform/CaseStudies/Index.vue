@@ -45,18 +45,18 @@ const archive = (id) => {
 };
 
 const difficultyBadge = (d) => ({
-    beginner: 'bg-emerald-100 text-emerald-700',
+    beginner: 'bg-emerald-100 badge-ok',
     intermediate: 'bg-yellow-100 text-yellow-700',
     advanced: 'bg-red-100 text-red-700',
-}[d] ?? 'bg-gray-100 text-gray-700');
+}[d] ?? 'bg-surface2 t-ink');
 
 const statusBadge = (status) => {
     const map = {
-        draft: 'bg-gray-100 text-gray-700',
-        published: 'bg-emerald-100 text-emerald-700',
-        archived: 'bg-amber-100 text-amber-700',
+        draft: 'bg-surface2 t-ink',
+        published: 'bg-emerald-100 badge-ok',
+        archived: 'bg-amber-100 badge-warn',
     };
-    return map[status] || 'bg-gray-100 text-gray-700';
+    return map[status] || 'bg-surface2 t-ink';
 };
 
 const statusLabel = (status) => {
@@ -70,7 +70,7 @@ const statusLabel = (status) => {
 
     <AppLayout title="Case Study Builder">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Buat latihan tabletop berbasis skenario insiden untuk mengasah pengambilan keputusan.
             </p>
             <button
@@ -84,16 +84,16 @@ const statusLabel = (status) => {
         <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Judul</label>
+                    <label class="text-sm t-muted">Judul</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">Ringkasan Skenario</label>
+                    <label class="text-sm t-muted">Ringkasan Skenario</label>
                     <textarea v-model="form.description" rows="2" class="input mt-1 w-full"></textarea>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Tingkat Kesulitan</label>
+                    <label class="text-sm t-muted">Tingkat Kesulitan</label>
                     <select v-model="form.difficulty" class="input mt-1 w-full">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
@@ -101,7 +101,7 @@ const statusLabel = (status) => {
                     </select>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Durasi (menit)</label>
+                    <label class="text-sm t-muted">Durasi (menit)</label>
                     <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
@@ -117,7 +117,7 @@ const statusLabel = (status) => {
                 :key="key"
                 @click="statusFilter = key"
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'"
+                :class="statusFilter === key ? 'bg-teal-600 text-white shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
@@ -126,7 +126,7 @@ const statusLabel = (status) => {
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Judul</th>
                         <th class="px-6 py-3 font-medium">Kesulitan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -146,7 +146,7 @@ const statusLabel = (status) => {
                             </div>
                         </td>
                     </tr>
-                    <tr v-for="c in filteredCases" :key="c.id" class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <tr v-for="c in filteredCases" :key="c.id" class="border-b border-gray-50 hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
                             <Link :href="route('platform.cases.show', c.id)" class="text-indigo-600 font-medium hover:underline">
                                 {{ c.title }}
@@ -162,8 +162,8 @@ const statusLabel = (status) => {
                                 {{ statusLabel(c.status) }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 text-gray-500">{{ c.scenes_count }}</td>
-                        <td class="px-6 py-3 text-gray-500">{{ c.duration_minutes }} menit</td>
+                        <td class="px-6 py-3 t-muted">{{ c.scenes_count }}</td>
+                        <td class="px-6 py-3 t-muted">{{ c.duration_minutes }} menit</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <button v-if="c.status === 'draft'" @click="publish(c.id)" class="text-emerald-600 text-sm font-medium hover:underline">Publish</button>
                             <button v-if="c.status === 'published'" @click="archive(c.id)" class="text-amber-600 text-sm font-medium hover:underline">Archive</button>

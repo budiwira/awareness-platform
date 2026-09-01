@@ -54,7 +54,7 @@ const submitEdit = (user) => {
 };
 
 const roleBadge = (role) =>
-    role === 'tenant_admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700';
+    role === 'tenant_admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 badge-ok';
 </script>
 
 <template>
@@ -62,7 +62,7 @@ const roleBadge = (role) =>
 
     <AppLayout title="Organization Users">
         <div class="flex items-center justify-between mb-6">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm t-muted">
                 Kelola anggota organisasi Anda. Perubahan role & status tercatat di audit log.
             </p>
             <div class="flex gap-2">
@@ -83,10 +83,10 @@ const roleBadge = (role) =>
 
         <!-- Form Import CSV -->
         <div v-if="showImport" class="card p-6 mb-6">
-            <div class="font-semibold text-gray-800 mb-4">Import User via CSV</div>
+            <div class="font-semibold t-ink mb-4">Import User via CSV</div>
             <form @submit.prevent="submitImport" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="text-sm text-gray-600">File CSV (Format: name, email, role)</label>
+                    <label class="text-sm t-muted">File CSV (Format: name, email, role)</label>
                     <input
                         @change="importForm.file = $event.target.files[0]"
                         type="file"
@@ -105,20 +105,20 @@ const roleBadge = (role) =>
 
         <!-- Form Tambah User -->
         <div v-if="showCreate" class="card p-6 mb-6">
-            <div class="font-semibold text-gray-800 mb-4">User Baru</div>
+            <div class="font-semibold t-ink mb-4">User Baru</div>
             <form @submit.prevent="submitCreate" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="text-sm text-gray-600">Nama</label>
+                    <label class="text-sm t-muted">Nama</label>
                     <input v-model="createForm.name" type="text" required class="input mt-1 w-full" />
                     <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name }}</p>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Email</label>
+                    <label class="text-sm t-muted">Email</label>
                     <input v-model="createForm.email" type="email" required class="input mt-1 w-full" />
                     <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email }}</p>
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Role</label>
+                    <label class="text-sm t-muted">Role</label>
                     <select v-model="createForm.role" class="input mt-1 w-full">
                         <option value="user">User</option>
                         <option value="tenant_admin">Tenant Admin</option>
@@ -138,7 +138,7 @@ const roleBadge = (role) =>
         <div class="card overflow-hidden">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-100">
+                    <tr class="text-left t-muted border-b border-gray-100">
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Email</th>
                         <th class="px-6 py-3 font-medium">Role</th>
@@ -169,8 +169,8 @@ const roleBadge = (role) =>
                             </td>
                         </template>
                         <template v-else>
-                            <td class="px-6 py-3 font-medium text-gray-900">{{ user.name }}</td>
-                            <td class="px-6 py-3 text-gray-500">{{ user.email }}</td>
+                            <td class="px-6 py-3 font-medium t-ink">{{ user.name }}</td>
+                            <td class="px-6 py-3 t-muted">{{ user.email }}</td>
                             <td class="px-6 py-3">
                                 <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="roleBadge(user.role)">
                                     {{ user.role === 'tenant_admin' ? 'Tenant Admin' : 'User' }}
@@ -179,7 +179,7 @@ const roleBadge = (role) =>
                             <td class="px-6 py-3">
                                 <span
                                     class="px-2 py-0.5 rounded-full text-xs font-medium"
-                                    :class="user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'"
+                                    :class="user.is_active ? 'bg-emerald-100 badge-ok' : 'bg-red-100 text-red-700'"
                                 >
                                     {{ user.is_active ? 'Active' : 'Disabled' }}
                                 </span>

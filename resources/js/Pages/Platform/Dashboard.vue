@@ -6,9 +6,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 defineProps({ stats: Object, tenants: Array });
 
 const statCards = [
-    { key: 'tenants', label: 'Total Tenant', accent: 'text-gray-900' },
-    { key: 'active_tenants', label: 'Tenant Aktif', accent: 'text-teal-700' },
-    { key: 'users', label: 'Total User', accent: 'text-gray-900' },
+    { key: 'tenants', label: 'Total Tenant', accent: 't-ink' },
+    { key: 'active_tenants', label: 'Tenant Aktif', accent: 'chip-brand' },
+    { key: 'users', label: 'Total User', accent: 't-ink' },
     { key: 'tenant_admins', label: 'Tenant Admin', accent: 'text-amber-600' },
 ];
 </script>
@@ -35,9 +35,9 @@ const statCards = [
         </div>
 
         <div class="card overflow-hidden">
-            <div class="px-6 py-4 font-display font-semibold text-gray-900 border-b border-gray-100 flex items-center justify-between">
+            <div class="px-6 py-4 font-display font-semibold t-ink border-b border-gray-100 flex items-center justify-between">
                 <span>Organisasi Terdaftar</span>
-                <Link :href="route('platform.tenants.index')" class="text-sm text-teal-700 hover:underline">Kelola →</Link>
+                <Link :href="route('platform.tenants.index')" class="text-sm chip-brand hover:underline">Kelola →</Link>
             </div>
             <table v-if="tenants.length > 0" class="w-full text-sm">
                 <thead>
@@ -49,16 +49,16 @@ const statCards = [
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="t in tenants" :key="t.slug" class="border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-                        <td class="px-6 py-3 font-medium text-gray-900">{{ t.name }}</td>
+                    <tr v-for="t in tenants" :key="t.slug" class="border-b border-gray-50 hover:bg-app/60 transition-colors">
+                        <td class="px-6 py-3 font-medium t-ink">{{ t.name }}</td>
                         <td class="px-6 py-3 font-mono text-xs" style="color: var(--muted)">{{ t.slug }}</td>
                         <td class="px-6 py-3">
                             <span
                                 class="badge"
-                                :class="t.status === 'active' ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-100 text-gray-600'"
+                                :class="t.status === 'active' ? 'chip-brand chip-brand border border-teal-200' : 'bg-surface2 t-muted'"
                             >{{ t.status }}</span>
                         </td>
-                        <td class="px-6 py-3 text-right font-medium text-gray-700">{{ t.users_count }}</td>
+                        <td class="px-6 py-3 text-right font-medium t-ink">{{ t.users_count }}</td>
                     </tr>
                 </tbody>
             </table>
