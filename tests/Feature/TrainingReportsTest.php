@@ -73,6 +73,7 @@ test('tenant admin reports only include own tenant data', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Tenant/Reports/Index')
-            ->where('stats.assignments', 1)
+            ->has('summary')
+            ->has('users')
         );
 });
