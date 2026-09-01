@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -18,6 +18,19 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
+const theme = ref('dark');
+
+const toggleTheme = () => {
+    theme.value = theme.value === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme.value;
+    localStorage.setItem('theme', theme.value);
+};
+
+onMounted(() => {
+    const saved = localStorage.getItem('theme') || 'dark';
+    theme.value = saved;
+    document.documentElement.dataset.theme = saved;
+});
 
 const submit = () => {
     form.post(route('login'), {
@@ -71,7 +84,23 @@ const submit = () => {
         </div>
 
         <!-- Panel form -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+            <button
+                @click="toggleTheme"
+                class="absolute top-6 right-6 transition-colors t-muted"
+                :aria-label="'Ganti tema'"
+                title="Ganti tema"
+                @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
+                @mouseleave="$event.currentTarget.style.color = ''"
+            >
+                <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+
             <div class="w-full max-w-md">
                 <div class="lg:hidden mb-8 text-center">
                     <div class="inline-flex w-12 h-12 rounded-xl text-white items-center justify-center font-display font-bold" style="background: var(--brand)">SA</div>
