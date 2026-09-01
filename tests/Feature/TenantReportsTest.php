@@ -16,7 +16,24 @@ beforeEach(function () {
 });
 
 test('tenant reports index shows summary and user list', function () {
+    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+        'name' => 'Pro',
+        'price_monthly' => 1500,
+        'max_users' => 100,
+        'features' => ['training', 'reports_export'],
+        'includes_all_modules' => true,
+        'is_active' => true,
+    ]);
+    
     $tenant = Tenant::factory()->create();
+    $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
+    Subscription::create([
+        'tenant_id' => $tenant->id,
+        'plan_id' => $proPlan->id,
+        'status' => 'active',
+        'started_at' => now(),
+    ]);
+    
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     
     // Create module + assignments
