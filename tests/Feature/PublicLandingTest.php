@@ -49,6 +49,8 @@ class PublicLandingTest extends TestCase
             ->component('Public/Landing')
             ->has('auth')
             ->where('auth.user.id', $user->id)
+            ->missing('auth.user.password')
+            ->missing('auth.user.remember_token')
         );
     }
 

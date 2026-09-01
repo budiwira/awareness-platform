@@ -1,14 +1,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 
-const props = defineProps({
-    auth: {
-        type: Object,
-        default: () => ({ user: null }),
-    },
-});
-
+const page = usePage();
 const theme = ref('dark');
 
 const toggleTheme = () => {
@@ -23,7 +17,7 @@ onMounted(() => {
     document.documentElement.dataset.theme = saved;
 });
 
-const isAuthenticated = computed(() => !!props.auth.user);
+const isAuthenticated = computed(() => !!page.props.auth.user);
 const ctaText = computed(() => isAuthenticated.value ? 'Masuk Dashboard' : 'Masuk ke Platform');
 const ctaHref = computed(() => isAuthenticated.value ? '/dashboard' : '/login');
 

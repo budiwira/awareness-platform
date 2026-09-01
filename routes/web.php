@@ -29,12 +29,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function (Request $request) {
-    return Inertia::render('Public/Landing', [
-        'auth' => [
-            'user' => $request->user(),
-        ],
-    ]);
+Route::get('/', function () {
+    return Inertia::render('Public/Landing');
 })->name('landing');
 
 Route::middleware('auth')->group(function () {
