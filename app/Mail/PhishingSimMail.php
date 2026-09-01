@@ -16,7 +16,7 @@ class PhishingSimMail extends Mailable
     public function __construct(
         public PhishingTarget $target,
         public string $senderName,
-        public string $subject,
+        public string $emailSubject,
         public string $bodyTemplate
     ) {}
 
@@ -27,7 +27,7 @@ class PhishingSimMail extends Mailable
                 config('mail.from.address'),
                 $this->senderName
             ),
-            subject: $this->subject,
+            subject: $this->emailSubject,
         );
     }
 
