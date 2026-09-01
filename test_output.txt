@@ -1,0 +1,415 @@
+
+  [44;1m INFO [49;22m <script setup>
+
+import { computed, ref } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import AppLayout from '@/Layouts/AppLayout.vue';
+
+const props = defineProps({ exercise: Object, users: Array, phases: Object });
+
+const errors = computed(() => usePage().props.errors ?? {});
+
+const phaseKeys = ['planning', 'preparation', 'execution', 'evaluation', 'completed'];
+const currentIndex = phaseKeys.indexOf(props.exercise.phase);
+
+// --- Injects ---
+const showInjectForm = ref(false);
+const injectForm = ref({ title: '', description: '' });
+
+const submitInject = () => {
+    router.post(route('tenant.ttx.exercises.injects.store', props.exercise.id), injectForm.value, {
+        onSuccess: () => {
+            injectForm.value = { title: '', description: '' };
+            showInjectForm.value = false;
+        },
+    });
+};
+
+// --- Teams ---
+const showTeamForm = ref(false);
+const teamForm = ref({ name: '', description: '' });
+
+const submitTeam = () => {
+    router.post(route('tenant.ttx.teams.store', props.exercise.id), teamForm.value, {
+        onSuccess: () => {
+            teamForm.value = { name: '', description: '' };
+            showTeamForm.value = false;
+        },
+    });
+};
+
+// --- Members ---
+const memberForms = ref({});
+
+const memberForm = (teamId) => {
+    if (!memberForms.value[teamId]) {
+        memberForms.value[teamId] = { user_id: '', role_in_team: 'member' };
+    }
+    return memberForms.value[teamId];
+};
+
+const submitMember = (teamId) => {
+    router.post(route('tenant.ttx.teams.members.store', teamId), memberForm(teamId), {
+        onSuccess: () => (memberForm(teamId).user_id = ''),
+    });
+};
+</script>.
+
+  [39;41;1m FAIL [39;49;22m[39m Tests\Unit\AwarenessScoreTest[39m
+  [31;1m⨯[39;22m[90m [39m[90mno data scores 0[39m[90m                                                                                            [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mperfect user scores 100 across all 5 signals with full entitlements[39m[90m                                         [39m [90m0.03s[39m  
+  [32;1m✓[39;22m[90m [39m[90mweighted computation across 5 signals is correct with full entitlements[39m
+  [32;1m✓[39;22m[90m [39m[90mctf engagement capped at 100[39m
+  [31;1m⨯[39;22m[90m [39m[90mbreakdown is explainable with weights for full entitlements[39m
+  [32;1m✓[39;22m[90m [39m[90mrenormalisasi untuk plan terbatas tanpa ctf dan case[39m
+  [32;1m✓[39;22m[90m [39m[90mrenormalisasi untuk plan training only[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\ExampleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mthat true is true[39m[90m                                                                                           [39m [90m0.02s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\AuditLogTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuccessful login writes an audit log[39m[90m                                                                        [39m [90m2.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapp role cannot update or delete audit logs (db-level immutability)[39m[90m                                         [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90maudit logs are tenant-scoped via RLS[39m[90m                                                                        [39m [90m0.21s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\AuthenticationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mlogin screen can be rendered[39m[90m                                                                                [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90musers can authenticate using the login screen[39m[90m                                                               [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90musers can not authenticate with invalid password[39m[90m                                                            [39m [90m0.40s[39m  
+  [32;1m✓[39;22m[90m [39m[90musers can logout[39m[90m                                                                                            [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\EmailVerificationTest[39m
+  [32;1m✓[39;22m[90m [39m[90memail verification screen can be rendered[39m[90m                                                                   [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90memail can be verified[39m[90m                                                                                       [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90memail is not verified with invalid hash[39m[90m                                                                     [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\PasswordConfirmationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mconfirm password screen can be rendered[39m[90m                                                                     [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpassword can be confirmed[39m[90m                                                                                   [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpassword is not confirmed with invalid password[39m[90m                                                             [39m [90m0.30s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\PasswordResetTest[39m
+  [32;1m✓[39;22m[90m [39m[90mreset password link screen can be rendered[39m[90m                                                                  [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreset password link can be requested[39m[90m                                                                        [39m [90m0.30s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreset password screen can be rendered[39m[90m                                                                       [39m [90m0.29s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpassword can be reset with valid token[39m[90m                                                                      [39m [90m0.34s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\Auth\PasswordUpdateTest[39m
+  [32;1m✓[39;22m[90m [39m[90mpassword can be updated[39m[90m                                                                                     [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcorrect password must be provided to update password[39m[90m                                                        [39m [90m0.20s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\CsvImportTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can import users via CSV[39m[90m                                                                       [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mCSV injection is sanitized[39m[90m                                                                                  [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90minvalid role in CSV rejects entire import[39m[90m                                                                   [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\DashboardDataTest[39m
+  [32;1m✓[39;22m[90m [39m[90mplatform dashboard exposes real platform stats[39m[90m                                                              [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant dashboard only sees its own tenant users[39m[90m                                                             [39m [90m0.18s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\EntitlementTest[39m
+  [32;1m✓[39;22m[90m [39m[90mstarter cannot assign module outside curasi returns 422[39m[90m                                                     [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstarter user cannot view assignment outside kurasi 403[39m[90m                                                      [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstarter 403 aksi TTX dengan locked state[39m[90m                                                                    [39m [90m0.22s[39m  
+  [32;1m✓[39;22m[90m [39m[90mstarter entitlements prop tanpa ttx[39m[90m                                                                         [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpro bisa TTX dan ekspor reports[39m[90m                                                                             [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90menterprise bisa CTF[39m[90m                                                                                         [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mincludes_all_modules otomatis dapat modul published baru[39m[90m                                                    [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcustom plan dengan modul pilihan enforcement benar[39m[90m                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mflash entitlements setelah set-plan berisi nama plan[39m[90m                                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mriwayat tetap terbaca setelah downgrade[39m[90m                                                                     [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser beta tetap bisa membuka modul tugasnya[39m[90m                                                                 [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\NotificationTest[39m
+  [32;1m✓[39;22m[90m [39m[90massigning training creates notification for the user[39m[90m                                                        [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90madding ttx member creates notification[39m[90m                                                                      [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser sees own notifications and can mark all read[39m[90m                                                           [39m [90m0.18s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot see another user notification[39m[90m                                                                   [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PhishingAutoRemedialTest[39m
+  [32;1m✓[39;22m[90m [39m[90mklik phishing trap membuat assignment remedial jika modul tersedia[39m[90m                                          [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mklik phishing trap tidak membuat assignment duplikat[39m[90m                                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mklik phishing trap tanpa modul remedial tidak error[39m[90m                                                         [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mphishing teaching page menampilkan pesan remedial saat assignment dibuat[39m[90m                                    [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PhishingAwarenessScoreTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser tanpa kampanye phishing mendapat score 100 untuk sinyal phishing[39m[90m                                       [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser dengan 1 click dari 1 campaign mendapat score 50[39m[90m                                                       [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant tanpa fitur phishing tidak punya sinyal phishing dan bobot renormalisasi[39m[90m                             [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser dengan 2 click dari 4 campaign mendapat score 75[39m[90m                                                       [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PhishingSimulationTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant without phishing feature gets 403 on index[39m[90m                                                           [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant with phishing feature can access index[39m[90m                                                               [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90madmin can create campaign with targets[39m[90m                                                                      [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcampaign enforces RLS tenant isolation[39m[90m                                                                      [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90msend campaign creates email snapshot and sends mail[39m[90m                                                         [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mclicking valid token marks target as clicked and shows teaching page[39m[90m                                        [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mclicking invalid token returns 404[39m[90m                                                                          [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mclicking already clicked token returns 404[39m[90m                                                                  [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant cannot access another tenant campaign[39m[90m                                                                [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mteaching page shows no credential form[39m[90m                                                                      [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformBillingManagementTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can view all billing requests across tenants[39m[90m                                                    [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can approve billing request and creates active subscription[39m[90m                                     [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can reject billing request[39m[90m                                                                      [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove fails when plan max_users below current active user count (downgrade guard)[39m[90m                         [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can set plan directly via tenants page[39m[90m                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mset plan fails when plan max_users below current active user count (downgrade guard)[39m[90m                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform billing routes[39m[90m                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mapprove cancels previous active subscription[39m[90m                                                                [39m [90m0.12s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformCaseStudyTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create case study[39m[90m                                                                           [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can add scene with quality options[39m[90m                                                              [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90minvalid quality is rejected[39m[90m                                                                                 [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access case study management[39m[90m                                                            [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformCtfTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create challenge with flag[39m[90m                                                                  [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mflag is never exposed in index payload[39m[90m                                                                      [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access ctf management[39m[90m                                                                   [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformPlanTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create plan[39m[90m                                                                                 [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access plans[39m[90m                                                                            [39m [90m0.20s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformQuizManagementTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create quiz for a module[39m[90m                                                                    [39m [90m0.21s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can add question with options[39m[90m                                                                   [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcorrect index out of range is rejected[39m[90m                                                                      [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access quiz management[39m[90m                                                                  [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformReportTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin sees platform report with tenant rows[39m[90m                                                           [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform report[39m[90m                                                                  [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformTenantManagementTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin lists tenants with user counts[39m[90m                                                                  [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin creates tenant; audit logged[39m[90m                                                                    [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate name gets unique slug suffix[39m[90m                                                                      [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform tenants[39m[90m                                                                 [39m [90m0.09s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformTrainingModuleTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can list training modules[39m[90m                                                                       [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create a training module[39m[90m                                                                    [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform modules[39m[90m                                                                 [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PlatformUserManagementTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can view all users across tenants[39m[90m                                                               [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can search users by name[39m[90m                                                                        [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can search users by email[39m[90m                                                                       [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can soft delete user from any tenant[39m[90m                                                            [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin cannot delete themselves[39m[90m                                                                        [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90msoft deleted user cannot login[39m[90m                                                                              [39m [90m0.29s[39m  
+  [32;1m✓[39;22m[90m [39m[90msoft deleted users are included in platform users index with deleted_at[39m[90m                                     [39m [90m0.20s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform users routes[39m[90m                                                            [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot access platform users routes[39m[90m                                                            [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90msoft delete notifies all tenant admins of that tenant[39m[90m                                                       [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msoft delete does not notify tenant admins from other tenants[39m[90m                                                [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdowngrade guard counts only non-deleted users[39m[90m                                                               [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ProfileAvatarTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser can upload avatar[39m[90m                                                                                      [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mavatar rejects svg[39m[90m                                                                                          [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mavatar rejects file over 2mb[39m[90m                                                                                [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mavatar accepts png webp[39m[90m                                                                                     [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90muploading new avatar deletes old file[39m[90m                                                                       [39m [90m0.23s[39m  
+  [32;1m✓[39;22m[90m [39m[90mavatar appears in app layout[39m[90m                                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mfallback initials when no avatar[39m[90m                                                                            [39m [90m0.14s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\ProfileTest[39m
+  [32;1m✓[39;22m[90m [39m[90mprofile page is displayed[39m[90m                                                                                   [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mprofile information can be updated[39m[90m                                                                          [39m [90m0.20s[39m  
+  [32;1m✓[39;22m[90m [39m[90memail verification status is unchanged when the email address is unchanged[39m[90m                                  [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser can delete their account[39m[90m                                                                               [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcorrect password must be provided to delete account[39m[90m                                                         [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\PublicLandingTest[39m
+  [32;1m✓[39;22m[90m [39m[90mguest can access landing page[39m[90m                                                                               [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90mlanding page renders for guest[39m[90m                                                                              [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mauthenticated user can access landing page[39m[90m                                                                  [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mlogin route still accessible[39m[90m                                                                                [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdashboard route redirects by role[39m[90m                                                                           [39m [90m0.12s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RlsDatabaseTest[39m
+  [32;1m✓[39;22m[90m [39m[90mRLS: tanpa context, role app tidak melihat satu baris pun[39m[90m                                                   [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mRLS: context tenant A tidak melihat data tenant B, walau WHERE dipaksa[39m[90m                                      [39m [90m0.23s[39m  
+  [32;1m✓[39;22m[90m [39m[90mRLS: super admin context melihat seluruh tenants[39m[90m                                                            [39m [90m0.23s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\RoleDashboardTest[39m
+  [32;1m✓[39;22m[90m [39m[90mguest is redirected to login from dashboard[39m[90m                                                                 [39m [90m0.08s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin lands on platform dashboard[39m[90m                                                                     [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin lands on tenant dashboard[39m[90m                                                                      [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser lands on user dashboard[39m[90m                                                                                [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform dashboard[39m[90m                                                               [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot access tenant dashboard[39m[90m                                                                         [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot access platform dashboard[39m[90m                                                                       [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin cannot access tenant dashboard[39m[90m                                                                  [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90minactive user is denied dashboard access[39m[90m                                                                    [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\SecurityHeadersTest[39m
+  [32;1m✓[39;22m[90m [39m[90mlogin page has basic security headers[39m[90m                                                                       [39m [90m0.09s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\SmokeTest[39m
+  [32;1m✓[39;22m[90m [39m[90mhome renders landing page for guest[39m[90m                                                                         [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mlogin page renders[39m[90m                                                                                          [39m [90m0.08s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\StudioKontenTest[39m
+  [32;1m✓[39;22m[90m [39m[90msuper admin can create module with draft status[39m[90m                                                             [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can publish a draft module[39m[90m                                                                      [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin can archive a published module[39m[90m                                                                  [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mdraft modules are not visible to tenant admin in assignment dropdown[39m[90m                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot access platform modules routes[39m[90m                                                          [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser only sees published ctf challenges[39m[90m                                                                     [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser only sees published case studies[39m[90m                                                                       [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot submit flag to draft ctf challenge[39m[90m                                                              [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot start draft case study[39m[90m                                                                          [39m [90m0.12s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TenantAssignmentTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can view assignments for their users[39m[90m                                                           [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can assign a module to a user[39m[90m                                                                  [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot assign module to user from another tenant[39m[90m                                               [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TenantBillingTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot subscribe directly[39m[90m                                                                      [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can request plan change[39m[90m                                                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant cannot see other tenant requests (RLS)[39m[90m                                                               [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot access billing page[39m[90m                                                                     [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot request plan change[39m[90m                                                                     [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin manages billing from platform (not tenant routes)[39m[90m                                               [39m [90m0.07s[39m  
+  [32;1m✓[39;22m[90m [39m[90mswitching plan cancels previous active subscription[39m[90m                                                         [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcannot downgrade below current user count[39m[90m                                                                   [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TenantContextTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant context is set from the authenticated user[39m[90m                                                           [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant context ignores tenant_id injected in request[39m[90m                                                        [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90msuper admin has no tenant context[39m[90m                                                                           [39m [90m0.10s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TenantDashboardAggregateTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant dashboard memuat agregat kesadaran[39m[90m                                                                   [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin dapat membuka playbook detail[39m[90m                                                                  [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin dapat membuka runbook detail[39m[90m                                                                   [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant lain tidak dapat membuka playbook tenant lain[39m[90m                                                        [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant lain tidak dapat membuka runbook tenant lain[39m[90m                                                         [39m [90m0.12s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TenantUserManagementTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin lists only own tenant users[39m[90m                                                                    [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin creates user into own tenant; injected tenant_id ignored[39m[90m                                       [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot create super admin[39m[90m                                                                      [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot update user from another tenant[39m[90m                                                         [39m [90m0.21s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot change own role[39m[90m                                                                         [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin cannot disable own account[39m[90m                                                                     [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot access tenant user management[39m[90m                                                           [39m [90m0.11s[39m  
+  [32;1m✓[39;22m[90m [39m[90mrole change and disable write audit logs[39m[90m                                                                    [39m [90m0.11s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TrainingReportsTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser sees own score page with stats[39m[90m                                                                         [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can export csv report[39m[90m                                                                          [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot export report[39m[90m                                                                           [39m [90m0.10s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin reports only include own tenant data[39m[90m                                                           [39m [90m0.16s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TtxContentTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create playbook[39m[90m                                                                            [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create runbook with steps split by line[39m[90m                                                    [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot access ttx management[39m[90m                                                                   [39m [90m0.09s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant isolation: admin B tidak melihat playbook tenant A[39m[90m                                                   [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TtxExerciseTest[39m
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create exercise[39m[90m                                                                            [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mtenant admin can create team[39m[90m                                                                                [39m [90m0.23s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcannot add member from another tenant[39m[90m                                                                       [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mregular user cannot access exercise management[39m[90m                                                              [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\TtxLifecycleTest[39m
+  [32;1m✓[39;22m[90m [39m[90mfull ttx lifecycle: create -> team -> advance -> evaluate -> completed[39m[90m                                      [39m [90m0.25s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserCaseStudyTest[39m
+  [32;1m✓[39;22m[90m [39m[90mrun payload never contains quality or feedback[39m[90m                                                              [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mbest decisions score 100 and complete participation[39m[90m                                                         [39m [90m0.27s[39m  
+  [32;1m✓[39;22m[90m [39m[90mpoor decisions score 0[39m[90m                                                                                      [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90munanswered scenes rejected[39m[90m                                                                                  [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot run another user participation[39m[90m                                                                  [39m [90m0.22s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserCtfTest[39m
+  [32;1m✓[39;22m[90m [39m[90mchallenge payload never contains flag[39m[90m                                                                       [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcorrect flag creates solve with points and audit[39m[90m                                                            [39m [90m0.24s[39m  
+  [32;1m✓[39;22m[90m [39m[90mflag comparison is trimmed and case-insensitive[39m[90m                                                             [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90mwrong flag creates no solve and logs failed attempt[39m[90m                                                         [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mduplicate solve is prevented[39m[90m                                                                                [39m [90m0.15s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserQuizAuthorizationTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser without assignment cannot start quiz[39m[90m                                                                   [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser with assignment but without entitlement cannot start quiz[39m[90m                                              [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser with assignment and entitlement can start quiz[39m[90m                                                         [39m [90m0.25s[39m  
+  [32;1m✓[39;22m[90m [39m[90mattempt created is tied to correct user and assignment context[39m[90m                                              [39m [90m0.15s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserQuizCbtTest[39m
+  [32;1m✓[39;22m[90m [39m[90mstart creates attempt with deadline and randomization[39m[90m                                                       [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90mattempt payload does not contain correct_index[39m[90m                                                              [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90msubmit before deadline creates submitted attempt with correct score[39m[90m                                         [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90msubmit after deadline creates expired attempt[39m[90m                                                               [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90mexpired in_progress attempt is finalized on next start[39m[90m                                                      [39m [90m0.18s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcannot start quiz after passing[39m[90m                                                                             [39m [90m0.19s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot access another user attempt[39m[90m                                                                     [39m [90m0.28s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcontinuing in_progress attempt returns same attempt[39m[90m                                                         [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90mquiz show page indicates already passed[39m[90m                                                                     [39m [90m0.18s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserQuizReviewTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser can review own submitted attempt[39m[90m                                                                       [39m [90m0.15s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser can review expired attempt[39m[90m                                                                             [39m [90m0.13s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot review in progress attempt[39m[90m                                                                      [39m [90m0.23s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot review another user attempt[39m[90m                                                                     [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreview shows original question order not shuffled[39m[90m                                                           [39m [90m0.14s[39m  
+  [32;1m✓[39;22m[90m [39m[90mreview shows original option order not shuffled[39m[90m                                                             [39m [90m0.17s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserQuizTest[39m
+  [32;1m✓[39;22m[90m [39m[90mquiz payload never contains correct_index[39m[90m                                                                   [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90mcorrect answers produce passing score and complete module[39m[90m                                                   [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90mwrong answers produce failing score[39m[90m                                                                         [39m [90m0.17s[39m  
+  [32;1m✓[39;22m[90m [39m[90munanswered quiz is rejected[39m[90m                                                                                 [39m [90m0.16s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot take quiz of another user assignment[39m[90m                                                            [39m [90m0.13s[39m  
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Feature\UserTrainingTest[39m
+  [32;1m✓[39;22m[90m [39m[90muser can view their own training assignments[39m[90m                                                                [39m [90m0.12s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser can mark assignment as completed[39m[90m                                                                       [39m [90m0.22s[39m  
+  [32;1m✓[39;22m[90m [39m[90muser cannot view another user assignment[39m[90m                                                                    [39m [90m0.11s[39m  
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\AwarenessScoreTest[22m [90m>[39m no data scores 0                                                             
+[39;1m  Failed asserting that 15 is identical to 0.[39;22m
+
+  at [32mtests\Unit\AwarenessScoreTest.php[39m:[32m37[39m
+     33▕ }
+     34▕ 
+     35▕ test('no data scores 0', function () {
+     36▕     $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0);
+  ➜  37▕     expect($score['overall'])->toBe(0);
+     38▕ });
+     39▕ 
+     40▕ test('perfect user scores 100 across all 5 signals with full entitlements', function () {
+     41▕     $score = (new AwarenessScore)->compute(
+
+  [33m1   [39m[39;1mtests\Unit\AwarenessScoreTest.php[39;22m:[39;1m37[39;22m
+
+  [31m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m  
+  [41;1m FAILED [49;22m [1mTests\Unit\AwarenessScoreTest[22m [90m>[39m breakdown is explainable with weights for full entitlements                  
+[39;1m  Failed asserting that actual size 6 matches expected size 5.[39;22m
+
+  at [32mtests\Unit\AwarenessScoreTest.php[39m:[32m93[39m
+     89▕ 
+     90▕ test('breakdown is explainable with weights for full entitlements', function () {
+     91▕     $score = (new AwarenessScore)->compute(collect(), collect(), collect(), collect(), collect(), 0, ['training', 'case_studies', 'ctf', 'ttx']);
+     92▕ 
+  ➜  93▕     expect($score['breakdown'])->toHaveCount(5)
+     94▕         ->and($score['breakdown'][0]['weight'])->toBe(25)
+     95▕         ->and($score['breakdown'][1]['weight'])->toBe(25)
+     96▕         ->and($score['breakdown'][2]['weight'])->toBe(15)
+     97▕         ->and($score['breakdown'][3]['weight'])->toBe(15)
+
+  [33m1   [39m[39;1mtests\Unit\AwarenessScoreTest.php[39;22m:[39;1m93[39;22m
+
+
+  [90mTests:[39m    [31;1m2 failed[39;22m[90m,[39m[39m [39m[32;1m223 passed[39;22m[90m (960 assertions)[39m
+  [90mDuration:[39m [39m33.35s[39m
+

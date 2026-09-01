@@ -3,7 +3,10 @@ import { computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-const props = defineProps({ stats: Object });
+const props = defineProps({ 
+    stats: Object,
+    phishingStats: Object,
+});
 
 const tierPercent = (count) => {
     const total = props.stats.tier_baik + props.stats.tier_cukup + props.stats.tier_perlu_perbaikan + props.stats.tier_belum_mengerjakan;
@@ -121,6 +124,32 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 rounded" style="background: var(--line)"></div>
                     <span style="color: var(--muted)">Belum Mengerjakan (0)</span>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="phishingStats" class="card p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display font-semibold t-ink">Phishing Awareness</h3>
+                <Link :href="route('tenant.phishing.index')" class="text-sm text-brand hover:underline">
+                    Kelola Kampanye →
+                </Link>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 rounded-xl bg-surface-alt">
+                    <div class="text-xs t-muted mb-1">Rata-rata Click Rate</div>
+                    <div class="font-display text-2xl font-bold t-ink">{{ phishingStats.avg_click_rate }}%</div>
+                    <div class="text-xs t-muted mt-1">Lebih rendah lebih baik</div>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-alt">
+                    <div class="text-xs t-muted mb-1">Kampanye Terkirim</div>
+                    <div class="font-display text-2xl font-bold t-ink">{{ phishingStats.campaigns_sent }}</div>
+                    <div class="text-xs t-muted mt-1">Total simulasi</div>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-alt">
+                    <div class="text-xs t-muted mb-1">Pengguna Berisiko</div>
+                    <div class="font-display text-2xl font-bold text-danger">{{ phishingStats.users_at_risk }}</div>
+                    <div class="text-xs t-muted mt-1">Click rate > 50%</div>
                 </div>
             </div>
         </div>
