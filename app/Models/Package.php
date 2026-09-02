@@ -20,13 +20,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Subscription> $subscriptions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TrainingModule> $modules
  */
-class Plan extends Model
+class Package extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'price_monthly', 'max_users', 'features', 'includes_all_modules', 'is_active'];
+    protected $table = 'packages';
 
-    protected $casts = ['features' => 'array', 'includes_all_modules' => 'boolean', 'is_active' => 'boolean'];
+    protected $fillable = ['name', 'slug', 'price_monthly', 'max_users', 'features', 'includes_all_modules', 'is_active', 'is_free'];
+
+    protected $casts = ['features' => 'array', 'includes_all_modules' => 'boolean', 'is_active' => 'boolean', 'is_free' => 'boolean'];
 
     public function subscriptions(): HasMany
     {
@@ -35,6 +37,6 @@ class Plan extends Model
 
     public function modules(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(TrainingModule::class, 'plan_module');
+        return $this->belongsToMany(TrainingModule::class, 'package_module');
     }
 }

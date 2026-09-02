@@ -22,13 +22,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read User $requestedBy
  * @property-read User|null $resolvedBy
  */
-class PlanRequest extends Model
+class PackageRequest extends Model
 {
     use HasFactory;
 
+    protected $table = 'package_requests';
+
     protected $fillable = [
         'tenant_id',
-        'plan_id',
+        'package_id',
         'note',
         'status',
         'requested_by',
@@ -45,9 +47,9 @@ class PlanRequest extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    public function plan(): BelongsTo
+    public function package(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(Package::class, 'package_id');
     }
 
     public function requestedBy(): BelongsTo
