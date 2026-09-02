@@ -25,6 +25,8 @@ use App\Http\Controllers\PhishingTrapController;
 use App\Enums\UserRole;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
+use App\Http\Controllers\Tenant\UserAccessController as TenantUserAccessController;
+use App\Http\Controllers\Platform\UserAccessController as PlatformUserAccessController;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -63,6 +65,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
             Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
             Route::post('/tenants/set-package', [PlatformTenantController::class, 'setPackage'])->name('tenants.set-package');
+            Route::get('/tenants/{tenant}/user-access', [PlatformUserAccessController::class, 'show'])->name('tenants.user-access.show');
+            Route::post('/tenants/{tenant}/user-access', [PlatformUserAccessController::class, 'update'])->name('tenants.user-access.update');
             
             // Route Modules
             Route::get('/modules', [PlatformModuleController::class, 'index'])->name('modules.index');
@@ -214,6 +218,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/users', [TenantUserController::class, 'store'])->name('users.store');
             Route::patch('/users/{user}', [TenantUserController::class, 'update'])->name('users.update');
             Route::post('/users/import', [TenantUserController::class, 'import'])->name('users.import');
+            Route::get('/users/{user}/access', [TenantUserAccessController::class, 'show'])->name('users.access.show');
+            Route::post('/users/{user}/access', [TenantUserAccessController::class, 'update'])->name('users.access.update');
             
             // Route Assignments
             Route::get('/assignments', [TenantAssignmentController::class, 'index'])->name('assignments.index');
