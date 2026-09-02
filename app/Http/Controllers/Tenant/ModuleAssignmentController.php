@@ -64,7 +64,7 @@ class ModuleAssignmentController extends Controller
         $entitlement = app(\App\Services\TenantEntitlement::class);
 
         if (!$entitlement->hasModule($tenant, $validated['training_module_id'])) {
-            return redirect()->back()->withErrors(['training_module_id' => 'Modul ini tidak termasuk dalam plan organisasi Anda.']);
+            return redirect()->back()->withErrors(['training_module_id' => 'Modul ini tidak termasuk dalam Package organisasi Anda.']);
         }
 
         $exists = ModuleAssignment::where('user_id', $targetUser->id)

@@ -9,7 +9,7 @@ const errors = computed(() => usePage().props.errors ?? {});
 const processing = ref(null);
 
 const approve = (requestId) => {
-    if (!confirm('Approve permintaan plan ini?')) return;
+    if (!confirm('Approve permintaan Package ini?')) return;
     processing.value = requestId;
     router.post(route('platform.billing.approve'), { request_id: requestId }, {
         onFinish: () => processing.value = null,
@@ -17,7 +17,7 @@ const approve = (requestId) => {
 };
 
 const reject = (requestId) => {
-    if (!confirm('Reject permintaan plan ini?')) return;
+    if (!confirm('Reject permintaan Package ini?')) return;
     processing.value = requestId;
     router.post(route('platform.billing.reject'), { request_id: requestId }, {
         onFinish: () => processing.value = null,
@@ -37,7 +37,7 @@ const statusBadge = (status) => {
     <AppLayout title="Billing Requests">
         <div class="mb-6">
             <p class="text-sm t-muted">
-                Permintaan perubahan plan dari tenant. Approve atau reject berdasarkan kebijakan bisnis.
+                Permintaan perubahan Package dari tenant. Approve atau reject berdasarkan kebijakan bisnis.
             </p>
         </div>
 
@@ -50,7 +50,7 @@ const statusBadge = (status) => {
                 <thead>
                     <tr class="text-left t-muted border-b b-line">
                         <th class="px-6 py-3 font-medium">Tenant</th>
-                        <th class="px-6 py-3 font-medium">Plan Diminta</th>
+                        <th class="px-6 py-3 font-medium">Package Diminta</th>
                         <th class="px-6 py-3 font-medium">Note</th>
                         <th class="px-6 py-3 font-medium">Diminta Oleh</th>
                         <th class="px-6 py-3 font-medium">Tanggal</th>

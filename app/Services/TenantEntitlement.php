@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tenant;
 use App\Models\TrainingModule;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 class TenantEntitlement
@@ -27,6 +28,28 @@ class TenantEntitlement
     }
 
     /**
+     * Check if tenant can add more users
+     */
+    public function canAddUser(Tenant $tenant): bool
+    {
+        $subscription = $this->resolveSubscription($tenant);
+
+        $package = $subscription?->package ?? \App\Models\Package::where('slug', 'free')->first();
+
+        if (!$package) {
+            return true;
+        }
+
+        if ($package->max_users === null) {
+            return true;
+        }
+
+        $activeUserCount = User::where('tenant_id', $tenant->id)->whereNull('deleted_at')->count();
+
+        return $activeUserCount < $package->max_users;
+    }
+
+    /**
      * Check if tenant has access to a specific training module
      */
     public function hasModule(Tenant $tenant, int $moduleId): bool
@@ -38,25 +61,25 @@ class TenantEntitlement
 
         $subscription = $this->resolveSubscription($tenant);
 
-        if (!$subscription || !$subscription->plan) {
+        if (!$subscription || !$subscription->package) {
             return $this->memo[$memoKey] = false;
         }
 
-        $plan = $subscription->plan;
+        $package = $subscription->package;
 
-        // If plan includes all modules, check if module is published
-        if ($plan->includes_all_modules) {
+        // If package includes all modules, check if module is published
+        if ($package->includes_all_modules) {
             $module = TrainingModule::find($moduleId);
 
             return $this->memo[$memoKey] = (bool) ($module && $module->status === 'published');
         }
 
         // Otherwise check if module is in the curated list
-        return $this->memo[$memoKey] = $plan->modules()->where('training_modules.id', $moduleId)->exists();
+        return $this->memo[$memoKey] = $package->modules()->where('training_modules.id', $moduleId)->exists();
     }
 
     /**
-     * Get all entitled module IDs for a tenant — cached 5 menit + memo per request.
+     * Get all entitled module IDs for a tenant â€” cached 5 menit + memo per request.
      *
      * @return array<int, int>
      */
@@ -72,24 +95,24 @@ class TenantEntitlement
         $ids = Cache::remember($cacheKey, 300, function () use ($tenant) {
             $subscription = $this->resolveSubscription($tenant);
 
-            if (!$subscription || !$subscription->plan) {
+            if (!$subscription || !$subscription->package) {
                 return [];
             }
 
-            $plan = $subscription->plan;
+            $package = $subscription->package;
 
-            if ($plan->includes_all_modules) {
+            if ($package->includes_all_modules) {
                 return TrainingModule::where('status', 'published')->pluck('id')->toArray();
             }
 
-            return $plan->modules()->pluck('training_modules.id')->toArray();
+            return $package->modules()->pluck('training_modules.id')->toArray();
         });
 
         return $this->memo[$memoKey] = $ids;
     }
 
     /**
-     * Get all entitled features for a tenant — cached 5 menit + memo per request.
+     * Get all entitled features for a tenant â€” cached 5 menit + memo per request.
      *
      * @return array<int, string>
      */
@@ -105,18 +128,18 @@ class TenantEntitlement
         $features = Cache::remember($cacheKey, 300, function () use ($tenant) {
             $subscription = $this->resolveSubscription($tenant);
 
-            if (!$subscription || !$subscription->plan) {
+            if (!$subscription || !$subscription->package) {
                 return [];
             }
 
-            return $subscription->plan->features ?? [];
+            return $subscription->package->features ?? [];
         });
 
         return $this->memo[$memoKey] = $features;
     }
 
     /**
-     * Resolve current subscription — memo per request untuk hindari N+1.
+     * Resolve current subscription â€” memo per request untuk hindari N+1.
      */
     private function resolveSubscription(Tenant $tenant): ?\App\Models\Subscription
     {

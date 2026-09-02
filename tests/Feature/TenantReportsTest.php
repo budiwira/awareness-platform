@@ -3,7 +3,7 @@
 use App\Models\ModuleAssignment;
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\QuizAttempt;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 test('tenant reports index shows summary and user list', function () {
-    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+    $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -29,7 +29,7 @@ test('tenant reports index shows summary and user list', function () {
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $proPlan->id,
+        'package_id' => $proPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -64,12 +64,12 @@ test('tenant reports index shows summary and user list', function () {
         ->has('trend')
         ->has('risk_tiers')
         ->has('users')
-        ->where('can_export', true) // Pro plan default
+        ->where('can_export', true) // Pro Package default
     );
 });
 
-test('tenant reports CSV export works for Pro plan', function () {
-    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+test('tenant reports CSV export works for Pro Package', function () {
+    $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -82,7 +82,7 @@ test('tenant reports CSV export works for Pro plan', function () {
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $proPlan->id,
+        'package_id' => $proPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -98,8 +98,8 @@ test('tenant reports CSV export works for Pro plan', function () {
     expect($response->getContent())->toContain('Test User,test@example.com');
 });
 
-test('tenant reports CSV export shows locked page for Starter plan', function () {
-    $starterPlan = Plan::firstOrCreate(['slug' => 'starter'], [
+test('tenant reports CSV export shows locked page for Starter Package', function () {
+    $starterPlan = Package::firstOrCreate(['slug' => 'starter'], [
         'name' => 'Starter',
         'price_monthly' => 0,
         'max_users' => 10,
@@ -112,7 +112,7 @@ test('tenant reports CSV export shows locked page for Starter plan', function ()
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $starterPlan->id,
+        'package_id' => $starterPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -192,7 +192,7 @@ test('tenant reports include phishing data in user list', function () {
 });
 
 test('CSV export does not include sensitive fields', function () {
-    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+    $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -205,7 +205,7 @@ test('CSV export does not include sensitive fields', function () {
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $proPlan->id,
+        'package_id' => $proPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);

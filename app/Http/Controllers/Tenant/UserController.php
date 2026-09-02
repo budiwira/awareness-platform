@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Tenant;
 
 use App\Services\CsvImporter;
+use App\Services\TenantEntitlement;
 use Illuminate\Http\UploadedFile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -32,6 +33,11 @@ class UserController extends Controller
     public function store(Request $request)
     {
         Gate::authorize('create', User::class);
+
+        // Hard limit check
+        if (!app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
+            abort(403, 'Upgrade package Anda untuk menambah user.');
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -101,6 +107,11 @@ class UserController extends Controller
         public function import(Request $request)
     {
         Gate::authorize('create', User::class);
+
+        // Hard limit check
+        if (!app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
+            abort(403, 'Upgrade package Anda untuk menambah user.');
+        }
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'], // Max 2MB

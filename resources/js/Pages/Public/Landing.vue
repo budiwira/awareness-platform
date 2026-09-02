@@ -55,7 +55,7 @@ const scrollTo = (id) => {
                         <button @click="scrollTo('how-it-works')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
                             Cara Kerja
                         </button>
-                        <button @click="scrollTo('plans')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                        <button @click="scrollTo('packages')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
                             Paket
                         </button>
                         <button @click="scrollTo('security')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
@@ -164,7 +164,7 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Plan & Entitlements</h3>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Package & Entitlements</h3>
                         <p class="text-sm t-muted">Paket fleksibel dengan gating fitur berbasis langganan</p>
                     </div>
 
@@ -273,7 +273,7 @@ const scrollTo = (id) => {
                     <div class="text-center fade-in">
                         <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">1</div>
                         <h3 class="font-display font-bold t-ink mb-2">Setup Platform</h3>
-                        <p class="text-sm t-muted">Super admin mengatur plan, konten, dan entitlements</p>
+                        <p class="text-sm t-muted">Super admin mengatur Package, konten, dan entitlements</p>
                     </div>
 
                     <div class="text-center fade-in" style="animation-delay: 0.1s">
@@ -299,8 +299,8 @@ const scrollTo = (id) => {
 
         <div class="beam max-w-7xl mx-auto"></div>
 
-        <!-- Plans -->
-        <section id="plans" class="py-20 px-6 lg:px-8">
+        <!-- packages -->
+        <section id="packages" class="py-20 px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-12">
                     <h2 class="font-display text-4xl font-bold t-ink mb-4">Paket Langganan</h2>
@@ -510,7 +510,7 @@ const scrollTo = (id) => {
         <footer class="py-8 px-6 lg:px-8 b-line border-t">
             <div class="max-w-7xl mx-auto text-center">
                 <p class="text-sm t-muted">
-                    Security Awareness Platform — Bangun budaya keamanan siber yang terukur
+                    Security Awareness Platform â€” Bangun budaya keamanan siber yang terukur
                 </p>
             </div>
         </footer>

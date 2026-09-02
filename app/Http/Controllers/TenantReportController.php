@@ -43,8 +43,8 @@ class TenantReportController extends Controller
         if (! $this->entitlement->hasFeature($tenant, 'reports_export')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'feature' => 'Export Reports',
-                'message' => 'Fitur export laporan tidak tersedia di plan Anda.',
-                'cta' => 'Upgrade ke plan Pro atau Enterprise untuk mengakses fitur ini.',
+                'message' => 'Fitur export laporan tidak tersedia di Package Anda.',
+                'cta' => 'Upgrade ke Package Pro atau Enterprise untuk mengakses fitur ini.',
             ]);
         }
         

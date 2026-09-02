@@ -105,7 +105,7 @@ test('breakdown is explainable with weights for full entitlements', function () 
         ->and($score['breakdown'][5]['weight'])->toBe(15);
 });
 
-test('renormalisasi untuk plan terbatas tanpa ctf dan case', function () {
+test('renormalisasi untuk Package terbatas tanpa ctf dan case', function () {
     // Starter tanpa ctf/case/phishing: hanya completion(20) + quiz(20) + ttx(15) = 55 bobot
     // completion: 100 * 0.20/0.55 = 36.36
     // quiz: 80 * 0.20/0.55 = 29.09
@@ -124,12 +124,12 @@ test('renormalisasi untuk plan terbatas tanpa ctf dan case', function () {
 
     expect($score['overall'])->toBe(87)
         ->and($score['breakdown'][2]['locked'])->toBeTrue()
-        ->and($score['breakdown'][2]['note'])->toBe('Tidak termasuk dalam plan')
+        ->and($score['breakdown'][2]['note'])->toBe('Tidak termasuk dalam Package')
         ->and($score['breakdown'][3]['locked'])->toBeTrue()
         ->and($score['breakdown'][5]['locked'])->toBeTrue();
 });
 
-test('renormalisasi untuk plan training only', function () {
+test('renormalisasi untuk Package training only', function () {
     $score = (new AwarenessScore)->compute(
         collect([makeAssignment('completed')]),
         collect([makeQuizAttempt(1, 90)]),

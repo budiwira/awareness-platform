@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({ tenants: Array, plans: Array });
+defineProps({ tenants: Array, packages: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
@@ -11,7 +11,7 @@ const showCreate = ref(false);
 const showSetPlan = ref(false);
 const selectedTenant = ref(null);
 const form = ref({ name: '' });
-const planForm = ref({ tenant_id: null, plan_id: null });
+const planForm = ref({ tenant_id: null, package_id: null });
 
 const submit = () => {
     router.post(route('platform.tenants.store'), form.value, {
@@ -24,12 +24,12 @@ const submit = () => {
 
 const openSetPlan = (tenant) => {
     selectedTenant.value = tenant;
-    planForm.value = { tenant_id: tenant.id, plan_id: null };
+    planForm.value = { tenant_id: tenant.id, package_id: null };
     showSetPlan.value = true;
 };
 
 const submitSetPlan = () => {
-    router.post(route('platform.tenants.set-plan'), planForm.value, {
+    router.post(route('platform.tenants.set-Package'), planForm.value, {
         onSuccess: () => {
             showSetPlan.value = false;
             selectedTenant.value = null;
@@ -74,8 +74,8 @@ const statusBadge = (status) =>
             </form>
         </div>
 
-        <div v-if="errors.plan_id" class="mb-4 p-4 bg-red-50 text-red-700 rounded-xl text-sm">
-            {{ errors.plan_id }}
+        <div v-if="errors.package_id" class="mb-4 p-4 bg-red-50 text-red-700 rounded-xl text-sm">
+            {{ errors.package_id }}
         </div>
 
         <div class="card overflow-hidden">
@@ -85,7 +85,7 @@ const statusBadge = (status) =>
                         <th class="px-6 py-3 font-medium">Name</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
                         <th class="px-6 py-3 font-medium">Users</th>
-                        <th class="px-6 py-3 font-medium">Plan</th>
+                        <th class="px-6 py-3 font-medium">Package</th>
                         <th class="px-6 py-3 font-medium">Status</th>
                         <th class="px-6 py-3 font-medium">Aksi</th>
                     </tr>
@@ -97,7 +97,7 @@ const statusBadge = (status) =>
                         <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>
                         <td class="px-6 py-3">
                             <span v-if="tenant.current_plan" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_plan }}</span>
-                            <span v-else class="text-xs t-muted">—</span>
+                            <span v-else class="text-xs t-muted">â€”</span>
                         </td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(tenant.status)">
@@ -106,7 +106,7 @@ const statusBadge = (status) =>
                         </td>
                         <td class="px-6 py-3">
                             <button @click="openSetPlan(tenant)" class="btn btn-primary text-xs py-1 px-3">
-                                Set Plan
+                                Set Package
                             </button>
                         </td>
                     </tr>
@@ -114,17 +114,17 @@ const statusBadge = (status) =>
             </table>
         </div>
 
-        <!-- Set Plan Modal -->
+        <!-- Set Package Modal -->
         <div v-if="showSetPlan" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in">
             <div class="card p-6 max-w-md w-full mx-4">
-                <h3 class="text-lg font-semibold mb-4">Set Plan untuk {{ selectedTenant?.name }}</h3>
+                <h3 class="text-lg font-semibold mb-4">Set Package untuk {{ selectedTenant?.name }}</h3>
                 <form @submit.prevent="submitSetPlan" class="space-y-4">
                     <div>
-                        <label class="text-sm t-muted">Pilih Plan</label>
-                        <select v-model="planForm.plan_id" required class="input mt-1 w-full">
-                            <option :value="null" disabled>-- Pilih Plan --</option>
-                            <option v-for="plan in plans" :key="plan.id" :value="plan.id">
-                                {{ plan.name }} ({{ plan.max_users }} users max)
+                        <label class="text-sm t-muted">Pilih Package</label>
+                        <select v-model="planForm.package_id" required class="input mt-1 w-full">
+                            <option :value="null" disabled>-- Pilih Package --</option>
+                            <option v-for="Package in packages" :key="Package.id" :value="Package.id">
+                                {{ Package.name }} ({{ Package.max_users }} users max)
                             </option>
                         </select>
                     </div>

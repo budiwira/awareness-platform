@@ -3,7 +3,7 @@
 use App\Models\ModuleAssignment;
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
@@ -17,7 +17,7 @@ beforeEach(function () {
 test('klik phishing trap membuat assignment remedial jika modul tersedia', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -28,7 +28,7 @@ test('klik phishing trap membuat assignment remedial jika modul tersedia', funct
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -79,7 +79,7 @@ test('klik phishing trap membuat assignment remedial jika modul tersedia', funct
 test('klik phishing trap tidak membuat assignment duplikat', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -90,7 +90,7 @@ test('klik phishing trap tidak membuat assignment duplikat', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -146,7 +146,7 @@ test('klik phishing trap tidak membuat assignment duplikat', function () {
 test('klik phishing trap tanpa modul remedial tidak error', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -157,7 +157,7 @@ test('klik phishing trap tanpa modul remedial tidak error', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -194,7 +194,7 @@ test('klik phishing trap tanpa modul remedial tidak error', function () {
 test('phishing teaching page menampilkan pesan remedial saat assignment dibuat', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -205,7 +205,7 @@ test('phishing teaching page menampilkan pesan remedial saat assignment dibuat',
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);

@@ -10,8 +10,8 @@ use function Pest\Laravel\get;
 
 beforeEach(function () {
     $this->tenant = Tenant::factory()->create(['status' => 'active']);
-    $plan = \App\Models\Plan::create(['name' => 'Agg-'.uniqid(), 'slug' => 'agg-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training','ttx'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $this->tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Agg-'.uniqid(), 'slug' => 'agg-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training','ttx'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $this->tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $this->admin = User::factory()->create([
         'tenant_id' => $this->tenant->id,
         'role' => UserRole::TenantAdmin,

@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ModuleAssignment> $assignments
  * @property-read \App\Models\Quiz|null $quiz
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Plan> $plans
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Package> $packages
  */
 class TrainingModule extends Model
 {
@@ -47,8 +47,8 @@ class TrainingModule extends Model
         return $this->hasOne(Quiz::class, 'training_module_id');
     }
 
-    public function plans(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function packages(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Plan::class, 'plan_module');
+        return $this->belongsToMany(Package::class, 'plan_module');
     }
 }

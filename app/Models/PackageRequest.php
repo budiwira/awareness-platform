@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $tenant_id
- * @property int $plan_id
+ * @property int $package_id
  * @property string|null $note
  * @property string $status
  * @property int $requested_by
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read Tenant $tenant
- * @property-read Plan $plan
+ * @property-read Package $Package
  * @property-read User $requestedBy
  * @property-read User|null $resolvedBy
  */

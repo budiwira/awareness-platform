@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 
 class AwarenessScore
 {
-    // Bobot 6 sinyal — didokumentasikan agar explainable
+    // Bobot 6 sinyal â€” didokumentasikan agar explainable
     public const WEIGHTS = [
         'completion' => 0.20,
         'quiz' => 0.20,
@@ -79,7 +79,7 @@ class AwarenessScore
                     'score' => (int) round($scores[$key]),
                     'weight' => (int) (self::WEIGHTS[$key] * 100),
                     'locked' => true,
-                    'note' => 'Tidak termasuk dalam plan',
+                    'note' => 'Tidak termasuk dalam Package',
                 ];
             } else {
                 $normalizedWeight = $entitledWeightSum > 0 ? $weight / $entitledWeightSum : 0;

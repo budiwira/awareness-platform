@@ -13,7 +13,7 @@ use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\User\CaseStudyController as UserCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
 use App\Http\Controllers\User\CtfController as UserCtfController;
-use App\Http\Controllers\Platform\PlanController as PlatformPlanController;
+use App\Http\Controllers\Platform\PackageController as PlatformPackageController;
 use App\Http\Controllers\PlatformReportController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
@@ -66,7 +66,7 @@ Route::middleware('auth')->group(function () {
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
             Route::post('/tenants', [PlatformTenantController::class, 'store'])->name('tenants.store');
-            Route::post('/tenants/set-plan', [PlatformTenantController::class, 'setPlan'])->name('tenants.set-plan');
+            Route::post('/tenants/set-package', [PlatformTenantController::class, 'setPackage'])->name('tenants.set-package');
             
             // Route Modules
             Route::get('/modules', [PlatformModuleController::class, 'index'])->name('modules.index');
@@ -102,10 +102,10 @@ Route::middleware('auth')->group(function () {
             // Route Reports
             Route::get('/reports', [PlatformReportController::class, 'index'])->name('reports');
 
-            // Route Plans
-            Route::get('/plans', [PlatformPlanController::class, 'index'])->name('plans.index');
-            Route::post('/plans', [PlatformPlanController::class, 'store'])->name('plans.store');
-            Route::put('/plans/{plan}', [PlatformPlanController::class, 'update'])->name('plans.update');
+            // Route Packages
+            Route::get('/packages', [PlatformPackageController::class, 'index'])->name('packages.index');
+            Route::post('/packages', [PlatformPackageController::class, 'store'])->name('packages.store');
+            Route::put('/packages/{package}', [PlatformPackageController::class, 'update'])->name('packages.update');
 
             // Route Billing Requests
             Route::get('/billing/requests', [PlatformBillingRequestController::class, 'index'])->name('billing.requests');
@@ -250,7 +250,7 @@ Route::middleware('auth')->group(function () {
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
-            Route::post('/billing/request', [TenantBillingController::class, 'requestPlanChange'])->name('billing.request');
+            Route::post('/billing/request', [TenantBillingController::class, 'requestPackageChange'])->name('billing.request');
             
             // Route Phishing Campaigns
             Route::get('/phishing', [TenantPhishingController::class, 'index'])->name('phishing.index');

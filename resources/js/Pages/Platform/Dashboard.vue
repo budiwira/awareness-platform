@@ -49,7 +49,7 @@ const props = defineProps({
                         <th class="px-6 py-3 font-medium text-right">Avg Score</th>
                         <th class="px-6 py-3 font-medium text-right">Phishing Clicked</th>
                         <th class="px-6 py-3 font-medium text-right">Risk Score</th>
-                        <th class="px-6 py-3 font-medium">Plan</th>
+                        <th class="px-6 py-3 font-medium">Package</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,16 +80,16 @@ const props = defineProps({
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Plan Distribution -->
+            <!-- Package Distribution -->
             <div class="card p-6">
-                <div class="font-semibold mb-4 t-ink">Plan Distribution</div>
+                <div class="font-semibold mb-4 t-ink">Package Distribution</div>
                 <div class="space-y-3">
-                    <div v-for="plan in plan_distribution" :key="plan.plan_slug" class="flex items-center justify-between">
+                    <div v-for="Package in plan_distribution" :key="Package.plan_slug" class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-3 h-3 rounded-full" style="background: var(--brand)"></div>
-                            <span class="text-sm t-ink">{{ plan.plan_name }}</span>
+                            <span class="text-sm t-ink">{{ Package.plan_name }}</span>
                         </div>
-                        <span class="font-semibold t-ink">{{ plan.tenant_count }} tenant</span>
+                        <span class="font-semibold t-ink">{{ Package.tenant_count }} tenant</span>
                     </div>
                 </div>
             </div>

@@ -132,7 +132,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-display font-semibold t-ink">Phishing Awareness</h3>
                 <Link :href="route('tenant.phishing.index')" class="text-sm text-brand hover:underline">
-                    Kelola Kampanye →
+                    Kelola Kampanye â†’
                 </Link>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -158,30 +158,30 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
             <Link :href="route('tenant.assignments.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Penugasan Training</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">â†’</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Tugaskan modul ke anggota.</p>
             </Link>
             <Link :href="route('tenant.ttx.exercises.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Simulasi TTX</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">â†’</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
             </Link>
             <Link :href="route('tenant.reports')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Laporan</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">â†’</span>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Skor awareness + ekspor CSV.</p>
             </Link>
             <Link :href="route('tenant.billing.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Billing</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <span class="chip-brand group-hover:translate-x-1 transition">â†’</span>
                 </div>
-                <p class="text-sm mt-1" style="color: var(--muted)">Plan & langganan organisasi.</p>
+                <p class="text-sm mt-1" style="color: var(--muted)">Package & langganan organisasi.</p>
             </Link>
         </div>
     </AppLayout>

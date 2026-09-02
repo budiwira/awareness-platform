@@ -9,7 +9,7 @@ use App\Models\CaseScene;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
 use App\Models\ModuleAssignment;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
@@ -116,7 +116,7 @@ class DemoSeeder extends Seeder
                 'options' => [
                     ['text' => 'Membalas dan memberikan password', 'quality' => 0, 'feedback' => 'Jangan pernah membagikan password.'],
                     ['text' => 'Meneruskan ke tim keamanan tanpa klik tautan', 'quality' => 100, 'feedback' => 'Tepat! Eskalasi ke tim keamanan.'],
-                    ['text' => 'Mengklik tautan untuk memastikan', 'quality' => 20, 'feedback' => 'Berisiko — tautan bisa berbahaya.'],
+                    ['text' => 'Mengklik tautan untuk memastikan', 'quality' => 20, 'feedback' => 'Berisiko â€” tautan bisa berbahaya.'],
                 ],
             ]);
             CaseScene::create([
@@ -125,7 +125,7 @@ class DemoSeeder extends Seeder
                 'situation' => 'Rekan mengaku butuh "bantuan mendesak" via chat dan meminta kode OTP.',
                 'options' => [
                     ['text' => 'Memberikan OTP karena rekan sendiri', 'quality' => 0, 'feedback' => 'OTP jangan dibagikan ke siapa pun.'],
-                    ['text' => 'Konfirmasi via kanal lain (telepon langsung)', 'quality' => 100, 'feedback' => 'Benar — verifikasi via kanal terpisah.'],
+                    ['text' => 'Konfirmasi via kanal lain (telepon langsung)', 'quality' => 100, 'feedback' => 'Benar â€” verifikasi via kanal terpisah.'],
                 ],
             ]);
         }
@@ -148,14 +148,14 @@ class DemoSeeder extends Seeder
         ]);
 
         // ---------- SUBSCRIPTIONS ----------
-        $pro = Plan::where('slug', 'pro')->first();
-        $starter = Plan::where('slug', 'starter')->first();
+        $pro = Package::where('slug', 'pro')->first();
+        $starter = Package::where('slug', 'starter')->first();
 
         if ($pro && ! Subscription::where('tenant_id', $acme->id)->where('status', 'active')->exists()) {
-            Subscription::create(['tenant_id' => $acme->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()->subMonths(2)]);
+            Subscription::create(['tenant_id' => $acme->id, 'package_id' => $pro->id, 'status' => 'active', 'started_at' => now()->subMonths(2)]);
         }
         if ($starter && ! Subscription::where('tenant_id', $beta->id)->where('status', 'active')->exists()) {
-            Subscription::create(['tenant_id' => $beta->id, 'plan_id' => $starter->id, 'status' => 'active', 'started_at' => now()->subMonth()]);
+            Subscription::create(['tenant_id' => $beta->id, 'package_id' => $starter->id, 'status' => 'active', 'started_at' => now()->subMonth()]);
         }
 
         // ---------- ACTIVITY PER USER ----------

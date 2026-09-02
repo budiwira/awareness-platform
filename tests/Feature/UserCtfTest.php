@@ -9,7 +9,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 function makeCtfFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $plan = \App\Models\Plan::create([
+    $Package = \App\Models\Package::create([
         'name' => 'Ent-' . uniqid(),
         'slug' => 'ent-' . uniqid(),
         'price_monthly' => 100,
@@ -20,7 +20,7 @@ function makeCtfFixture(): array
     ]);
     \App\Models\Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $plan->id,
+        'package_id' => $Package->id,
         'status' => 'active',
         'started_at' => now(),
     ]);

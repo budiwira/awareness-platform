@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property string $tenant_id
- * @property int $plan_id
+ * @property int $package_id
  * @property string $status
  * @property \Illuminate\Support\Carbon $started_at
  * @property \Illuminate\Support\Carbon|null $ends_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Plan $plan
+ * @property-read \App\Models\Package $package
  * @property-read \App\Models\Tenant $tenant
  */
 class Subscription extends Model
@@ -28,7 +28,7 @@ class Subscription extends Model
 
     public function package(): BelongsTo
     {
-        return $this->belongsTo(Package::class);
+        return $this->belongsTo(Package::class, 'package_id');
     }
 
     public function tenant(): BelongsTo

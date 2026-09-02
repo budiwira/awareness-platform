@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\ModuleAssignment;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\Subscription;
@@ -11,8 +11,8 @@ use App\Models\User;
 
 test('user without assignment cannot start quiz', function () {
     $tenant = Tenant::factory()->create();
-    $plan = Plan::create(['name' => 'Test-'.uniqid(), 'slug' => 'test-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Test-'.uniqid(), 'slug' => 'test-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $otherUser = User::factory()->create(['tenant_id' => $tenant->id]);
@@ -38,9 +38,9 @@ test('user without assignment cannot start quiz', function () {
 
 test('user with assignment but without entitlement cannot start quiz', function () {
     $tenant = Tenant::factory()->create();
-    // Plan tanpa includes_all_modules
-    $plan = Plan::create(['name' => 'Limited-'.uniqid(), 'slug' => 'limited-'.uniqid(), 'price_monthly' => 50, 'max_users' => 50, 'features' => ['training'], 'includes_all_modules' => false, 'module_ids' => [], 'is_active' => true]);
-    Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    // Package tanpa includes_all_modules
+    $Package = Package::create(['name' => 'Limited-'.uniqid(), 'slug' => 'limited-'.uniqid(), 'price_monthly' => 50, 'max_users' => 50, 'features' => ['training'], 'includes_all_modules' => false, 'module_ids' => [], 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     
@@ -65,8 +65,8 @@ test('user with assignment but without entitlement cannot start quiz', function 
 
 test('user with assignment and entitlement can start quiz', function () {
     $tenant = Tenant::factory()->create();
-    $plan = Plan::create(['name' => 'Full-'.uniqid(), 'slug' => 'full-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Full-'.uniqid(), 'slug' => 'full-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     
@@ -99,8 +99,8 @@ test('user with assignment and entitlement can start quiz', function () {
 
 test('attempt created is tied to correct user and assignment context', function () {
     $tenant = Tenant::factory()->create();
-    $plan = Plan::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     

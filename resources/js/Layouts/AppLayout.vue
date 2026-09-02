@@ -43,7 +43,7 @@ const menus = computed(() => {
                 { label: 'Dashboard', route: 'platform.dashboard' },
                 { label: 'Tenants', route: 'platform.tenants.index' },
                 { label: 'Reports', route: 'platform.reports' },
-                { label: 'Plans & Billing', route: 'platform.plans.index' },
+                { label: 'packages & Billing', route: 'platform.packages.index' },
                 { label: 'Billing Requests', route: 'platform.billing.requests' },
                 { label: 'Users', route: 'platform.users.index' },
             ]},
@@ -163,7 +163,7 @@ const logout = () => router.post(route('logout'));
             <aside class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
                 <div class="flex items-center justify-between px-6 h-16 border-b b-line">
                     <div class="font-display font-semibold t-ink">Awareness</div>
-                    <button class="t-muted" @click="showMobileNav = false">✕</button>
+                    <button class="t-muted" @click="showMobileNav = false">âœ•</button>
                 </div>
                 <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
                     <div v-for="group in menus" :key="group.section">
@@ -195,7 +195,7 @@ const logout = () => router.post(route('logout'));
         <div class="flex-1 flex flex-col min-w-0">
             <header class="h-16 flex items-center justify-between px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
                 <div class="flex items-center gap-3">
-                    <button class="lg:hidden t-muted" @click="showMobileNav = true">☰</button>
+                    <button class="lg:hidden t-muted" @click="showMobileNav = true">â˜°</button>
                     <h1 class="font-display text-lg font-bold t-ink">{{ title }}</h1>
                 </div>
 

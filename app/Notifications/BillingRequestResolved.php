@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\PlanRequest;
-use App\Models\Plan;
+use App\Models\PackageRequest;
+use App\Models\Package;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -12,9 +12,9 @@ class BillingRequestResolved extends Notification
     use Queueable;
 
     public function __construct(
-        public ?PlanRequest $planRequest = null,
+        public ?PackageRequest $PackageRequest = null,
         public string $status = 'approved',
-        public ?Plan $plan = null
+        public ?Package $Package = null
     ) {}
 
     public function via(object $notifiable): array
@@ -24,17 +24,17 @@ class BillingRequestResolved extends Notification
 
     public function toArray(object $notifiable): array
     {
-        $planName = $this->plan->name ?? $this->planRequest->plan->name ?? 'Unknown';
+        $planName = $this->Package->name ?? $this->PackageRequest->Package->name ?? 'Unknown';
         
         if ($this->status === 'approved') {
-            $message = "Permintaan plan Anda telah disetujui. Plan baru: {$planName}";
+            $message = "Permintaan Package Anda telah disetujui. Package baru: {$planName}";
         } else {
-            $message = "Permintaan plan Anda ke {$planName} ditolak.";
+            $message = "Permintaan Package Anda ke {$planName} ditolak.";
         }
 
         return [
             'message' => $message,
-            'request_id' => $this->planRequest?->id,
+            'request_id' => $this->PackageRequest?->id,
             'plan_name' => $planName,
             'status' => $this->status,
         ];
