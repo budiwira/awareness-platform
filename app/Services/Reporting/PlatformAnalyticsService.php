@@ -3,7 +3,7 @@
 namespace App\Services\Reporting;
 
 use App\Models\PhishingCampaign;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -46,7 +46,7 @@ class PlatformAnalyticsService
     public function getTopTenantsByRisk(): array
     {
         $tenants = Tenant::withCount('users')
-            ->with('subscriptions.plan')
+            ->with('subscriptions.Package')
             ->get();
         
         $riskData = [];
@@ -93,7 +93,7 @@ class PlatformAnalyticsService
                 'avg_score' => round($avgScore, 1),
                 'phishing_clicked' => $phishingClicked,
                 'risk_score' => round($riskScore, 1),
-                'current_plan' => $currentSubscription->plan->name ?? 'No Plan',
+                'current_plan' => $currentSubscription->Package->name ?? 'No Package',
             ];
         }
         
@@ -106,20 +106,20 @@ class PlatformAnalyticsService
     }
     
     /**
-     * Get plan distribution
+     * Get Package distribution
      */
     public function getPlanDistribution(): array
     {
-        $plans = Plan::withCount(['subscriptions' => function ($q) {
+        $packages = Package::withCount(['subscriptions' => function ($q) {
             $q->where('status', 'active');
         }])->get();
         
         $distribution = [];
-        foreach ($plans as $plan) {
+        foreach ($packages as $Package) {
             $distribution[] = [
-                'plan_name' => $plan->name,
-                'plan_slug' => $plan->slug,
-                'tenant_count' => $plan->subscriptions_count,
+                'plan_name' => $Package->name,
+                'plan_slug' => $Package->slug,
+                'tenant_count' => $Package->subscriptions_count,
             ];
         }
         
@@ -131,12 +131,12 @@ class PlatformAnalyticsService
      */
     public function getPhishingAdoption(): array
     {
-        $tenantsWithPhishing = Tenant::whereHas('subscriptions.plan', function ($q) {
+        $tenantsWithPhishing = Tenant::whereHas('subscriptions.Package', function ($q) {
             $q->where('is_active', true)
                 ->whereJsonContains('features', 'phishing');
         })->count();
         
-        $tenantsActivelySending = Tenant::whereHas('subscriptions.plan', function ($q) {
+        $tenantsActivelySending = Tenant::whereHas('subscriptions.Package', function ($q) {
             $q->where('is_active', true)
                 ->whereJsonContains('features', 'phishing');
         })

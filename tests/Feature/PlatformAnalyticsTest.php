@@ -2,7 +2,7 @@
 
 use App\Models\ModuleAssignment;
 use App\Models\PhishingCampaign;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -53,10 +53,10 @@ test('platform dashboard shows top tenants by risk', function () {
     );
 });
 
-test('platform dashboard shows plan distribution', function () {
+test('platform dashboard shows Package distribution', function () {
     $superAdmin = User::factory()->superAdmin()->create();
     
-    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+    $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -65,7 +65,7 @@ test('platform dashboard shows plan distribution', function () {
         'is_active' => true,
     ]);
     
-    $starterPlan = Plan::firstOrCreate(['slug' => 'starter'], [
+    $starterPlan = Package::firstOrCreate(['slug' => 'starter'], [
         'name' => 'Starter',
         'price_monthly' => 0,
         'max_users' => 10,
@@ -80,7 +80,7 @@ test('platform dashboard shows plan distribution', function () {
     $tenant1->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant1->id,
-        'plan_id' => $proPlan->id,
+        'package_id' => $proPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -88,7 +88,7 @@ test('platform dashboard shows plan distribution', function () {
     $tenant2->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant2->id,
-        'plan_id' => $starterPlan->id,
+        'package_id' => $starterPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -105,7 +105,7 @@ test('platform dashboard shows plan distribution', function () {
 test('platform dashboard shows phishing adoption metrics', function () {
     $superAdmin = User::factory()->superAdmin()->create();
     
-    $proPlan = Plan::firstOrCreate(['slug' => 'pro'], [
+    $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -118,7 +118,7 @@ test('platform dashboard shows phishing adoption metrics', function () {
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $proPlan->id,
+        'package_id' => $proPlan->id,
         'status' => 'active',
         'started_at' => now(),
     ]);

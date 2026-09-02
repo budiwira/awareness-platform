@@ -209,7 +209,7 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                     Export CSV
                 </a>
                 <div v-else class="text-sm t-muted">
-                    Export tidak tersedia di plan Anda
+                    Export tidak tersedia di Package Anda
                 </div>
             </div>
             <table v-if="filteredUsers.length > 0" class="w-full text-sm">

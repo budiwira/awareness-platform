@@ -4,7 +4,7 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({
-  plans: Array,
+  packages: Array,
   current_plan: Object,
   current_subscription: Object,
   entitlements: Object,
@@ -16,7 +16,7 @@ const errors = computed(() => usePage().props.errors ?? {});
 const flash = computed(() => usePage().props.flash ?? {});
 
 const showRequestForm = ref(false);
-const requestForm = ref({ plan_id: '', note: '' });
+const requestForm = ref({ package_id: '', note: '' });
 const submitting = ref(false);
 
 const submitRequest = () => {
@@ -25,7 +25,7 @@ const submitRequest = () => {
         onFinish: () => {
             submitting.value = false;
             showRequestForm.value = false;
-            requestForm.value = { plan_id: '', note: '' };
+            requestForm.value = { package_id: '', note: '' };
         },
     });
 };
@@ -58,17 +58,17 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
             {{ flash.success }}
         </div>
 
-        <p v-if="errors.plan_id" class="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            {{ errors.plan_id }}
+        <p v-if="errors.package_id" class="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            {{ errors.package_id }}
         </p>
 
-        <!-- Kartu plan aktif (READ-ONLY) -->
+        <!-- Kartu Package aktif (READ-ONLY) -->
         <div class="card p-6 mb-6 flex items-center justify-between">
             <div>
-                <div class="text-sm t-muted">Plan aktif saat ini</div>
+                <div class="text-sm t-muted">Package aktif saat ini</div>
                 <div class="text-xl font-display font-bold t-ink mt-1">{{ current_plan?.name ?? 'Free' }}</div>
                 <div class="text-xs t-muted mt-1">
-                    {{ user_count }} / {{ current_plan?.max_users }} users terpakai · {{ entitlements?.module_info }}
+                    {{ user_count }} / {{ current_plan?.max_users }} users terpakai Â· {{ entitlements?.module_info }}
                 </div>
                 <div v-if="entitlements?.features?.length" class="flex flex-wrap gap-1 mt-2">
                     <span v-for="f in entitlements.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand chip-brand ">{{ f }}</span>
@@ -82,19 +82,19 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
             </div>
         </div>
         <!-- Kartu fitur terkunci -->
-        <div v-if="plans.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div v-if="packages.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             <div v-for="f in ['training','reports_export','ttx','case_studies','ctf']" :key="f" class="card p-4 flex flex-col items-center text-center" :class="entitlements?.features?.includes(f) ? 'bg-surface' : 'bg-app border-dashed'">
                 <svg v-if="!entitlements?.features?.includes(f)" class="w-6 h-6 mb-2" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <span class="text-xs font-medium" :class="entitlements?.features?.includes(f) ? 't-ink' : 't-muted'">{{ f }}</span>
-                <span v-if="!entitlements?.features?.includes(f)" class="text-xs badge-warn mt-1">Terkunci — Ajukan Upgrade</span>
+                <span v-if="!entitlements?.features?.includes(f)" class="text-xs badge-warn mt-1">Terkunci â€” Ajukan Upgrade</span>
             </div>
         </div>
 
-        <!-- Form ajukan perubahan plan -->
+        <!-- Form ajukan perubahan Package -->
         <div class="card p-6 mb-6">
-            <h2 class="text-lg font-display font-semibold t-ink mb-4">Ajukan Perubahan Plan</h2>
+            <h2 class="text-lg font-display font-semibold t-ink mb-4">Ajukan Perubahan Package</h2>
             
             <div v-if="!showRequestForm">
                 <button @click="showRequestForm = true" class="btn btn-primary">
@@ -104,12 +104,12 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
 
             <form v-else @submit.prevent="submitRequest" class="space-y-4 fade-in">
                 <div>
-                    <label class="block text-sm font-medium t-ink mb-2">Pilih Plan</label>
-                    <select v-model="requestForm.plan_id" required
+                    <label class="block text-sm font-medium t-ink mb-2">Pilih Package</label>
+                    <select v-model="requestForm.package_id" required
                         class="w-full rounded-lg b-line focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150">
-                        <option value="">-- Pilih Plan --</option>
-                        <option v-for="plan in plans" :key="plan.id" :value="plan.id">
-                            {{ plan.name }} ({{ formatPrice(plan.price_monthly) }})
+                        <option value="">-- Pilih Package --</option>
+                        <option v-for="Package in packages" :key="Package.id" :value="Package.id">
+                            {{ Package.name }} ({{ formatPrice(Package.price_monthly) }})
                         </option>
                     </select>
                 </div>
@@ -118,7 +118,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     <label class="block text-sm font-medium t-ink mb-2">Catatan (opsional)</label>
                     <textarea v-model="requestForm.note" rows="3" maxlength="500"
                         class="w-full rounded-lg b-line focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150"
-                        placeholder="Jelaskan alasan perubahan plan..."></textarea>
+                        placeholder="Jelaskan alasan perubahan Package..."></textarea>
                     <div class="text-xs t-muted mt-1">{{ requestForm.note.length }} / 500 karakter</div>
                 </div>
 
@@ -141,7 +141,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                 <svg class="w-12 h-12 mx-auto mb-3 t-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p class="text-sm">Belum ada permintaan perubahan plan.</p>
+                <p class="text-sm">Belum ada permintaan perubahan Package.</p>
             </div>
 
             <div v-else class="overflow-x-auto">
@@ -149,7 +149,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     <thead class="text-xs uppercase t-muted border-b b-line">
                         <tr>
                             <th class="text-left py-3 px-4">Tanggal</th>
-                            <th class="text-left py-3 px-4">Plan</th>
+                            <th class="text-left py-3 px-4">Package</th>
                             <th class="text-left py-3 px-4">Catatan</th>
                             <th class="text-left py-3 px-4">Diajukan Oleh</th>
                             <th class="text-left py-3 px-4">Status</th>
@@ -160,10 +160,10 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                         <tr v-for="req in requests" :key="req.id" 
                             class="hover:bg-app transition-colors duration-150">
                             <td class="py-3 px-4 t-muted">{{ formatDate(req.created_at) }}</td>
-                            <td class="py-3 px-4 font-medium t-ink">{{ req.plan?.name }}</td>
+                            <td class="py-3 px-4 font-medium t-ink">{{ req.Package?.name }}</td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.note" class="max-w-xs truncate block">{{ req.note }}</span>
-                                <span v-else class="t-muted">—</span>
+                                <span v-else class="t-muted">â€”</span>
                             </td>
                             <td class="py-3 px-4 t-muted">{{ req.requested_by?.name }}</td>
                             <td class="py-3 px-4">
@@ -173,7 +173,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             </td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.resolved_by">{{ req.resolved_by.name }}</span>
-                                <span v-else class="t-muted">—</span>
+                                <span v-else class="t-muted">â€”</span>
                             </td>
                         </tr>
                     </tbody>
@@ -182,7 +182,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
         </div>
 
         <p class="text-xs t-muted mt-6">
-            * Model bisnis managed: super admin yang menetapkan plan. Tenant mengajukan permintaan perubahan.
+            * Model bisnis managed: super admin yang menetapkan Package. Tenant mengajukan permintaan perubahan.
         </p>
     </AppLayout>
 </template>

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $tenant_id
- * @property int $plan_id
+ * @property int $package_id
  * @property string|null $note
  * @property string $status
  * @property int $requested_by
@@ -18,17 +18,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read Tenant $tenant
- * @property-read Plan $plan
+ * @property-read Package $Package
  * @property-read User $requestedBy
  * @property-read User|null $resolvedBy
  */
-class PlanRequest extends Model
+class PackageRequest extends Model
 {
     use HasFactory;
 
+    protected $table = 'package_requests';
+
     protected $fillable = [
         'tenant_id',
-        'plan_id',
+        'package_id',
         'note',
         'status',
         'requested_by',
@@ -45,9 +47,9 @@ class PlanRequest extends Model
         return $this->belongsTo(Tenant::class);
     }
 
-    public function plan(): BelongsTo
+    public function package(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(Package::class, 'package_id');
     }
 
     public function requestedBy(): BelongsTo

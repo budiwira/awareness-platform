@@ -179,20 +179,20 @@ test('downgrade guard counts only non-deleted users', function () {
         $u->delete();
     }
 
-    $smallPlan = \App\Models\Plan::create(['name' => 'Small', 'slug' => 'small', 'price_monthly' => 500, 'max_users' => 5, 'is_active' => true]);
+    $smallPlan = \App\Models\Package::create(['name' => 'Small', 'slug' => 'small', 'price_monthly' => 500, 'max_users' => 5, 'is_active' => true]);
 
     // Harus sukses karena hanya 5 active users (deleted tidak dihitung)
     $response = $this->actingAs($superAdmin)
-        ->post(route('platform.tenants.set-plan'), [
+        ->post(route('platform.tenants.set-package'), [
             'tenant_id' => $tenant->id,
-            'plan_id' => $smallPlan->id,
+            'package_id' => $smallPlan->id,
         ]);
 
     $response->assertRedirect(route('platform.tenants.index'));
 
     $this->assertDatabaseHas('subscriptions', [
         'tenant_id' => $tenant->id,
-        'plan_id' => $smallPlan->id,
+        'package_id' => $smallPlan->id,
         'status' => 'active',
     ]);
 });

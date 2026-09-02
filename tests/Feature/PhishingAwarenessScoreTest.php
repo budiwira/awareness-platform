@@ -2,7 +2,7 @@
 
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -17,7 +17,7 @@ test('user tanpa kampanye phishing mendapat score 100 untuk sinyal phishing', fu
     $tenant = Tenant::factory()->create();
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -28,7 +28,7 @@ test('user tanpa kampanye phishing mendapat score 100 untuk sinyal phishing', fu
 
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -55,7 +55,7 @@ test('user dengan 1 click dari 1 campaign mendapat score 50', function () {
     $tenant = Tenant::factory()->create();
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -66,7 +66,7 @@ test('user dengan 1 click dari 1 campaign mendapat score 50', function () {
 
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -110,7 +110,7 @@ test('user dengan 1 click dari 1 campaign mendapat score 50', function () {
 test('tenant tanpa fitur phishing tidak punya sinyal phishing dan bobot renormalisasi', function () {
     $tenant = Tenant::factory()->create();
 
-    $starter = Plan::firstOrCreate(['slug' => 'starter'], [
+    $starter = Package::firstOrCreate(['slug' => 'starter'], [
         'name' => 'Starter',
         'price_monthly' => 500,
         'max_users' => 25,
@@ -121,7 +121,7 @@ test('tenant tanpa fitur phishing tidak punya sinyal phishing dan bobot renormal
 
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $starter->id,
+        'package_id' => $starter->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -140,7 +140,7 @@ test('tenant tanpa fitur phishing tidak punya sinyal phishing dan bobot renormal
 
     $phishingBreakdown = collect($result['breakdown'])->firstWhere('key', 'phishing_awareness');
     expect($phishingBreakdown['locked'])->toBe(true);
-    expect($phishingBreakdown['note'])->toBe('Tidak termasuk dalam plan');
+    expect($phishingBreakdown['note'])->toBe('Tidak termasuk dalam Package');
 
     // Bobot training sinyal harus naik karena renormalisasi
     $completionBreakdown = collect($result['breakdown'])->firstWhere('key', 'completion');
@@ -151,7 +151,7 @@ test('user dengan 2 click dari 4 campaign mendapat score 75', function () {
     $tenant = Tenant::factory()->create();
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -162,7 +162,7 @@ test('user dengan 2 click dari 4 campaign mendapat score 75', function () {
 
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);

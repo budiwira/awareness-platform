@@ -12,7 +12,7 @@ class ResetUserData extends Command
         {--force : Lewati konfirmasi interaktif}
         {--with-tenants : Hapus juga tenants dan subscriptions}';
 
-    protected $description = 'Hapus semua data user & aktivitas tenant untuk demo bersih. Konten platform (plans, modules, quizzes, cases, CTF, TTX, badges) dan super admin DIPERTAHANKAN.';
+    protected $description = 'Hapus semua data user & aktivitas tenant untuk demo bersih. Konten platform (packages, modules, quizzes, cases, CTF, TTX, badges) dan super admin DIPERTAHANKAN.';
 
     private const ACTIVITY_TABLES = [
         'quiz_attempts',
@@ -26,7 +26,7 @@ class ResetUserData extends Command
         'ttx_team_members',
         'ttx_teams',
         'notifications',
-        'plan_requests',
+        'package_requests',
     ];
 
     public function handle(): int
@@ -58,11 +58,11 @@ class ResetUserData extends Command
         $failed = [];
 
         foreach ($tables as $table) {
-            try {
-                $count = DB::connection($conn)->table($table)->count();
-            } catch (\Throwable) {
+            $exists = DB::connection($conn)->select('SELECT to_regclass(?) AS t', ['public.' . $table])[0]->t;
+            if ($exists === null) {
                 continue;
             }
+            $count = (int) DB::connection($conn)->table($table)->count();
 
             $this->line(sprintf('  - %-24s %s', $table, ($dry ? 'akan dihapus: ' : 'dihapus: ') . $count));
 

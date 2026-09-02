@@ -56,8 +56,8 @@ test('super admin can archive a published module', function () {
 
 test('draft modules are not visible to tenant admin in assignment dropdown', function () {
     $tenant = \App\Models\Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Dr-' . uniqid(), 'slug' => 'dr-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Dr-' . uniqid(), 'slug' => 'dr-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
     TrainingModule::create(['title' => 'Draft Module', 'content' => 'Test', 'duration_minutes' => 10, 'status' => 'draft', 'is_active' => true]);
@@ -79,8 +79,8 @@ test('tenant admin cannot access platform modules routes', function () {
 
 test('user only sees published ctf challenges', function () {
     $tenant = \App\Models\Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Cf-' . uniqid(), 'slug' => 'cf-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ctf'], 'includes_all_modules' => false, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Cf-' . uniqid(), 'slug' => 'cf-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ctf'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     \App\Models\CtfChallenge::create([
@@ -112,8 +112,8 @@ test('user only sees published ctf challenges', function () {
 
 test('user only sees published case studies', function () {
     $tenant = \App\Models\Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Cs-' . uniqid(), 'slug' => 'cs-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Cs-' . uniqid(), 'slug' => 'cs-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     \App\Models\CaseStudy::create([
@@ -141,8 +141,8 @@ test('user only sees published case studies', function () {
 
 test('user cannot submit flag to draft ctf challenge', function () {
     $tenant = \App\Models\Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Dc-' . uniqid(), 'slug' => 'dc-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ctf'], 'includes_all_modules' => false, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Dc-' . uniqid(), 'slug' => 'dc-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['ctf'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $challenge = \App\Models\CtfChallenge::create([
@@ -164,8 +164,8 @@ test('user cannot submit flag to draft ctf challenge', function () {
 
 test('user cannot start draft case study', function () {
     $tenant = \App\Models\Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Sd-'.uniqid(), 'slug' => 'sd-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Sd-'.uniqid(), 'slug' => 'sd-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $case = \App\Models\CaseStudy::create([

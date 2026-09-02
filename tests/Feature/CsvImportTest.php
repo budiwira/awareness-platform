@@ -2,6 +2,8 @@
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Package;
+use App\Models\Subscription;
 
 test('tenant admin can import users via CSV', function () {
     $tenant = Tenant::factory()->create();

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\ModuleAssignment;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
@@ -21,7 +21,7 @@ class UserQuizReviewTest extends TestCase
     private function makeQuizFixture()
     {
         $tenant = Tenant::factory()->create();
-        $plan = Plan::create([
+        $Package = Package::create([
             'name' => 'Pro-' . uniqid(),
             'slug' => 'pro-' . uniqid(),
             'price_monthly' => 100,
@@ -32,7 +32,7 @@ class UserQuizReviewTest extends TestCase
         ]);
         Subscription::create([
             'tenant_id' => $tenant->id,
-            'plan_id' => $plan->id,
+            'package_id' => $Package->id,
             'status' => 'active',
             'started_at' => now(),
         ]);

@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\TrainingModule;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class PlanSeeder extends Seeder
+class PackageSeeder extends Seeder
 {
     public function run(): void
     {
@@ -18,12 +18,13 @@ class PlanSeeder extends Seeder
         $modules = TrainingModule::where('status', 'published')->get();
         $basicModules = $modules->take(3); // 3 modul dasar untuk Starter
 
-        $plans = [
+        $packages = [
             [
-                'name' => 'Starter',
-                'slug' => 'starter',
-                'price_monthly' => 500,
-                'max_users' => 25,
+                'name' => 'Free',
+                'slug' => 'free',
+                'price_monthly' => 0,
+                'is_free' => true,
+                'max_users' => 5,
                 'features' => ['training'],
                 'includes_all_modules' => false,
                 'is_active' => true,
@@ -32,7 +33,8 @@ class PlanSeeder extends Seeder
                 'name' => 'Pro',
                 'slug' => 'pro',
                 'price_monthly' => 1500,
-                'max_users' => 100,
+                'is_free' => false,
+                'max_users' => 50,
                 'features' => ['training', 'reports_export', 'ttx', 'case_studies', 'phishing'],
                 'includes_all_modules' => true,
                 'is_active' => true,
@@ -41,21 +43,22 @@ class PlanSeeder extends Seeder
                 'name' => 'Enterprise',
                 'slug' => 'enterprise',
                 'price_monthly' => 5000,
-                'max_users' => 9999,
+                'is_free' => false,
+                'max_users' => null,
                 'features' => ['training', 'reports_export', 'ttx', 'case_studies', 'ctf', 'phishing'],
                 'includes_all_modules' => true,
                 'is_active' => true,
             ],
         ];
 
-        foreach ($plans as $planData) {
-            $plan = Plan::updateOrCreate(['slug' => $planData['slug']], $planData);
+        foreach ($packages as $packageData) {
+            $package = Package::updateOrCreate(['slug' => $packageData['slug']], $packageData);
 
-            // Attach modul kurasi untuk Starter (plan lain includes_all_modules=true)
-            if ($planData['slug'] === 'starter' && !$planData['includes_all_modules']) {
-                $plan->modules()->sync($basicModules->pluck('id')->toArray());
-            } elseif ($planData['includes_all_modules']) {
-                $plan->modules()->detach(); // Kosongkan pivot, karena includes_all_modules=true
+            // Attach modul kurasi untuk Free (package lain includes_all_modules=true)
+            if ($packageData['slug'] === 'free' && !$packageData['includes_all_modules']) {
+                $package->modules()->sync($basicModules->pluck('id')->toArray());
+            } elseif ($packageData['includes_all_modules']) {
+                $package->modules()->detach(); // Kosongkan pivot, karena includes_all_modules=true
             }
         }
     }

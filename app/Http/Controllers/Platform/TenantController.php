@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -18,19 +18,19 @@ class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::withCount('users')->with('subscriptions.plan:id,name')->orderBy('name')->get()
+        $tenants = Tenant::withCount('users')->with('subscriptions.package:id,name')->orderBy('name')->get()
             ->map(function ($tenant) {
                 $current = $tenant->subscriptions->where('status', 'active')->sortByDesc('started_at')->first();
                 $data = $tenant->toArray();
-                $data['current_plan'] = $current?->plan?->name;
+                $data['current_package'] = $current?->package?->name;
                 return $data;
             });
 
-        $plans = Plan::where('is_active', true)->orderBy('price_monthly')->get();
+        $packages = Package::where('is_active', true)->orderBy('price_monthly')->get();
 
         return Inertia::render('Platform/Tenants/Index', [
             'tenants' => $tenants,
-            'plans' => $plans,
+            'packages' => $packages,
         ]);
     }
 
@@ -60,26 +60,26 @@ class TenantController extends Controller
         return redirect()->route('platform.tenants.index');
     }
 
-    public function setPlan(Request $request)
+    public function setPackage(Request $request)
     {
         $validated = $request->validate([
             'tenant_id' => ['required', 'exists:tenants,id'],
-            'plan_id' => ['required', 'exists:plans,id'],
+            'package_id' => ['required', 'exists:packages,id'],
         ]);
 
         $tenant = Tenant::findOrFail($validated['tenant_id']);
-        $plan = Plan::findOrFail($validated['plan_id']);
+        $package = Package::findOrFail($validated['package_id']);
 
         // Guard downgrade: cek jumlah user aktif
         $activeUserCount = User::where('tenant_id', $tenant->id)->whereNull('deleted_at')->count();
 
-        if ($plan->max_users < $activeUserCount) {
+        if ($package->max_users !== null && $package->max_users < $activeUserCount) {
             return redirect()->back()->withErrors([
-                'plan_id' => "Plan '{$plan->name}' maksimal {$plan->max_users} users, tenant '{$tenant->name}' punya {$activeUserCount} active users.",
+                'package_id' => "Package '{$package->name}' maksimal {$package->max_users} users, tenant '{$tenant->name}' punya {$activeUserCount} active users.",
             ]);
         }
 
-        DB::transaction(function () use ($tenant, $plan) {
+        DB::transaction(function () use ($tenant, $package) {
             // Batalkan subscription aktif lama
             Subscription::where('tenant_id', $tenant->id)
                 ->where('status', 'active')
@@ -88,7 +88,7 @@ class TenantController extends Controller
             // Buat subscription baru
             Subscription::create([
                 'tenant_id' => $tenant->id,
-                'plan_id' => $plan->id,
+                'package_id' => $package->id,
                 'status' => 'active',
                 'started_at' => now(),
             ]);
@@ -100,17 +100,16 @@ class TenantController extends Controller
                 ->get();
 
             foreach ($tenantAdmins as $admin) {
-                $admin->notify(new BillingRequestResolved(null, 'approved', $plan));
+                $admin->notify(new BillingRequestResolved(null, 'approved', $package));
             }
 
             // Audit log
-            Audit::log('billing.plan_set_by_admin', $plan, [
+            Audit::log('billing.package_set_by_admin', $package, [
                 'tenant_id' => $tenant->id,
-                'plan_id' => $plan->id,
+                'package_id' => $package->id,
             ]);
         });
 
-        return redirect()->route('platform.tenants.index')->with('success', "Plan '{$plan->name}' diaktifkan");
+        return redirect()->route('platform.tenants.index')->with('success', "Package '{$package->name}' diaktifkan");
     }
 }
-

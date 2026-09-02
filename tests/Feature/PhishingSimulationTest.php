@@ -2,7 +2,7 @@
 
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Plan;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -18,8 +18,8 @@ beforeEach(function () {
 test('tenant without phishing feature gets 403 on index', function () {
     $tenant = Tenant::factory()->create();
     
-    // Starter plan (no phishing)
-    $starter = Plan::firstOrCreate(['slug' => 'starter'], [
+    // Starter Package (no phishing)
+    $starter = Package::firstOrCreate(['slug' => 'starter'], [
         'name' => 'Starter',
         'price_monthly' => 500,
         'max_users' => 25,
@@ -30,7 +30,7 @@ test('tenant without phishing feature gets 403 on index', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $starter->id,
+        'package_id' => $starter->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -49,7 +49,7 @@ test('tenant without phishing feature gets 403 on index', function () {
 test('tenant with phishing feature can access index', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -60,7 +60,7 @@ test('tenant with phishing feature can access index', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -78,7 +78,7 @@ test('tenant with phishing feature can access index', function () {
 test('admin can create campaign with targets', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -89,7 +89,7 @@ test('admin can create campaign with targets', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -123,7 +123,7 @@ test('campaign enforces RLS tenant isolation', function () {
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -132,8 +132,8 @@ test('campaign enforces RLS tenant isolation', function () {
         'is_active' => true,
     ]);
     
-    Subscription::create(['tenant_id' => $tenant1->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
-    Subscription::create(['tenant_id' => $tenant2->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
+    Subscription::create(['tenant_id' => $tenant1->id, 'package_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
+    Subscription::create(['tenant_id' => $tenant2->id, 'package_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
     
     $admin1 = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant1->id]);
     $admin2 = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant2->id]);
@@ -173,7 +173,7 @@ test('campaign enforces RLS tenant isolation', function () {
 test('send campaign creates email snapshot and sends mail', function () {
     $tenant = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -184,7 +184,7 @@ test('send campaign creates email snapshot and sends mail', function () {
     
     Subscription::create([
         'tenant_id' => $tenant->id,
-        'plan_id' => $pro->id,
+        'package_id' => $pro->id,
         'status' => 'active',
         'started_at' => now(),
     ]);
@@ -298,7 +298,7 @@ test('tenant cannot access another tenant campaign', function () {
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
     
-    $pro = Plan::firstOrCreate(['slug' => 'pro'], [
+    $pro = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
         'max_users' => 100,
@@ -307,8 +307,8 @@ test('tenant cannot access another tenant campaign', function () {
         'is_active' => true,
     ]);
     
-    Subscription::create(['tenant_id' => $tenant1->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
-    Subscription::create(['tenant_id' => $tenant2->id, 'plan_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
+    Subscription::create(['tenant_id' => $tenant1->id, 'package_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
+    Subscription::create(['tenant_id' => $tenant2->id, 'package_id' => $pro->id, 'status' => 'active', 'started_at' => now()]);
     
     $admin1 = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant1->id]);
     $admin2 = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant2->id]);

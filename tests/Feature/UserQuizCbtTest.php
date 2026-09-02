@@ -12,8 +12,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 function makeQuizCbtFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $plan = \App\Models\Plan::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'plan_id' => $plan->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = \App\Models\Package::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create(['title' => 'Phishing', 'content' => 'x', 'duration_minutes' => 10, 'status' => 'published', 'is_active' => true]);
     $quiz = Quiz::create(['training_module_id' => $module->id, 'title' => 'Quiz P', 'passing_score' => 50, 'duration_minutes' => 30]);
