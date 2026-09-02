@@ -22,13 +22,13 @@ class Subscription extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['tenant_id', 'plan_id', 'status', 'started_at', 'ends_at'];
+    protected $fillable = ['tenant_id', 'package_id', 'status', 'started_at', 'ends_at'];
 
     protected $casts = ['started_at' => 'datetime', 'ends_at' => 'datetime'];
 
-    public function plan(): BelongsTo
+    public function package(): BelongsTo
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(Package::class);
     }
 
     public function tenant(): BelongsTo
