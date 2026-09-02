@@ -13,8 +13,12 @@ test('platform dashboard exposes real platform stats', function () {
         ->get(route('platform.dashboard'))
         ->assertInertia(fn (Assert $page) => $page
             ->component('Platform/Dashboard')
-            ->where('stats.tenants', 2)
-            ->has('tenants', 2)
+            ->where('summary.total_tenants', 2)
+            ->has('summary.total_users')
+            ->has('summary.avg_platform_awareness_score')
+            ->has('top_tenants_by_risk')
+            ->has('plan_distribution')
+            ->has('phishing_adoption.tenants_with_phishing_feature')
         );
 });
 

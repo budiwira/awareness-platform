@@ -57,25 +57,7 @@ Route::middleware('auth')->group(function () {
         ->prefix('platform')
         ->name('platform.')
         ->group(function () {
-            Route::get('/dashboard', function () {
-                return Inertia::render('Platform/Dashboard', [
-                    'stats' => [
-                        'tenants' => Tenant::count(),
-                        'active_tenants' => Tenant::where('status', 'active')->count(),
-                        'users' => User::count(),
-                        'tenant_admins' => User::where('role', UserRole::TenantAdmin->value)->count(),
-                    ],
-                    'tenants' => Tenant::withCount('users')
-                        ->orderBy('name')
-                        ->get()
-                        ->map(fn (Tenant $t) => [
-                            'name' => $t->name,
-                            'slug' => $t->slug,
-                            'status' => $t->status,
-                            'users_count' => $t->users_count,
-                        ]),
-                ]);
-            })->name('dashboard');
+            Route::get('/dashboard', [PlatformReportController::class, 'index'])->name('dashboard');
 
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
