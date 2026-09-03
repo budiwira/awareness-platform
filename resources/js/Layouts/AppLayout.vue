@@ -43,7 +43,7 @@ const menus = computed(() => {
                 { label: 'Dashboard', route: 'platform.dashboard' },
                 { label: 'Tenants', route: 'platform.tenants.index' },
                 { label: 'Reports', route: 'platform.reports' },
-                { label: 'packages & Billing', route: 'platform.packages.index' },
+                { label: 'Packages & Billing', route: 'platform.packages.index' },
                 { label: 'Billing Requests', route: 'platform.billing.requests' },
                 { label: 'Users', route: 'platform.users.index' },
             ]},
