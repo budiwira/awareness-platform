@@ -13,8 +13,9 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     // 1. Setup Tenant & Package
     $this->tenant = Tenant::factory()->create();
-    $this->package = Package::factory()->create(['features' => ['training']]);
-    $this->subscription = Subscription::factory()->create([
+    $this->package = Package::create(['name' => 'Pro', 'slug' => 'pro', 'price_monthly' => 1500, 'max_users' => 100, 'includes_all_modules' => false, 'features' => ['training']]);
+    $this->subscription = Subscription::create([
+        'started_at' => now(),
         'tenant_id' => $this->tenant->id,
         'package_id' => $this->package->id,
         'status' => 'active',
@@ -37,6 +38,7 @@ beforeEach(function () {
     // 4. Setup Assignment & Quiz
     $this->assignment = \App\Models\ModuleAssignment::create([
         'user_id' => $this->user->id,
+        'tenant_id' => $this->tenant->id,
         'training_module_id' => $this->module->id,
         'status' => 'assigned',
     ]);
@@ -47,6 +49,14 @@ beforeEach(function () {
         'passing_score' => 70,
         'duration_minutes' => 10,
         'is_active' => true,
+    ]);
+
+    // Minimal 1 question (start() checks questions->count() > 0)
+    \App\Models\QuizQuestion::create([
+        'quiz_id' => $this->quiz->id,
+        'question' => 'Test question?',
+        'options' => ['A', 'B', 'C', 'D'],
+        'correct_index' => 0,
     ]);
 });
 
