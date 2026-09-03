@@ -117,4 +117,12 @@ class UserAccessManager
             'granted_by' => $actor->id,
         ]);
     }
+    public function hasModuleAccessById(User $user, int $moduleId): bool
+    {
+        $module = \App\Models\TrainingModule::find($moduleId);
+        if (!$module) {
+            return false;
+        }
+        return $this->hasModuleAccess($user, $module);
+    }
 }

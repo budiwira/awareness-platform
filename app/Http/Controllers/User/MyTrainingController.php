@@ -33,6 +33,12 @@ class MyTrainingController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Filter out modules revoked from this user
+        $manager = app(\App\Services\UserAccessManager::class);
+        $assignments = $assignments->filter(function ($assignment) use ($manager, $request) {
+            return $manager->hasModuleAccessById($request->user(), $assignment->training_module_id);
+        })->values();
+
         return Inertia::render('User/MyTraining/Index', [
             'assignments' => $assignments,
         ]);
@@ -51,6 +57,16 @@ class MyTrainingController extends Controller
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Modul Tidak Tersedia',
                 'message' => 'Organisasi Anda belum mengaktifkan modul ini.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
+
+        // Per-user access check: revoked user blocked
+        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById(auth()->user(), $assignment->training_module_id)) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Akses Modul Dibatasi',
+                'message' => 'Admin telah membatasi akses Anda ke modul ini.',
                 'cta' => 'Hubungi admin organisasi',
             ])->toResponse(request())->setStatusCode(403);
         }

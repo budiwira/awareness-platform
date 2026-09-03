@@ -25,6 +25,15 @@ class ModuleQuizController extends Controller
             ])->toResponse($request)->setStatusCode(403);
         }
 
+        // Per-user access check
+        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById($request->user(), $assignment->training_module_id)) {
+            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Akses Modul Dibatasi',
+                'message' => 'Admin telah membatasi akses Anda ke modul ini.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse($request)->setStatusCode(403);
+        }
+
         $quiz = $assignment->module->quiz;
 
         if (! $quiz || ! $quiz->is_active) {
@@ -103,6 +112,11 @@ class ModuleQuizController extends Controller
         }
 
         $user = $request->user();
+
+        // Per-user access check: revoked user blocked
+        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById($user, $quiz->training_module_id)) {
+            return response()->json(['message' => 'Akses modul dibatasi oleh admin untuk user ini.'], 403);
+        }
 
         // Cek apakah sudah lulus
         $passedAttempt = QuizAttempt::where('quiz_id', $quiz->id)
