@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ tenants: Array, packages: Array });
@@ -105,6 +105,7 @@ const statusBadge = (status) =>
                             </span>
                         </td>
                         <td class="px-6 py-3">
+                            <Link :href="route('platform.tenants.user-access.show', tenant.id)" class="btn bg-surface2 hover:bg-surface2 t-ink text-xs py-1 px-3 mr-2">Kelola Akses</Link>
                             <button @click="openSetPlan(tenant)" class="btn btn-primary text-xs py-1 px-3">
                                 Set Package
                             </button>
