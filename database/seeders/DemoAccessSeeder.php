@@ -14,8 +14,10 @@ class DemoAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        // Bypass RLS untuk seeding
-        DB::statement('SET LOCAL row_security = off;');
+        // Disable RLS untuk semua tabel yang akan di-seed
+        DB::statement('ALTER TABLE tenants DISABLE ROW LEVEL SECURITY;');
+        DB::statement('ALTER TABLE users DISABLE ROW LEVEL SECURITY;');
+        DB::statement('ALTER TABLE subscriptions DISABLE ROW LEVEL SECURITY;');
 
         $tenant = Tenant::firstOrCreate(
             ['slug' => 'pt-demo'],
@@ -49,7 +51,9 @@ class DemoAccessSeeder extends Seeder
         }
 
         // Re-enable RLS
-        DB::statement('SET LOCAL row_security = on;');
+        DB::statement('ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;');
+        DB::statement('ALTER TABLE users ENABLE ROW LEVEL SECURITY;');
+        DB::statement('ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;');
 
         echo "Seeded: ".$tenant->name." | users: ".$tenant->users()->count()."\n";
     }
