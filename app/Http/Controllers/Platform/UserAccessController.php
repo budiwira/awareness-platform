@@ -10,6 +10,7 @@ use App\Models\UserModuleAccess;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use App\Models\UserFeatureAccess;
 use Inertia\Inertia;
 
@@ -62,10 +63,21 @@ class UserAccessController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
-            'module_ids' => 'required|array',
+            'module_ids' => 'nullable|array',
             'module_ids.*' => 'integer|exists:training_modules,id',
+            'feature_keys' => 'nullable|array',
+            'feature_keys.*' => 'string',
             'is_allowed' => 'required|boolean',
         ]);
+
+        $requestedModuleIds = $validated['module_ids'] ?? [];
+        $requestedFeatureKeys = $validated['feature_keys'] ?? [];
+
+        if (empty($requestedModuleIds) && empty($requestedFeatureKeys)) {
+            throw ValidationException::withMessages([
+                'access' => 'Pilih minimal satu modul atau fitur.',
+            ]);
+        }
 
         $user = User::where('id', $validated['user_id'])
             ->where('tenant_id', $tenant->id)
@@ -75,18 +87,29 @@ class UserAccessController extends Controller
         $manager = app(UserAccessManager::class);
         $entitlement = app(TenantEntitlement::class);
 
+        // Validate modules are entitled by tenant package
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
-        $requestedIds = $validated['module_ids'];
-        $invalidIds = array_diff($requestedIds, $entitledModuleIds);
+        $invalidModuleIds = array_values(array_diff($requestedModuleIds, $entitledModuleIds));
 
-        if (!empty($invalidIds)) {
+        if (!empty($invalidModuleIds)) {
             return response()->json([
                 'error' => 'Modul tidak termasuk dalam paket tenant',
-                'invalid_module_ids' => $invalidIds,
+                'invalid_module_ids' => $invalidModuleIds,
             ], 422);
         }
 
-        $modules = TrainingModule::whereIn('id', $requestedIds)->get();
+        // Validate features are entitled by tenant package
+        $entitledFeatures = $entitlement->getEntitledFeatures($tenant);
+        $invalidFeatureKeys = array_values(array_diff($requestedFeatureKeys, $entitledFeatures));
+
+        if (!empty($invalidFeatureKeys)) {
+            return response()->json([
+                'error' => 'Fitur tidak termasuk dalam paket tenant',
+                'invalid_feature_keys' => $invalidFeatureKeys,
+            ], 422);
+        }
+
+        $modules = TrainingModule::whereIn('id', $requestedModuleIds)->get();
 
         foreach ($modules as $module) {
             if ($validated['is_allowed']) {
@@ -96,10 +119,19 @@ class UserAccessController extends Controller
             }
         }
 
+        foreach ($requestedFeatureKeys as $featureKey) {
+            if ($validated['is_allowed']) {
+                $manager->grantFeatureAccess($user, $featureKey, $actor);
+            } else {
+                $manager->revokeFeatureAccess($user, $featureKey, $actor);
+            }
+        }
+
         return response()->json([
-            'message' => 'Akses modul berhasil diperbarui (super admin override)',
+            'message' => 'Akses user berhasil diperbarui (super admin override)',
             'user_id' => $user->id,
-            'module_ids' => $requestedIds,
+            'module_ids' => $requestedModuleIds,
+            'feature_keys' => $requestedFeatureKeys,
             'is_allowed' => $validated['is_allowed'],
             'actor_id' => $actor->id,
         ]);

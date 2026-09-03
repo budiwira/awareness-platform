@@ -58,6 +58,54 @@ const saveModules = () => {
     });
 };
 
+const saveFeatures = () => {
+    if (!selectedUser.value) return;
+
+    saving.value = true;
+    savedMessage.value = '';
+
+    const allowedKeys = selectedUser.value.features.filter(f => f.is_allowed).map(f => f.key);
+    const deniedKeys = selectedUser.value.features.filter(f => !f.is_allowed).map(f => f.key);
+
+    let pending = 0;
+    const done = () => {
+        pending--;
+        if (pending <= 0) {
+            saving.value = false;
+            savedMessage.value = 'Perubahan akses fitur disimpan.';
+            setTimeout(() => savedMessage.value = '', 3000);
+        }
+    };
+
+    if (allowedKeys.length > 0) {
+        pending++;
+        router.post(route('platform.tenants.user-access.update', props.tenant.id), {
+            user_id: selectedUser.value.user_id,
+            feature_keys: allowedKeys,
+            is_allowed: true,
+        }, {
+            preserveScroll: true,
+            onFinish: done,
+        });
+    }
+
+    if (deniedKeys.length > 0) {
+        pending++;
+        router.post(route('platform.tenants.user-access.update', props.tenant.id), {
+            user_id: selectedUser.value.user_id,
+            feature_keys: deniedKeys,
+            is_allowed: false,
+        }, {
+            preserveScroll: true,
+            onFinish: done,
+        });
+    }
+
+    if (pending === 0) {
+        saving.value = false;
+    }
+};
+
 const featureLabel = (key) => {
     const labels = {
         'phishing': 'Phishing Simulation',
@@ -133,8 +181,12 @@ const featureLabel = (key) => {
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-display text-lg font-bold t-ink">Akses Fitur</h3>
-                    <button class="btn btn-primary text-sm" disabled title="Segera hadir">
-                        Simpan Fitur
+                    <button
+                        @click="saveFeatures"
+                        :disabled="saving"
+                        class="btn btn-primary text-sm"
+                    >
+                        {{ saving ? 'Menyimpan...' : 'Simpan Fitur' }}
                     </button>
                 </div>
 
