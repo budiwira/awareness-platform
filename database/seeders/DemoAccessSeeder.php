@@ -7,12 +7,16 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DemoAccessSeeder extends Seeder
 {
     public function run(): void
     {
+        // Bypass RLS untuk seeding
+        DB::statement('SET LOCAL row_security = off;');
+
         $tenant = Tenant::firstOrCreate(
             ['slug' => 'pt-demo'],
             ['name' => 'PT Demo Nusantara']
@@ -43,6 +47,9 @@ class DemoAccessSeeder extends Seeder
                 ]
             );
         }
+
+        // Re-enable RLS
+        DB::statement('SET LOCAL row_security = on;');
 
         echo "Seeded: ".$tenant->name." | users: ".$tenant->users()->count()."\n";
     }
