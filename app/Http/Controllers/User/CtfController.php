@@ -24,6 +24,15 @@ class CtfController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Akses Dibatasi',
+                'message' => 'Admin telah membatasi akses Anda ke fitur CTF.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
         $solves = CtfSolve::where('user_id', $request->user()->id)
             ->get()
             ->keyBy('challenge_id');
@@ -54,6 +63,11 @@ class CtfController extends Controller
 
         if (!$tenant || !$entitlement->hasFeature($tenant, 'ctf')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur CTF.');
+        }
+
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
+            abort(403, 'Admin telah membatasi akses Anda ke fitur CTF.');
         }
 
         if (! $challenge->is_active || $challenge->status !== 'published') {

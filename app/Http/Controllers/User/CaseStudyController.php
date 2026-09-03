@@ -26,6 +26,15 @@ class CaseStudyController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'case_studies')) {
+            return Inertia::render('Shared/FeatureLocked', [
+                'title' => 'Akses Dibatasi',
+                'message' => 'Admin telah membatasi akses Anda ke fitur Studi Kasus.',
+                'cta' => 'Hubungi admin organisasi',
+            ])->toResponse(request())->setStatusCode(403);
+        }
+
         $participations = CaseParticipation::where('user_id', $request->user()->id)
             ->get()
             ->keyBy('case_study_id');
@@ -64,6 +73,11 @@ class CaseStudyController extends Controller
             abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
         }
 
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'case_studies')) {
+            abort(403, 'Admin telah membatasi akses Anda ke fitur Studi Kasus.');
+        }
+
         if (! $caseStudy->is_active || $caseStudy->status !== 'published') {
             return redirect()->route('user.cases.index');
         }
@@ -82,6 +96,11 @@ class CaseStudyController extends Controller
         $entitlement = app(\App\Services\TenantEntitlement::class);
         if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'case_studies')) {
+            abort(403, 'Admin telah membatasi akses Anda ke fitur Studi Kasus.');
         }
 
         $this->ensureOwner($request, $participation);
@@ -114,6 +133,11 @@ class CaseStudyController extends Controller
         $entitlement = app(\App\Services\TenantEntitlement::class);
         if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'case_studies')) {
+            abort(403, 'Admin telah membatasi akses Anda ke fitur Studi Kasus.');
         }
 
         $this->ensureOwner($request, $participation);
@@ -173,6 +197,11 @@ class CaseStudyController extends Controller
         $entitlement = app(\App\Services\TenantEntitlement::class);
         if (!$tenant || !$entitlement->hasFeature($tenant, 'case_studies')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur Studi Kasus.');
+        }
+
+        // Per-user feature access check
+        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'case_studies')) {
+            abort(403, 'Admin telah membatasi akses Anda ke fitur Studi Kasus.');
         }
 
         $this->ensureOwner($request, $participation);
