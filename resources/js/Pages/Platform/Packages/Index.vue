@@ -55,9 +55,9 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
 </script>
 
 <template>
-  <Head title="packages & Billing" />
+  <Head title="Packages & Billing" />
 
-  <AppLayout title="packages & Billing">
+  <AppLayout title="Packages & Billing">
     <div class="flex items-center justify-between mb-6">
       <p class="text-sm t-muted">Kelola paket langganan platform.</p>
       <button @click="openCreate" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors">
@@ -114,7 +114,7 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
           <span class="text-xs t-muted">{{ Package.subscriptions_count }} subscriber</span>
         </div>
         <div class="text-2xl font-bold text-indigo-600 mb-1">{{ formatPrice(Package.price_monthly) }}</div>
-        <div class="text-xs t-muted mb-2">Maks. {{ Package.max_users }} users Â· {{ Package.includes_all_modules ? 'Semua modul published' : (Package.modules?.length ?? 0) + ' modul kurasi' }}</div>
+        <div class="text-xs t-muted mb-2">Maks. {{ Package.max_users }} users · {{ Package.includes_all_modules ? 'Semua modul published' : (Package.modules?.length ?? 0) + ' modul kurasi' }}</div>
         <div class="flex flex-wrap gap-1 mb-3">
           <span v-for="f in Package.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand">{{ f }}</span>
         </div>
