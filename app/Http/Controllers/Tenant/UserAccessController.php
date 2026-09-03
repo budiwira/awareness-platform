@@ -10,6 +10,7 @@ use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class UserAccessController extends Controller
 {
@@ -21,23 +22,27 @@ class UserAccessController extends Controller
         $entitlement = app(TenantEntitlement::class);
 
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
-        $modules = TrainingModule::whereIn('id', $entitledModuleIds)->get();
+        $modules = TrainingModule::whereIn('id', $entitledModuleIds)
+            ->orderBy('title')
+            ->get(['id', 'title', 'description', 'duration_minutes']);
 
         $overrides = UserModuleAccess::where('user_id', $user->id)
             ->whereIn('training_module_id', $entitledModuleIds)
             ->pluck('is_allowed', 'training_module_id');
 
-        $accessState = $modules->map(function ($module) use ($overrides) {
+        $moduleAccess = $modules->map(function ($module) use ($overrides) {
             return [
-                'module_id' => $module->id,
+                'id' => $module->id,
                 'title' => $module->title,
+                'description' => $module->description,
+                'duration_minutes' => $module->duration_minutes,
                 'is_allowed' => $overrides[$module->id] ?? true,
             ];
-        });
+        })->values();
 
-        return response()->json([
-            'user_id' => $user->id,
-            'modules' => $accessState,
+        return Inertia::render('Tenant/Users/Access', [
+            'user' => $user->only('id', 'name', 'email'),
+            'modules' => $moduleAccess,
         ]);
     }
 

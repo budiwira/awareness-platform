@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 defineProps({ users: Array });
@@ -185,6 +185,7 @@ const roleBadge = (role) =>
                                 </span>
                             </td>
                             <td class="px-6 py-3 text-right">
+                                <Link :href="route('tenant.users.access.show', user.id)" class="text-green-600 text-sm font-medium">Akses</Link>
                                 <button @click="startEdit(user)" class="text-indigo-600 text-sm font-medium">Edit</button>
                             </td>
                         </template>

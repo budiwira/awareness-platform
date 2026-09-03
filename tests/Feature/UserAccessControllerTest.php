@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    $this->withoutVite();
     $this->tenant = Tenant::factory()->create();
     $this->admin = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'tenant_admin']);
     $this->user = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'user']);
@@ -197,11 +198,14 @@ test('endpoint returns current access state', function () {
     $response = $this->actingAs($this->admin)->get(route('tenant.users.access.show', $this->user));
 
     $response->assertOk();
-    $response->assertJson([
-        'user_id' => $this->user->id,
-        'modules' => [
-            ['module_id' => $this->module1->id, 'is_allowed' => false],
-            ['module_id' => $this->module2->id, 'is_allowed' => true],
-        ],
-    ]);
+    $response->assertInertia(fn ($page) => $page
+        ->component('Tenant/Users/Access')
+        ->has('user')
+        ->has('modules', 2)
+        ->where('user.id', $this->user->id)
+        ->where('modules.0.id', $this->module1->id)
+        ->where('modules.0.is_allowed', false)
+        ->where('modules.1.id', $this->module2->id)
+        ->where('modules.1.is_allowed', true)
+    );
 });
