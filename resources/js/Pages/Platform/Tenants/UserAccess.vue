@@ -166,10 +166,10 @@ const featureLabel = (key) => {
                         <button
                             @click="toggleModule(mod)"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                            :class="mod.is_allowed ? 'bg-green-600' : 'bg-gray-300'"
+                            :class="mod.is_allowed ? 'bg-green-600 dark:bg-green-500' : 'bg-gray-300 dark:bg-gray-700'"
                         >
                             <span
-                                class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                class="inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-100 transition-transform"
                                 :class="mod.is_allowed ? 'translate-x-6' : 'translate-x-1'"
                             ></span>
                         </button>
@@ -205,10 +205,10 @@ const featureLabel = (key) => {
                         <button
                             @click="toggleFeature(feat)"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                            :class="feat.is_allowed ? 'bg-green-600' : 'bg-gray-300'"
+                            :class="feat.is_allowed ? 'bg-green-600 dark:bg-green-500' : 'bg-gray-300 dark:bg-gray-700'"
                         >
                             <span
-                                class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                                class="inline-block h-4 w-4 transform rounded-full bg-white dark:bg-gray-100 transition-transform"
                                 :class="feat.is_allowed ? 'translate-x-6' : 'translate-x-1'"
                             ></span>
                         </button>
@@ -217,6 +217,6 @@ const featureLabel = (key) => {
             </div>
         </div>
 
-        <p v-if="savedMessage" class="text-sm text-green-600 mt-4">{{ savedMessage }}</p>
+        <p v-if="savedMessage" class="text-sm text-green-600 dark:text-green-400 mt-4">{{ savedMessage }}</p>
     </AppLayout>
 </template>
