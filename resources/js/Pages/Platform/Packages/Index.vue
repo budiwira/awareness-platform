@@ -114,12 +114,12 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
           <span class="text-xs t-muted">{{ Package.subscriptions_count }} subscriber</span>
         </div>
         <div class="text-2xl font-bold text-indigo-600 mb-1">{{ formatPrice(Package.price_monthly) }}</div>
-        <div class="text-xs t-muted mb-2">Maks. {{ Package.max_users }} users · {{ Package.includes_all_modules ? 'Semua modul published' : (Package.modules?.length ?? 0) + ' modul kurasi' }}</div>
+        <div class="text-xs t-muted mb-2">Maks. {{ Package.max_users }} users   {{ Package.includes_all_modules ? 'Semua modul published' : (Package.modules?.length ?? 0) + ' modul kurasi' }}</div>
         <div class="flex flex-wrap gap-1 mb-3">
           <span v-for="f in Package.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand">{{ f }}</span>
         </div>
         <ul class="space-y-1 text-sm t-muted flex-1">
-          <li v-for="m in Package.modules" :key="m.id" class="flex items-start gap-2 text-xs">ðŸ“š {{ m.title }}</li>
+          <li v-for="m in Package.modules" :key="m.id" class="flex items-start gap-2 text-xs">  {{ m.title }}</li>
         </ul>
         <button @click="openEdit(Package)" class="mt-3 text-xs text-blue-600 hover:text-blue-700 font-medium">Edit</button>
       </div>
