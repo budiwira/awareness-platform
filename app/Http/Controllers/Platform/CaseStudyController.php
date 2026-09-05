@@ -66,7 +66,14 @@ class CaseStudyController extends Controller
     {
         Gate::authorize('update', $caseStudy);
 
-        $caseStudy->update(['status' => 'published']);
+        $caseStudy->status = 'published';
+        $caseStudy->save();
+
+        $caseStudy->refresh();
+        if ($caseStudy->status !== 'published') {
+            return back()->withErrors(['action' => 'Status gagal diperbarui (RLS/permission).']);
+        }
+
         Audit::log('case.published', $caseStudy, ['title' => $caseStudy->title]);
 
         return back();
@@ -76,7 +83,14 @@ class CaseStudyController extends Controller
     {
         Gate::authorize('update', $caseStudy);
 
-        $caseStudy->update(['status' => 'archived']);
+        $caseStudy->status = 'archived';
+        $caseStudy->save();
+
+        $caseStudy->refresh();
+        if ($caseStudy->status !== 'archived') {
+            return back()->withErrors(['action' => 'Status gagal diperbarui (RLS/permission).']);
+        }
+
         Audit::log('case.archived', $caseStudy, ['title' => $caseStudy->title]);
 
         return back();
