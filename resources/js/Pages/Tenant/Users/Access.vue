@@ -81,7 +81,7 @@ const saveChanges = () => {
                     v-for="module in localModules"
                     :key="module.id"
                     class="flex items-center justify-between p-4 rounded-lg border b-line"
-                    :class="module.is_allowed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                    :class="module.is_allowed ? 'bg-surface2 border-green-500/40' : 'bg-surface2 border-red-500/40'"
                 >
                     <div class="flex-1">
                         <div class="font-medium t-ink">{{ module.title }}</div>

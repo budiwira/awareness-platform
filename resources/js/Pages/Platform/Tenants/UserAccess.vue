@@ -132,7 +132,7 @@ const featureLabel = (key) => {
             <label class="text-sm t-muted block mb-2">Pilih User</label>
             <select v-model="selectedUserId" class="input w-full md:w-96">
                 <option v-for="user in users" :key="user.user_id" :value="user.user_id">
-                    {{ user.name }} ({{ user.email }}) — {{ user.role }}
+                    {{ user.name }} ({{ user.email }}) - {{ user.role }}
                 </option>
             </select>
         </div>
@@ -160,7 +160,7 @@ const featureLabel = (key) => {
                         v-for="mod in selectedUser.modules"
                         :key="mod.module_id"
                         class="flex items-center justify-between p-3 rounded-lg border b-line"
-                        :class="mod.is_allowed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                        :class="mod.is_allowed ? 'bg-surface2 border-green-500/40' : 'bg-surface2 border-red-500/40'"
                     >
                         <div class="font-medium t-ink">{{ mod.title }}</div>
                         <button
@@ -199,7 +199,7 @@ const featureLabel = (key) => {
                         v-for="feat in selectedUser.features"
                         :key="feat.key"
                         class="flex items-center justify-between p-3 rounded-lg border b-line"
-                        :class="feat.is_allowed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                        :class="feat.is_allowed ? 'bg-surface2 border-green-500/40' : 'bg-surface2 border-red-500/40'"
                     >
                         <div class="font-medium t-ink">{{ featureLabel(feat.key) }}</div>
                         <button

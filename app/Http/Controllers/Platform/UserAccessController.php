@@ -86,16 +86,18 @@ class UserAccessController extends Controller
         $actor = $request->user();
         $manager = app(UserAccessManager::class);
         $entitlement = app(TenantEntitlement::class);
+        $isInertia = (bool) $request->header('X-Inertia');
 
         // Validate modules are entitled by tenant package
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
         $invalidModuleIds = array_values(array_diff($requestedModuleIds, $entitledModuleIds));
 
         if (!empty($invalidModuleIds)) {
-            return response()->json([
-                'error' => 'Modul tidak termasuk dalam paket tenant',
-                'invalid_module_ids' => $invalidModuleIds,
-            ], 422);
+            $msg = 'Modul tidak termasuk dalam paket tenant';
+
+            return $isInertia
+                ? redirect()->back()->withErrors(['access' => $msg])
+                : response()->json(['error' => $msg, 'invalid_module_ids' => $invalidModuleIds], 422);
         }
 
         // Validate features are entitled by tenant package
@@ -103,10 +105,11 @@ class UserAccessController extends Controller
         $invalidFeatureKeys = array_values(array_diff($requestedFeatureKeys, $entitledFeatures));
 
         if (!empty($invalidFeatureKeys)) {
-            return response()->json([
-                'error' => 'Fitur tidak termasuk dalam paket tenant',
-                'invalid_feature_keys' => $invalidFeatureKeys,
-            ], 422);
+            $msg = 'Fitur tidak termasuk dalam paket tenant';
+
+            return $isInertia
+                ? redirect()->back()->withErrors(['access' => $msg])
+                : response()->json(['error' => $msg, 'invalid_feature_keys' => $invalidFeatureKeys], 422);
         }
 
         $modules = TrainingModule::whereIn('id', $requestedModuleIds)->get();
@@ -127,13 +130,15 @@ class UserAccessController extends Controller
             }
         }
 
-        return response()->json([
+        $payload = [
             'message' => 'Akses user berhasil diperbarui (super admin override)',
             'user_id' => $user->id,
             'module_ids' => $requestedModuleIds,
             'feature_keys' => $requestedFeatureKeys,
             'is_allowed' => $validated['is_allowed'],
             'actor_id' => $actor->id,
-        ]);
+        ];
+
+        return $isInertia ? redirect()->back() : response()->json($payload);
     }
 }
