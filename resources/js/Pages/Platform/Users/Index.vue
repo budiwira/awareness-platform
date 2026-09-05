@@ -3,15 +3,16 @@ import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({ users: Array, search: String });
+const props = defineProps({ users: Array, search: String, tenant_id: [String, Number], tenants: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
 const searchInput = ref('');
+const tenantSelect = ref(props.tenant_id ?? '');
 const showDeleteModal = ref(false);
 const userToDelete = ref(null);
 
 const handleSearch = () => {
-    router.get(route('platform.users.index'), { search: searchInput.value }, {
+    router.get(route('platform.users.index'), { search: searchInput.value, tenant_id: tenantSelect.value || null }, {
         preserveState: true,
         replace: true,
     });
@@ -44,6 +45,12 @@ const roleBadge = (role) => {
 
     <AppLayout title="Users (Cross-Tenant)">
         <div class="mb-6 flex items-center gap-4">
+            <div>
+                <select v-model="tenantSelect" @change="handleSearch" class="input">
+                    <option value="">Semua Tenant</option>
+                    <option v-for="t in tenants" :key="t.id" :value="t.id">{{ t.name }}</option>
+                </select>
+            </div>
             <div class="flex-1">
                 <input
                     v-model="searchInput"
