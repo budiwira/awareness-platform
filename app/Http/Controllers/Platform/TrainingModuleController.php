@@ -45,7 +45,7 @@ class TrainingModuleController extends Controller
         $stats = [
             'assignments_count' => $module->assignments()->count(),
             'completed_count' => $module->assignments()->where('status', 'completed')->count(),
-            'avg_score' => round($module->assignments()->whereHas('quizAttempt')->with('quizAttempt')->get()->avg(fn($a) => $a->quizAttempt->score ?? 0)),
+            'avg_score' => round(\App\Models\QuizAttempt::whereHas('quiz', fn($q) => $q->where('training_module_id', $module->id))->where('status', 'submitted')->avg('score') ?? 0),
         ];
 
         return Inertia::render('Platform/TrainingModules/Show', [
