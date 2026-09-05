@@ -61,7 +61,14 @@ class CtfChallengeController extends Controller
     {
         Gate::authorize('update', $challenge);
 
-        $challenge->update(['status' => 'published']);
+        $challenge->status = 'published';
+        $challenge->save();
+
+        $challenge->refresh();
+        if ($challenge->status !== 'published') {
+            return back()->withErrors(['action' => 'Status gagal diperbarui (RLS/permission).']);
+        }
+
         Audit::log('ctf.published', $challenge, ['title' => $challenge->title]);
 
         return back();
@@ -71,7 +78,14 @@ class CtfChallengeController extends Controller
     {
         Gate::authorize('update', $challenge);
 
-        $challenge->update(['status' => 'archived']);
+        $challenge->status = 'archived';
+        $challenge->save();
+
+        $challenge->refresh();
+        if ($challenge->status !== 'archived') {
+            return back()->withErrors(['action' => 'Status gagal diperbarui (RLS/permission).']);
+        }
+
         Audit::log('ctf.archived', $challenge, ['title' => $challenge->title]);
 
         return back();
