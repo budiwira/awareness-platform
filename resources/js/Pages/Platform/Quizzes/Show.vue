@@ -91,8 +91,9 @@ const submit = () => {
                     <p v-if="errors.correct_index" class="text-xs text-red-600 mt-1">{{ errors.correct_index }}</p>
                 </div>
 
-                <div class="flex justify-end">
+                <div class="flex justify-end gap-2">
                     <button class="btn btn-primary">Simpan Pertanyaan</button>
+                    <Link :href="route('platform.quizzes.index')" class="btn bg-surface2 t-ink">Selesai</Link>
                 </div>
             </form>
         </div>
