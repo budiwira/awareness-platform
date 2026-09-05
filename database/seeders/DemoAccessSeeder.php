@@ -13,14 +13,22 @@ class DemoAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = Tenant::firstOrCreate(
+        // Koneksi runtime dengan role khusus (BYPASSRLS).
+        // Tidak perlu ubah config/database.php.
+        config([
+            'database.connections.pgsql_seeder' => config('database.connections.pgsql'),
+            'database.connections.pgsql_seeder.username' => env('DB_SEEDER_USERNAME', 'postgres'),
+            'database.connections.pgsql_seeder.password' => env('DB_SEEDER_PASSWORD', ''),
+        ]);
+
+        $tenant = Tenant::on('pgsql_seeder')->firstOrCreate(
             ['slug' => 'pt-demo'],
             ['name' => 'PT Demo Nusantara']
         );
 
-        $package = Package::where('slug', 'pro')->first();
+        $package = Package::on('pgsql_seeder')->where('slug', 'pro')->first();
 
-        Subscription::updateOrCreate(
+        Subscription::on('pgsql_seeder')->updateOrCreate(
             ['tenant_id' => $tenant->id],
             ['package_id' => $package?->id, 'status' => 'active', 'started_at' => now()]
         );
@@ -32,7 +40,7 @@ class DemoAccessSeeder extends Seeder
         ];
 
         foreach ($users as $u) {
-            User::firstOrCreate(
+            User::on('pgsql_seeder')->firstOrCreate(
                 ['email' => $u['email']],
                 [
                     'name' => $u['name'],
@@ -44,6 +52,8 @@ class DemoAccessSeeder extends Seeder
             );
         }
 
-        echo "Seeded: ".$tenant->name." | users: ".$tenant->users()->count()."\n";
+        $count = User::on('pgsql_seeder')->where('tenant_id', $tenant->id)->count();
+
+        echo "Seeded: {$tenant->name} | users: {$count}\n";
     }
 }
