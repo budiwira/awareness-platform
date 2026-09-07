@@ -44,52 +44,35 @@ const postJson = async (url, data) => {
 
 };
 
-const saveModules = async () => {
+const saveChanges = async () => {
     if (!selectedUser.value) return;
     saving.value = true;
     savedMessage.value = '';
 
     try {
         const mods = selectedUser.value.modules;
-        const allowedIds = mods.filter(m => m.is_allowed).map(m => m.module_id);
-        const deniedIds = mods.filter(m => !m.is_allowed).map(m => m.module_id);
-        const url = route('platform.tenants.user-access.update', props.tenant.id);
-
-        if (allowedIds.length > 0) {
-            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: allowedIds, is_allowed: true });
-        }
-        if (deniedIds.length > 0) {
-            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: deniedIds, is_allowed: false });
-        }
-
-        savedMessage.value = 'Perubahan akses modul disimpan.';
-    } catch (e) {
-        savedMessage.value = 'Gagal menyimpan: ' + e.message;
-    } finally {
-        saving.value = false;
-        setTimeout(() => savedMessage.value = '', 3000);
-    }
-};
-
-const saveFeatures = async () => {
-    if (!selectedUser.value) return;
-    saving.value = true;
-    savedMessage.value = '';
-
-    try {
         const feats = selectedUser.value.features;
-        const allowedKeys = feats.filter(f => f.is_allowed).map(f => f.key);
-        const deniedKeys = feats.filter(f => !f.is_allowed).map(f => f.key);
         const url = route('platform.tenants.user-access.update', props.tenant.id);
 
-        if (allowedKeys.length > 0) {
-            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: allowedKeys, is_allowed: true });
+        const allowedModuleIds = mods.filter(m => m.is_allowed).map(m => m.module_id);
+        const deniedModuleIds = mods.filter(m => !m.is_allowed).map(m => m.module_id);
+        if (allowedModuleIds.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: allowedModuleIds, is_allowed: true });
         }
-        if (deniedKeys.length > 0) {
-            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: deniedKeys, is_allowed: false });
+        if (deniedModuleIds.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: deniedModuleIds, is_allowed: false });
         }
 
-        savedMessage.value = 'Perubahan akses fitur disimpan.';
+        const allowedFeatureKeys = feats.filter(f => f.is_allowed).map(f => f.key);
+        const deniedFeatureKeys = feats.filter(f => !f.is_allowed).map(f => f.key);
+        if (allowedFeatureKeys.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: allowedFeatureKeys, is_allowed: true });
+        }
+        if (deniedFeatureKeys.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: deniedFeatureKeys, is_allowed: false });
+        }
+
+        savedMessage.value = 'Perubahan akses berhasil disimpan.';
     } catch (e) {
         savedMessage.value = 'Gagal menyimpan: ' + e.message;
     } finally {
@@ -134,13 +117,6 @@ const featureLabel = (key) => {
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-display text-lg font-bold t-ink">Akses Modul</h3>
-                    <button
-                        @click="saveChanges"
-                        :disabled="saving"
-                        class="btn btn-primary text-sm"
-                    >
-                        {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
-                    </button>
                 </div>
 
                 <p class="text-sm t-muted mb-4">
@@ -173,13 +149,6 @@ const featureLabel = (key) => {
             <div class="card p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-display text-lg font-bold t-ink">Akses Fitur</h3>
-                    <button
-                        @click="saveChanges"
-                        :disabled="saving"
-                        class="btn btn-primary text-sm"
-                    >
-                        {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
-                    </button>
                 </div>
 
                 <p class="text-sm t-muted mb-4">
@@ -207,6 +176,12 @@ const featureLabel = (key) => {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="flex justify-end mt-6">
+            <button @click="saveChanges" :disabled="saving" class="btn btn-primary">
+                {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
         </div>
 
         <p v-if="savedMessage" class="text-sm text-green-600 dark:text-green-400 mt-4">{{ savedMessage }}</p>
