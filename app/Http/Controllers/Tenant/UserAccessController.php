@@ -54,6 +54,7 @@ class UserAccessController extends Controller
         $actor = $request->user();
         $manager = app(UserAccessManager::class);
         $entitlement = app(TenantEntitlement::class);
+        $isInertia = (bool) $request->header('X-Inertia');
 
         $validated = $request->validate([
             'module_ids' => 'required|array',
@@ -66,10 +67,11 @@ class UserAccessController extends Controller
         $invalidIds = array_diff($requestedIds, $entitledModuleIds);
 
         if (!empty($invalidIds)) {
-            return response()->json([
-                'error' => 'Modul tidak termasuk dalam paket tenant',
-                'invalid_module_ids' => $invalidIds,
-            ], 422);
+            $msg = 'Modul tidak termasuk dalam paket tenant';
+
+            return $isInertia
+                ? redirect()->back()->withErrors(['access' => $msg])
+                : response()->json(['error' => $msg, 'invalid_module_ids' => $invalidIds], 422);
         }
 
         $modules = TrainingModule::whereIn('id', $requestedIds)->get();
@@ -82,11 +84,13 @@ class UserAccessController extends Controller
             }
         }
 
-        return response()->json([
+        $payload = [
             'message' => 'Akses modul berhasil diperbarui',
             'user_id' => $user->id,
             'module_ids' => $requestedIds,
             'is_allowed' => $validated['is_allowed'],
-        ]);
+        ];
+
+        return $isInertia ? redirect()->back() : response()->json($payload);
     }
 }
