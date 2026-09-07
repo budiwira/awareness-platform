@@ -100,3 +100,22 @@ Decision: DD-03 — publik hanya rank+nama+skor; kategori detail hanya owner & a
 ## B25 — Quiz belum memenuhi standar CBT profesional
 Role: user | Severity: MEDIUM | Kategori: FEATURE
 Decision: DD-04 — timer, passing grade jelas, edit/hapus soal, import Word + template
+
+## B26 — Score tidak konsisten antara Dashboard dan Leaderboard
+Role: user | URL: /user/dashboard vs /me/leaderboard | Severity: MEDIUM | Kategori: DATA
+Actual: dashboard menampilkan 55, leaderboard menampilkan 57 untuk user yang sama (budi), waktu bersamaan
+Expected: satu angka konsisten di semua permukaan
+Catatan: bergabung dengan B23 (score user baru non-zero) → kluster "scoring pipeline"
+
+## B27 — Simpan modul + simpan fitur/tenant bersamaan: hanya yang pertama tersimpan
+Role: super_admin | URL: /platform/tenants (Kelola Akses) | Severity: MEDIUM | Kategori: FUNCTIONAL
+Root cause (hipotesis): setelah save pertama, Inertia redirect memuat ulang props →
+state toggle yang BELUM di-save ter-reset → save kedua mengirim state basi.
+
+## B28 — Item ter-archive tidak punya tombol Publish (tidak bisa dipulihkan)
+Role: super_admin | URL: /platform/ctf, /platform/cases, /platform/modules | Severity: MEDIUM | Kategori: UX
+Expected: status archived menampilkan tombol Publish sebagai pengganti Archive.
+
+## B29 — Packages & Billing masih error setelah policy fix
+Role: super_admin | Severity: HIGH | Kategori: FUNCTIONAL
+Catatan: berarti akar B02/B04 BUKAN (hanya) RLS — ada penyebab kedua.

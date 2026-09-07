@@ -193,6 +193,7 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 text-right space-x-3">
                             <button v-if="c.status === 'draft'" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
                             <button v-if="c.status === 'published'" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
+                            <button v-if="c.status === 'archived'" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
                         </td>
                     </tr>
                 </tbody>

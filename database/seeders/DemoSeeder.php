@@ -114,9 +114,9 @@ class DemoSeeder extends Seeder
                 'order' => 1,
                 'situation' => 'Email masuk mengaku dari IT, meminta password untuk "verifikasi mendesak".',
                 'options' => [
-                    ['text' => 'Membalas dan memberikan password', 'quality' => 0, 'feedback' => 'Jangan pernah membagikan password.'],
-                    ['text' => 'Meneruskan ke tim keamanan tanpa klik tautan', 'quality' => 100, 'feedback' => 'Tepat! Eskalasi ke tim keamanan.'],
-                    ['text' => 'Mengklik tautan untuk memastikan', 'quality' => 20, 'feedback' => 'Berisiko â€” tautan bisa berbahaya.'],
+                    ['text' => 'Membalas dan memberikan password', 'quality' => 'poor', 'feedback' => 'Jangan pernah membagikan password.'],
+                    ['text' => 'Meneruskan ke tim keamanan tanpa klik tautan', 'quality' => 'best', 'feedback' => 'Tepat! Eskalasi ke tim keamanan.'],
+                    ['text' => 'Mengklik tautan untuk memastikan', 'quality' => 'poor', 'feedback' => 'Berisiko â€” tautan bisa berbahaya.'],
                 ],
             ]);
             CaseScene::create([
@@ -124,8 +124,8 @@ class DemoSeeder extends Seeder
                 'order' => 2,
                 'situation' => 'Rekan mengaku butuh "bantuan mendesak" via chat dan meminta kode OTP.',
                 'options' => [
-                    ['text' => 'Memberikan OTP karena rekan sendiri', 'quality' => 0, 'feedback' => 'OTP jangan dibagikan ke siapa pun.'],
-                    ['text' => 'Konfirmasi via kanal lain (telepon langsung)', 'quality' => 100, 'feedback' => 'Benar â€” verifikasi via kanal terpisah.'],
+                    ['text' => 'Memberikan OTP karena rekan sendiri', 'quality' => 'poor', 'feedback' => 'OTP jangan dibagikan ke siapa pun.'],
+                    ['text' => 'Konfirmasi via kanal lain (telepon langsung)', 'quality' => 'best', 'feedback' => 'Benar â€” verifikasi via kanal terpisah.'],
                 ],
             ]);
         }

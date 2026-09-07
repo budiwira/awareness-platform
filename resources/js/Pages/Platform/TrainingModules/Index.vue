@@ -122,6 +122,7 @@ const statusLabel = (status) => {
                             <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
                             <button v-if="module.status === 'draft'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
                             <button v-if="module.status === 'published'" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
+                            <button v-if="module.status === 'archived'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
                             <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline">Hapus</button>
                         </td>
                     </tr>
