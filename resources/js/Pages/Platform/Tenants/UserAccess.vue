@@ -30,7 +30,7 @@ const postJson = async (url, data) => {
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || decodeURIComponent((document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [, ''])[1]),
             'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify(data),
