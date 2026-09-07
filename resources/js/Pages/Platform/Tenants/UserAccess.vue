@@ -36,12 +36,12 @@ const postJson = async (url, data) => {
         body: JSON.stringify(data),
     });
 
+    const body = await res.json().catch(() => ({}));
     if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.message || ('HTTP ' + res.status));
     }
 
-    return body;
 };
 
 const saveModules = async () => {
