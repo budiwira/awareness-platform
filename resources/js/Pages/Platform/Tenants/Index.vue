@@ -96,7 +96,7 @@ const statusBadge = (status) =>
                         <td class="px-6 py-3 t-muted">{{ tenant.slug }}</td>
                         <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>
                         <td class="px-6 py-3">
-                            <span v-if="tenant.current_plan" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_plan }}</span>
+                            <span v-if="tenant.current_package" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_package }}</span>
                             <span v-else class="text-xs t-muted">Belum ada paket</span>
                         </td>
                         <td class="px-6 py-3">
