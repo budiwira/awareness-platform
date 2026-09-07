@@ -135,11 +135,11 @@ const featureLabel = (key) => {
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-display text-lg font-bold t-ink">Akses Modul</h3>
                     <button
-                        @click="saveModules"
+                        @click="saveChanges"
                         :disabled="saving"
                         class="btn btn-primary text-sm"
                     >
-                        {{ saving ? 'Menyimpan...' : 'Simpan Modul' }}
+                        {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
                     </button>
                 </div>
 
@@ -174,11 +174,11 @@ const featureLabel = (key) => {
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-display text-lg font-bold t-ink">Akses Fitur</h3>
                     <button
-                        @click="saveFeatures"
+                        @click="saveChanges"
                         :disabled="saving"
                         class="btn btn-primary text-sm"
                     >
-                        {{ saving ? 'Menyimpan...' : 'Simpan Fitur' }}
+                        {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
                     </button>
                 </div>
 
