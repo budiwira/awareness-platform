@@ -24,85 +24,77 @@ const toggleFeature = (feat) => {
     feat.is_allowed = !feat.is_allowed;
 };
 
-const saveModules = () => {
-    if (!selectedUser.value) return;
-    saving.value = true;
-    savedMessage.value = '';
-
-    const allowedIds = selectedUser.value.modules.filter(m => m.is_allowed).map(m => m.module_id);
-    const deniedIds = selectedUser.value.modules.filter(m => !m.is_allowed).map(m => m.module_id);
-
-    // Kirim dua request: grant yang allowed, revoke yang denied
-    const promises = [];
-
-    if (allowedIds.length > 0) {
-        promises.push(router.post(route('platform.tenants.user-access.update', props.tenant.id), {
-            user_id: selectedUser.value.user_id,
-            module_ids: allowedIds,
-            is_allowed: true,
-        }, { preserveScroll: true, onError: () => {} }));
-    }
-
-    if (deniedIds.length > 0) {
-        promises.push(router.post(route('platform.tenants.user-access.update', props.tenant.id), {
-            user_id: selectedUser.value.user_id,
-            module_ids: deniedIds,
-            is_allowed: false,
-        }, { preserveScroll: true, onError: () => {} }));
-    }
-
-    Promise.all(promises).then(() => {
-        saving.value = false;
-        savedMessage.value = 'Perubahan akses modul disimpan.';
-        setTimeout(() => savedMessage.value = '', 3000);
+const postJson = async (url, data) => {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(data),
     });
+
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || ('HTTP ' + res.status));
+    }
+
+    return body;
 };
 
-const saveFeatures = () => {
+const saveModules = async () => {
     if (!selectedUser.value) return;
-
     saving.value = true;
     savedMessage.value = '';
 
-    const allowedKeys = selectedUser.value.features.filter(f => f.is_allowed).map(f => f.key);
-    const deniedKeys = selectedUser.value.features.filter(f => !f.is_allowed).map(f => f.key);
+    try {
+        const mods = selectedUser.value.modules;
+        const allowedIds = mods.filter(m => m.is_allowed).map(m => m.module_id);
+        const deniedIds = mods.filter(m => !m.is_allowed).map(m => m.module_id);
+        const url = route('platform.tenants.user-access.update', props.tenant.id);
 
-    let pending = 0;
-    const done = () => {
-        pending--;
-        if (pending <= 0) {
-            saving.value = false;
-            savedMessage.value = 'Perubahan akses fitur disimpan.';
-            setTimeout(() => savedMessage.value = '', 3000);
+        if (allowedIds.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: allowedIds, is_allowed: true });
         }
-    };
+        if (deniedIds.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, module_ids: deniedIds, is_allowed: false });
+        }
 
-    if (allowedKeys.length > 0) {
-        pending++;
-        router.post(route('platform.tenants.user-access.update', props.tenant.id), {
-            user_id: selectedUser.value.user_id,
-            feature_keys: allowedKeys,
-            is_allowed: true,
-        }, {
-            preserveScroll: true,
-            onFinish: done,
-        });
-    }
-
-    if (deniedKeys.length > 0) {
-        pending++;
-        router.post(route('platform.tenants.user-access.update', props.tenant.id), {
-            user_id: selectedUser.value.user_id,
-            feature_keys: deniedKeys,
-            is_allowed: false,
-        }, {
-            preserveScroll: true,
-            onFinish: done,
-        });
-    }
-
-    if (pending === 0) {
+        savedMessage.value = 'Perubahan akses modul disimpan.';
+    } catch (e) {
+        savedMessage.value = 'Gagal menyimpan: ' + e.message;
+    } finally {
         saving.value = false;
+        setTimeout(() => savedMessage.value = '', 3000);
+    }
+};
+
+const saveFeatures = async () => {
+    if (!selectedUser.value) return;
+    saving.value = true;
+    savedMessage.value = '';
+
+    try {
+        const feats = selectedUser.value.features;
+        const allowedKeys = feats.filter(f => f.is_allowed).map(f => f.key);
+        const deniedKeys = feats.filter(f => !f.is_allowed).map(f => f.key);
+        const url = route('platform.tenants.user-access.update', props.tenant.id);
+
+        if (allowedKeys.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: allowedKeys, is_allowed: true });
+        }
+        if (deniedKeys.length > 0) {
+            await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: deniedKeys, is_allowed: false });
+        }
+
+        savedMessage.value = 'Perubahan akses fitur disimpan.';
+    } catch (e) {
+        savedMessage.value = 'Gagal menyimpan: ' + e.message;
+    } finally {
+        saving.value = false;
+        setTimeout(() => savedMessage.value = '', 3000);
     }
 };
 

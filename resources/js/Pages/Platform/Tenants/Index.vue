@@ -29,7 +29,7 @@ const openSetPlan = (tenant) => {
 };
 
 const submitSetPlan = () => {
-    router.post(route('platform.tenants.set-Package'), planForm.value, {
+    router.post(route('platform.tenants.set-package'), planForm.value, {
         onSuccess: () => {
             showSetPlan.value = false;
             selectedTenant.value = null;
