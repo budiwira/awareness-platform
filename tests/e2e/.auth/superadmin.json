@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "XSRF-TOKEN",
+      "value": "eyJpdiI6ImFoVWQzbWlIMXdFTmkvNEE4aCs4a2c9PSIsInZhbHVlIjoib1VCWjl5UUlSMXR1Vnp0c3E2QlNvMnFNTE8rRDRWRlJvQjEyTm5na29yemFPUXBaMS9nSStHQnBoR1Y4WTl4cldSVjZWeTNEY2o0OHNBNDZMV0tCWmZFVDQrTEJvTjN3OENnRjNyQkxkbjdNNC9GSVN0Uk5wOXJDK3V2WmYwSWkiLCJtYWMiOiJlZmFhZWY1MTYxM2I4ZjNkOTdlMTA0YzVhNjQ0N2M4N2IwMGVjZWY4NDEzNmFkNDVhOGYzNzFjNTVjYTVmMmNiIiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1788860105.038983,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "cyber-security-awareness-session",
+      "value": "eyJpdiI6Ik0xZHhTSGdDbjd0ZHpDM1dLbVQxM3c9PSIsInZhbHVlIjoiQlBJZHNlVjYxMUxFbkp5K1EyV1B6Tlp2RGVlOEFRL3kvcXBUcUZ6dTlEUmtSVTBIR2hGUVNUVHcvdE1HanA0a0V6Yjd4MXYvSjZsSkora0VRMVVNb3hiclNubTF3ZTFoblJRSlFsNGdlRW1xREh0NU1vb0pKU1FnZXNjN1dLbFUiLCJtYWMiOiIwOWI2N2M0MmJlNDUyMDEyOWEwNjRlYWRjODllMzViOTBmNTU2YjYzMDBkMTAwNzFhNDk5YjkwNmU4NzhhZGQzIiwidGFnIjoiIn0%3D",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1788860105.039114,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
