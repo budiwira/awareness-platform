@@ -66,9 +66,9 @@ jobs:
           psql -h 127.0.0.1 -U postgres -c "CREATE ROLE awareness_app LOGIN PASSWORD 'AppRuntime!123' NOBYPASSRLS;"
           psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE awareness_testing OWNER awareness_dev;"
 
+      - run: composer install --prefer-dist --no-progress --no-interaction
       - run: cp .env.example .env
       - run: php artisan key:generate
-      - run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Migrate sebagai owner tabel
         env:
