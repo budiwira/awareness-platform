@@ -124,3 +124,10 @@ Catatan: berarti akar B02/B04 BUKAN (hanya) RLS â€” ada penyebab kedua.
 - QA tooling aktif: Pint (style gate), Larastan level 5 + baseline (static gate), GitHub Actions CI 3 gate
 - Test suite hermetic: withoutVite() - Pest tidak lagi butuh npm build
 - Backlog terbuka terdokumentasi: B06, B18, B23, B26 (Medium/Low)
+
+## Changelog V3.2.0 - 2026-09-08
+- Status: High bugs = 0, Playwright E2E guards aktif (2 specs: B04, B27)
+- Test suite: 286 Pest + 2 Playwright specs
+- Gate pipeline: Gate 0 (dep audit) + Gate 1-3 (Pint/Larastan/Pest)
+- Temuan data: tenant Acme/Beta di DB development tidak punya user (seed tidak konsisten) — bukan bug kode; dropdown kosong adalah expected behavior untuk tenant tanpa user
+- Governance: branch protection enforce server-side, PR workflow end-to-end, secret scan clean, LICENSE MIT
