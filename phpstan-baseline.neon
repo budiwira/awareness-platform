@@ -1,0 +1,19 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, name\: string, avatar_path\: string\|null, score\: mixed\}, Closure\(App\\Models\\User\)\: array\{id\: int, name\: string, avatar_path\: string\|null, score\: mixed\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/User/LeaderboardController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>package" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/TenantEntitlement.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_allowed" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/UserAccessManager.php

@@ -24,15 +24,15 @@ class BillingController extends Controller
         $entitlement = app(TenantEntitlement::class);
         $features = $entitlement->getEntitledFeatures($tenant);
         $moduleIds = $entitlement->getEntitledModuleIds($tenant);
-        $Package = $current->Package ?? Package::where('slug', 'starter')->first();
+        $package = $current->package ?? Package::where('slug', 'starter')->first();
 
         return Inertia::render('Tenant/Billing/Index', [
             'packages' => Package::where('is_active', true)->orderBy('price_monthly')->get(),
-            'current_plan' => $Package,
+            'current_plan' => $package,
             'current_subscription' => $current,
             'entitlements' => [
                 'features' => $features,
-                'module_info' => $Package?->includes_all_modules ? 'Semua modul published' : count($moduleIds).' modul kurasi',
+                'module_info' => $package?->includes_all_modules ? 'Semua modul published' : count($moduleIds).' modul kurasi',
                 'module_ids' => $moduleIds,
             ],
             'user_count' => User::where('tenant_id', $tenant->id)->count(),
@@ -56,31 +56,31 @@ class BillingController extends Controller
         ]);
 
         $tenant = Tenant::findOrFail($validated['tenant_id']);
-        $Package = Package::findOrFail($validated['package_id']);
+        $package = Package::findOrFail($validated['package_id']);
 
         // Aturan bisnis: tidak bisa memilih Package di bawah jumlah user saat ini
         $userCount = User::where('tenant_id', $tenant->id)->count();
 
-        if ($Package->max_users < $userCount) {
+        if ($package->max_users < $userCount) {
             return redirect()->back()->withErrors([
-                'package_id' => "Package '{$Package->name}' maks. {$Package->max_users} users, Anda punya {$userCount} users.",
+                'package_id' => "Package '{$package->name}' maks. {$package->max_users} users, Anda punya {$userCount} users.",
             ]);
         }
 
-        DB::transaction(function () use ($tenant, $Package) {
+        DB::transaction(function () use ($tenant, $package) {
             Subscription::where('tenant_id', $tenant->id)
                 ->where('status', 'active')
                 ->update(['status' => 'cancelled', 'ends_at' => now()]);
 
             Subscription::create([
                 'tenant_id' => $tenant->id,
-                'package_id' => $Package->id,
+                'package_id' => $package->id,
                 'status' => 'active',
                 'started_at' => now(),
             ]);
         });
 
-        Audit::log('billing.package_changed', $Package, ['tenant_id' => $tenant->id, 'Package' => $Package->slug]);
+        Audit::log('billing.package_changed', $package, ['tenant_id' => $tenant->id, 'Package' => $package->slug]);
 
         return redirect()->route('tenant.billing.index')->with('success', 'Package berhasil diperbarui.');
     }

@@ -40,7 +40,7 @@ class LeaderboardController extends Controller
             ->where('is_active', true)
             ->sum('points');
         $subscription = $tenant->currentSubscription();
-        $entitledFeatures = $subscription?->Package?->features;
+        $entitledFeatures = $subscription?->package?->features;
 
         // Hitung awareness score untuk setiap user
         $leaderboard = $users->map(function (User $u) use ($totalCtfPoints, $entitledFeatures) {
