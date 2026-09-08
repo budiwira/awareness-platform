@@ -1,6 +1,8 @@
+![CI](https://github.com/budiwira/awareness-platform/actions/workflows/ci.yml/badge.svg)
+
 # Cyber Security Awareness Platform
 
-Platform pelatihan & pengukuran kesadaran keamanan siber untuk organisasi — multi-tenant, terukur, dan aman secara desain.
+Platform pelatihan & pengukuran kesadaran keamanan siber untuk organisasi â€” multi-tenant, terukur, dan aman secara desain.
 
 ## Overview
 
@@ -23,7 +25,7 @@ Platform komprehensif untuk melatih, menguji, dan mengukur tingkat kesadaran kea
 - Campaign dengan email template dan target list
 - Link tracking dengan token unik
 - Auto-remedial: assignment training module otomatis setelah click
-- Teaching page (bukan credential capture) — ethical design
+- Teaching page (bukan credential capture) â€” ethical design
 - Dashboard tracking: sent, clicked, reported
 
 ### Gamifikasi
@@ -289,9 +291,9 @@ Lihat [SECURITY.md](SECURITY.md) untuk threat model dan mitigations lengkap.
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — System design, trade-offs, scoring logic
-- [SECURITY.md](SECURITY.md) — Threat model, mitigations, compliance
-- [DEPLOYMENT.md](DEPLOYMENT.md) — Production setup, server config, monitoring
+- [ARCHITECTURE.md](ARCHITECTURE.md) â€” System design, trade-offs, scoring logic
+- [SECURITY.md](SECURITY.md) â€” Threat model, mitigations, compliance
+- [DEPLOYMENT.md](DEPLOYMENT.md) â€” Production setup, server config, monitoring
 
 ## Contributing
 

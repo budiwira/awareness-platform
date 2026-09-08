@@ -119,3 +119,8 @@ Expected: status archived menampilkan tombol Publish sebagai pengganti Archive.
 ## B29 — Packages & Billing masih error setelah policy fix
 Role: super_admin | Severity: HIGH | Kategori: FUNCTIONAL
 Catatan: berarti akar B02/B04 BUKAN (hanya) RLS — ada penyebab kedua.
+## Changelog V3.0.4 - 2026-09-08
+- Status: High bugs = 0 (K1-K7 closed; B01, B02, B04, B22, B27, B28, B29 closed)
+- QA tooling aktif: Pint (style gate), Larastan level 5 + baseline (static gate), GitHub Actions CI 3 gate
+- Test suite hermetic: withoutVite() - Pest tidak lagi butuh npm build
+- Backlog terbuka terdokumentasi: B06, B18, B23, B26 (Medium/Low)
