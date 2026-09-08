@@ -55,7 +55,7 @@ class PackageSeeder extends Seeder
             $package = Package::updateOrCreate(['slug' => $packageData['slug']], $packageData);
 
             // Attach modul kurasi untuk Free (package lain includes_all_modules=true)
-            if ($packageData['slug'] === 'free' && !$packageData['includes_all_modules']) {
+            if ($packageData['slug'] === 'free' && ! $packageData['includes_all_modules']) {
                 $package->modules()->sync($basicModules->pluck('id')->toArray());
             } elseif ($packageData['includes_all_modules']) {
                 $package->modules()->detach(); // Kosongkan pivot, karena includes_all_modules=true

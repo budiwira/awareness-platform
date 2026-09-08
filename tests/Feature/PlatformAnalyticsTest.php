@@ -1,8 +1,7 @@
 <?php
 
-use App\Models\ModuleAssignment;
-use App\Models\PhishingCampaign;
 use App\Models\Package;
+use App\Models\PhishingCampaign;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -14,16 +13,16 @@ beforeEach(function () {
 
 test('platform dashboard shows aggregate summary', function () {
     $superAdmin = User::factory()->superAdmin()->create();
-    
+
     // Create multiple tenants
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
-    
+
     User::factory()->count(3)->create(['tenant_id' => $tenant1->id]);
     User::factory()->count(2)->create(['tenant_id' => $tenant2->id]);
-    
+
     $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Platform/Dashboard')
@@ -37,15 +36,15 @@ test('platform dashboard shows aggregate summary', function () {
 
 test('platform dashboard shows top tenants by risk', function () {
     $superAdmin = User::factory()->superAdmin()->create();
-    
+
     $tenant1 = Tenant::factory()->create(['name' => 'High Risk Corp']);
     $tenant2 = Tenant::factory()->create(['name' => 'Low Risk Inc']);
-    
+
     $user1 = User::factory()->create(['tenant_id' => $tenant1->id]);
     $user2 = User::factory()->create(['tenant_id' => $tenant2->id]);
-    
+
     $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Platform/Dashboard')
@@ -55,7 +54,7 @@ test('platform dashboard shows top tenants by risk', function () {
 
 test('platform dashboard shows Package distribution', function () {
     $superAdmin = User::factory()->superAdmin()->create();
-    
+
     $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
@@ -64,7 +63,7 @@ test('platform dashboard shows Package distribution', function () {
         'includes_all_modules' => true,
         'is_active' => true,
     ]);
-    
+
     $starterPlan = Package::firstOrCreate(['slug' => 'starter'], [
         'name' => 'Starter',
         'price_monthly' => 0,
@@ -73,10 +72,10 @@ test('platform dashboard shows Package distribution', function () {
         'includes_all_modules' => false,
         'is_active' => true,
     ]);
-    
+
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
-    
+
     $tenant1->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant1->id,
@@ -84,7 +83,7 @@ test('platform dashboard shows Package distribution', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $tenant2->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
         'tenant_id' => $tenant2->id,
@@ -92,9 +91,9 @@ test('platform dashboard shows Package distribution', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Platform/Dashboard')
@@ -104,7 +103,7 @@ test('platform dashboard shows Package distribution', function () {
 
 test('platform dashboard shows phishing adoption metrics', function () {
     $superAdmin = User::factory()->superAdmin()->create();
-    
+
     $proPlan = Package::firstOrCreate(['slug' => 'pro'], [
         'name' => 'Pro',
         'price_monthly' => 1500,
@@ -113,7 +112,7 @@ test('platform dashboard shows phishing adoption metrics', function () {
         'includes_all_modules' => true,
         'is_active' => true,
     ]);
-    
+
     $tenant = Tenant::factory()->create();
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
@@ -122,9 +121,9 @@ test('platform dashboard shows phishing adoption metrics', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    
+
     PhishingCampaign::create([
         'tenant_id' => $tenant->id,
         'title' => 'Test Campaign',
@@ -134,9 +133,9 @@ test('platform dashboard shows phishing adoption metrics', function () {
         'status' => 'sent',
         'created_by' => $admin->id,
     ]);
-    
+
     $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Platform/Dashboard')
@@ -149,30 +148,30 @@ test('platform dashboard shows phishing adoption metrics', function () {
 
 test('platform analytics query is optimized', function () {
     $superAdmin = User::factory()->superAdmin()->create();
-    
+
     // Create many tenants
     for ($i = 0; $i < 10; $i++) {
         $tenant = Tenant::factory()->create();
         User::factory()->count(5)->create(['tenant_id' => $tenant->id]);
     }
-    
+
     DB::enableQueryLog();
-    
+
     $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
-    
+
     $queryCount = count(DB::getQueryLog());
-    
+
     // Should be reasonable number of queries (aggregate queries expected)
     expect($queryCount)->toBeLessThan(100);
-    
+
     $response->assertOk();
 });
 
 test('regular tenant admin cannot access platform analytics', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    
+
     $response = $this->actingAs($admin)->get(route('platform.reports'));
-    
+
     $response->assertStatus(403);
 });

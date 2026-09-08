@@ -22,7 +22,7 @@ return new class extends Migration
 
         DB::statement('ALTER TABLE plans ENABLE ROW LEVEL SECURITY');
         DB::statement('DROP POLICY IF EXISTS plans_select_policy ON plans');
-        DB::statement("CREATE POLICY plans_select_policy ON plans FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY plans_select_policy ON plans FOR SELECT USING (true)');
         DB::statement('DROP POLICY IF EXISTS plans_write_policy ON plans');
         DB::statement("CREATE POLICY plans_write_policy ON plans FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
     }

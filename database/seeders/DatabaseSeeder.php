@@ -43,7 +43,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
         $this->call(TtxContentSeeder::class);
-        $this->call(PackageSeeder::class);  
+        $this->call(PackageSeeder::class);
         $this->call(DemoSeeder::class);
 
     }

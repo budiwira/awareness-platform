@@ -39,7 +39,7 @@ return new class extends Migration
         DB::statement('DROP POLICY IF EXISTS plans_select_policy ON packages');
         DB::statement('DROP POLICY IF EXISTS plans_write_policy ON packages');
         DB::statement('ALTER TABLE packages ENABLE ROW LEVEL SECURITY');
-        DB::statement("CREATE POLICY packages_select_policy ON packages FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY packages_select_policy ON packages FOR SELECT USING (true)');
         DB::statement("CREATE POLICY packages_write_policy ON packages FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
 
         // package_requests (formerly plan_requests)
@@ -57,7 +57,7 @@ return new class extends Migration
         DB::statement('DROP POLICY IF EXISTS plan_module_select_policy ON package_module');
         DB::statement('DROP POLICY IF EXISTS plan_module_write_policy ON package_module');
         DB::statement('ALTER TABLE package_module ENABLE ROW LEVEL SECURITY');
-        DB::statement("CREATE POLICY package_module_select_policy ON package_module FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY package_module_select_policy ON package_module FOR SELECT USING (true)');
         DB::statement("CREATE POLICY package_module_write_policy ON package_module FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
     }
 
@@ -97,7 +97,7 @@ return new class extends Migration
 
         // Restore old RLS Policies
         DB::statement('ALTER TABLE plans ENABLE ROW LEVEL SECURITY');
-        DB::statement("CREATE POLICY plans_select_policy ON plans FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY plans_select_policy ON plans FOR SELECT USING (true)');
         DB::statement("CREATE POLICY plans_write_policy ON plans FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
 
         DB::statement('ALTER TABLE plan_requests ENABLE ROW LEVEL SECURITY');
@@ -106,7 +106,7 @@ return new class extends Migration
         DB::statement("CREATE POLICY plan_requests_update_policy ON plan_requests FOR UPDATE USING (NULLIF(current_setting('app.role', true), '') = 'super_admin') WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
 
         DB::statement('ALTER TABLE plan_module ENABLE ROW LEVEL SECURITY');
-        DB::statement("CREATE POLICY plan_module_select_policy ON plan_module FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY plan_module_select_policy ON plan_module FOR SELECT USING (true)');
         DB::statement("CREATE POLICY plan_module_write_policy ON plan_module FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
     }
 };

@@ -1,18 +1,20 @@
 <?php
 
 use App\Models\ModuleAssignment;
+use App\Models\Package;
 use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function makeQuizFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Quiz-'.uniqid(), 'slug' => 'quiz-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create(['title' => 'Phishing', 'content' => 'x', 'duration_minutes' => 10, 'status' => 'published', 'is_active' => true]);
     $quiz = Quiz::create(['training_module_id' => $module->id, 'title' => 'Quiz P', 'passing_score' => 50]);
@@ -54,7 +56,7 @@ test('correct answers produce passing score and complete module', function () {
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
-    $attempt = \App\Models\QuizAttempt::find($attemptId);
+    $attempt = QuizAttempt::find($attemptId);
 
     // Map jawaban ke posisi teracak
     $optionOrderQ1 = $attempt->option_orders[$q1->id];
@@ -83,7 +85,7 @@ test('wrong answers produce failing score', function () {
         ->assertOk();
 
     $attemptId = $startResponse->json('attempt_id');
-    $attempt = \App\Models\QuizAttempt::find($attemptId);
+    $attempt = QuizAttempt::find($attemptId);
 
     // Map jawaban SALAH ke posisi teracak
     $optionOrderQ1 = $attempt->option_orders[$q1->id];

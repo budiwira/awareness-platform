@@ -7,7 +7,6 @@ use App\Models\PhishingTarget;
 use App\Models\QuizAttempt;
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class TenantReportService
 {
@@ -22,26 +21,26 @@ class TenantReportService
         $phishingTargets = PhishingTarget::whereHas('campaign', function ($q) use ($tenantId) {
             $q->where('tenant_id', $tenantId);
         });
-        
+
         $totalAssignments = $assignments->count();
         $completedAssignments = $assignments->where('status', 'completed')->count();
-        $completionRate = $totalAssignments > 0 
-            ? round(($completedAssignments / $totalAssignments) * 100, 1) 
+        $completionRate = $totalAssignments > 0
+            ? round(($completedAssignments / $totalAssignments) * 100, 1)
             : 0;
-        
+
         $avgQuizScore = $quizAttempts->avg('score') ?? 0;
-        
+
         $totalPhishingTargets = $phishingTargets->count();
         $clickedPhishing = $phishingTargets->whereNotNull('clicked_at')->count();
         $phishingClickRate = $totalPhishingTargets > 0
             ? round(($clickedPhishing / $totalPhishingTargets) * 100, 1)
             : 0;
-        
+
         // Average awareness score (dari ModuleAssignment)
         $avgAwarenessScore = $assignments->where('status', 'completed')
             ->whereNotNull('score')
             ->avg('score') ?? 0;
-        
+
         // Users at risk: completion < 50% OR quiz score < 60 OR phishing clicked
         $usersAtRisk = User::where('tenant_id', $tenantId)
             ->whereNull('deleted_at')
@@ -51,17 +50,17 @@ class TenantReportService
                     $subQ->where('status', '!=', 'completed');
                 }, '>=', 2)
                 // OR low quiz score
-                ->orWhereHas('quizAttempts', function ($subQ) {
-                    $subQ->where('status', 'submitted')
-                        ->where('score', '<', 60);
-                })
+                    ->orWhereHas('quizAttempts', function ($subQ) {
+                        $subQ->where('status', 'submitted')
+                            ->where('score', '<', 60);
+                    })
                 // OR clicked phishing
-                ->orWhereHas('phishingTargets', function ($subQ) {
-                    $subQ->whereNotNull('clicked_at');
-                });
+                    ->orWhereHas('phishingTargets', function ($subQ) {
+                        $subQ->whereNotNull('clicked_at');
+                    });
             })
             ->count();
-        
+
         return [
             'avg_awareness_score' => round($avgAwarenessScore, 1),
             'completion_rate' => $completionRate,
@@ -70,7 +69,7 @@ class TenantReportService
             'users_at_risk' => $usersAtRisk,
         ];
     }
-    
+
     /**
      * Get 30-day trend data
      */
@@ -80,11 +79,11 @@ class TenantReportService
         $completionTrend = [];
         $quizScoreTrend = [];
         $phishingClickTrend = [];
-        
+
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
             $days[] = $date;
-            
+
             // Completion rate up to that day
             $totalAssignments = ModuleAssignment::where('tenant_id', $tenantId)
                 ->whereDate('created_at', '<=', $date)
@@ -94,14 +93,14 @@ class TenantReportService
                 ->whereDate('completed_at', '<=', $date)
                 ->count();
             $completionTrend[] = $totalAssignments > 0 ? round(($completed / $totalAssignments) * 100, 1) : 0;
-            
+
             // Average quiz score up to that day
             $avgScore = QuizAttempt::where('tenant_id', $tenantId)
                 ->where('status', 'submitted')
                 ->whereDate('submitted_at', '<=', $date)
                 ->avg('score');
             $quizScoreTrend[] = $avgScore ? round($avgScore, 1) : 0;
-            
+
             // Phishing click rate up to that day
             $totalTargets = PhishingTarget::whereHas('campaign', function ($q) use ($tenantId, $date) {
                 $q->where('tenant_id', $tenantId)
@@ -110,12 +109,12 @@ class TenantReportService
             $clicked = PhishingTarget::whereHas('campaign', function ($q) use ($tenantId) {
                 $q->where('tenant_id', $tenantId);
             })
-            ->whereNotNull('clicked_at')
-            ->whereDate('clicked_at', '<=', $date)
-            ->count();
+                ->whereNotNull('clicked_at')
+                ->whereDate('clicked_at', '<=', $date)
+                ->count();
             $phishingClickTrend[] = $totalTargets > 0 ? round(($clicked / $totalTargets) * 100, 1) : 0;
         }
-        
+
         return [
             'days' => $days,
             'completion_trend' => $completionTrend,
@@ -123,7 +122,7 @@ class TenantReportService
             'phishing_click_trend' => $phishingClickTrend,
         ];
     }
-    
+
     /**
      * Get risk tier breakdown
      */
@@ -133,22 +132,22 @@ class TenantReportService
             ->whereNull('deleted_at')
             ->with(['assignments', 'quizAttempts', 'phishingTargets'])
             ->get();
-        
+
         $tiers = [
             'baik' => 0,
             'cukup' => 0,
             'perlu_perbaikan' => 0,
             'belum_mengerjakan' => 0,
         ];
-        
+
         foreach ($users as $user) {
             $tier = $this->calculateUserTier($user);
             $tiers[$tier]++;
         }
-        
+
         return $tiers;
     }
-    
+
     /**
      * Get detailed user risk list
      */
@@ -158,21 +157,21 @@ class TenantReportService
             ->whereNull('deleted_at')
             ->with(['assignments', 'quizAttempts', 'phishingTargets'])
             ->get();
-        
+
         $result = [];
         foreach ($users as $user) {
             $totalAssignments = $user->assignments->count();
             $completedAssignments = $user->assignments->where('status', 'completed')->count();
-            $completionRate = $totalAssignments > 0 
-                ? round(($completedAssignments / $totalAssignments) * 100, 1) 
+            $completionRate = $totalAssignments > 0
+                ? round(($completedAssignments / $totalAssignments) * 100, 1)
                 : 0;
-            
+
             $avgScore = $user->assignments->where('status', 'completed')
                 ->whereNotNull('score')
                 ->avg('score') ?? 0;
-            
+
             $phishingClicked = $user->phishingTargets->whereNotNull('clicked_at')->count();
-            
+
             $result[] = [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -183,10 +182,10 @@ class TenantReportService
                 'tier' => $this->calculateUserTier($user),
             ];
         }
-        
+
         return $result;
     }
-    
+
     /**
      * Get user detail report
      */
@@ -195,27 +194,27 @@ class TenantReportService
         $assignments = ModuleAssignment::where('user_id', $user->id)
             ->with('module')
             ->get();
-        
+
         $quizAttempts = QuizAttempt::where('user_id', $user->id)
             ->with('quiz')
             ->orderBy('submitted_at', 'desc')
             ->get();
-        
+
         $phishingHistory = PhishingTarget::where('user_id', $user->id)
             ->with('campaign')
             ->orderBy('created_at', 'desc')
             ->get();
-        
+
         $totalAssignments = $assignments->count();
         $completedAssignments = $assignments->where('status', 'completed')->count();
-        $completionRate = $totalAssignments > 0 
-            ? round(($completedAssignments / $totalAssignments) * 100, 1) 
+        $completionRate = $totalAssignments > 0
+            ? round(($completedAssignments / $totalAssignments) * 100, 1)
             : 0;
-        
+
         $avgScore = $assignments->where('status', 'completed')
             ->whereNotNull('score')
             ->avg('score') ?? 0;
-        
+
         return [
             'user' => [
                 'id' => $user->id,
@@ -260,7 +259,7 @@ class TenantReportService
             }),
         ];
     }
-    
+
     /**
      * Export CSV data
      */
@@ -270,28 +269,28 @@ class TenantReportService
             ->whereNull('deleted_at')
             ->with(['assignments', 'quizAttempts', 'phishingTargets'])
             ->get();
-        
+
         $csv = "user_name,email,awareness_score,completion_rate,quiz_score,phishing_received,phishing_clicked,risk_tier\n";
-        
+
         foreach ($users as $user) {
             $totalAssignments = $user->assignments->count();
             $completedAssignments = $user->assignments->where('status', 'completed')->count();
-            $completionRate = $totalAssignments > 0 
-                ? round(($completedAssignments / $totalAssignments) * 100, 1) 
+            $completionRate = $totalAssignments > 0
+                ? round(($completedAssignments / $totalAssignments) * 100, 1)
                 : 0;
-            
+
             $avgScore = $user->assignments->where('status', 'completed')
                 ->whereNotNull('score')
                 ->avg('score') ?? 0;
-            
+
             $avgQuizScore = $user->quizAttempts->where('status', 'submitted')
                 ->avg('score') ?? 0;
-            
+
             $phishingReceived = $user->phishingTargets->count();
             $phishingClicked = $user->phishingTargets->whereNotNull('clicked_at')->count();
-            
+
             $tier = $this->calculateUserTier($user);
-            
+
             $csv .= sprintf(
                 "%s,%s,%.1f,%.1f,%.1f,%d,%d,%s\n",
                 $this->escapeCsv($user->name),
@@ -304,10 +303,10 @@ class TenantReportService
                 $tier
             );
         }
-        
+
         return $csv;
     }
-    
+
     /**
      * Calculate user risk tier
      */
@@ -315,17 +314,17 @@ class TenantReportService
     {
         $totalAssignments = $user->assignments->count();
         $completedAssignments = $user->assignments->where('status', 'completed')->count();
-        
+
         if ($totalAssignments === 0) {
             return 'belum_mengerjakan';
         }
-        
+
         $completionRate = ($completedAssignments / $totalAssignments) * 100;
         $avgScore = $user->assignments->where('status', 'completed')
             ->whereNotNull('score')
             ->avg('score') ?? 0;
         $phishingClicked = $user->phishingTargets->whereNotNull('clicked_at')->count();
-        
+
         // Tier logic
         if ($completionRate >= 80 && $avgScore >= 80 && $phishingClicked === 0) {
             return 'baik';
@@ -337,15 +336,16 @@ class TenantReportService
             return 'belum_mengerjakan';
         }
     }
-    
+
     /**
      * Escape CSV field
      */
     private function escapeCsv(string $value): string
     {
         if (strpos($value, ',') !== false || strpos($value, '"') !== false || strpos($value, "\n") !== false) {
-            return '"' . str_replace('"', '""', $value) . '"';
+            return '"'.str_replace('"', '""', $value).'"';
         }
+
         return $value;
     }
 }

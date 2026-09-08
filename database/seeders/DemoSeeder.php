@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Enums\UserRole;
 use App\Models\CaseParticipation;
-use App\Models\CaseStudy;
 use App\Models\CaseScene;
+use App\Models\CaseStudy;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
 use App\Models\ModuleAssignment;
@@ -73,7 +73,7 @@ class DemoSeeder extends Seeder
             ]);
 
             $quiz = Quiz::firstOrCreate(['training_module_id' => $m->id], [
-                'title' => 'Quiz: ' . $title,
+                'title' => 'Quiz: '.$title,
                 'passing_score' => 70,
                 'is_active' => true,
             ]);

@@ -1,12 +1,12 @@
 <?php
 
+use App\Models\CaseStudy;
+use App\Models\CtfChallenge;
 use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\UserFeatureAccess;
-use App\Models\CaseStudy;
-use App\Models\CtfChallenge;
+use App\Services\UserAccessManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -55,7 +55,7 @@ beforeEach(function () {
 });
 
 test('revoked user blocked from cases index (403)', function () {
-    app(\App\Services\UserAccessManager::class)->revokeFeatureAccess($this->user, 'case_studies', $this->admin);
+    app(UserAccessManager::class)->revokeFeatureAccess($this->user, 'case_studies', $this->admin);
 
     $response = $this->actingAs($this->user)->get(route('user.cases.index'));
     $response->assertStatus(403);
@@ -67,7 +67,7 @@ test('non-revoked user can access cases index', function () {
 });
 
 test('revoked user blocked from ctf index (403)', function () {
-    app(\App\Services\UserAccessManager::class)->revokeFeatureAccess($this->user, 'ctf', $this->admin);
+    app(UserAccessManager::class)->revokeFeatureAccess($this->user, 'ctf', $this->admin);
 
     $response = $this->actingAs($this->user)->get(route('user.ctf.index'));
     $response->assertStatus(403);

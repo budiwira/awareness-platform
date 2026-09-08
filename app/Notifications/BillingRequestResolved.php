@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\PackageRequest;
 use App\Models\Package;
+use App\Models\PackageRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -25,7 +25,7 @@ class BillingRequestResolved extends Notification
     public function toArray(object $notifiable): array
     {
         $planName = $this->Package->name ?? $this->PackageRequest->Package->name ?? 'Unknown';
-        
+
         if ($this->status === 'approved') {
             $message = "Permintaan Package Anda telah disetujui. Package baru: {$planName}";
         } else {

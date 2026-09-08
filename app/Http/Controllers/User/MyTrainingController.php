@@ -4,6 +4,8 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
+use App\Services\TenantEntitlement;
+use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,11 +17,11 @@ class MyTrainingController extends Controller
         $userId = $request->user()->id;
         $tenant = $request->user()->tenant;
 
-        if (!$tenant) {
+        if (! $tenant) {
             abort(403, 'Anda tidak terikat pada organisasi.');
         }
 
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
         // User hanya bisa melihat assignment miliknya sendiri,
@@ -34,7 +36,7 @@ class MyTrainingController extends Controller
             ->get();
 
         // Filter out modules revoked from this user
-        $manager = app(\App\Services\UserAccessManager::class);
+        $manager = app(UserAccessManager::class);
         $assignments = $assignments->filter(function ($assignment) use ($manager, $request) {
             return $manager->hasModuleAccessById($request->user(), $assignment->training_module_id);
         })->values();
@@ -51,9 +53,9 @@ class MyTrainingController extends Controller
         }
 
         $tenant = auth()->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+        if (! $tenant || ! $entitlement->hasModule($tenant, $assignment->training_module_id)) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Modul Tidak Tersedia',
                 'message' => 'Organisasi Anda belum mengaktifkan modul ini.',
@@ -61,9 +63,8 @@ class MyTrainingController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
-
         // Per-user access check: revoked user blocked
-        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById(auth()->user(), $assignment->training_module_id)) {
+        if (! app(UserAccessManager::class)->hasModuleAccessById(auth()->user(), $assignment->training_module_id)) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Akses Modul Dibatasi',
                 'message' => 'Admin telah membatasi akses Anda ke modul ini.',

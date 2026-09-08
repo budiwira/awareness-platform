@@ -14,13 +14,13 @@ return new class extends Migration
             $table->foreignId('plan_id')->constrained('plans')->onDelete('cascade');
             $table->foreignId('training_module_id')->constrained('training_modules')->onDelete('cascade');
             $table->timestamps();
-            
+
             $table->unique(['plan_id', 'training_module_id']);
         });
 
         DB::statement('ALTER TABLE plan_module ENABLE ROW LEVEL SECURITY');
         DB::statement('DROP POLICY IF EXISTS plan_module_select_policy ON plan_module');
-        DB::statement("CREATE POLICY plan_module_select_policy ON plan_module FOR SELECT USING (true)");
+        DB::statement('CREATE POLICY plan_module_select_policy ON plan_module FOR SELECT USING (true)');
         DB::statement('DROP POLICY IF EXISTS plan_module_write_policy ON plan_module');
         DB::statement("CREATE POLICY plan_module_write_policy ON plan_module FOR ALL WITH CHECK (NULLIF(current_setting('app.role', true), '') = 'super_admin')");
     }

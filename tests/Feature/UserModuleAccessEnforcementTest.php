@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\ModuleAssignment;
 use App\Models\Package;
+use App\Models\Quiz;
+use App\Models\QuizQuestion;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
@@ -20,7 +23,7 @@ beforeEach(function () {
         'package_id' => $this->package->id,
         'status' => 'active',
     ]);
-    
+
     // 2. Setup Module
     $this->module = TrainingModule::create([
         'title' => 'Modul Test',
@@ -36,14 +39,14 @@ beforeEach(function () {
     $this->user = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'user']);
 
     // 4. Setup Assignment & Quiz
-    $this->assignment = \App\Models\ModuleAssignment::create([
+    $this->assignment = ModuleAssignment::create([
         'user_id' => $this->user->id,
         'tenant_id' => $this->tenant->id,
         'training_module_id' => $this->module->id,
         'status' => 'assigned',
     ]);
 
-    $this->quiz = \App\Models\Quiz::create([
+    $this->quiz = Quiz::create([
         'training_module_id' => $this->module->id,
         'title' => 'Test Quiz',
         'passing_score' => 70,
@@ -52,7 +55,7 @@ beforeEach(function () {
     ]);
 
     // Minimal 1 question (start() checks questions->count() > 0)
-    \App\Models\QuizQuestion::create([
+    QuizQuestion::create([
         'quiz_id' => $this->quiz->id,
         'question' => 'Test question?',
         'options' => ['A', 'B', 'C', 'D'],

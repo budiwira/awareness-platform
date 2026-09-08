@@ -1,8 +1,8 @@
 <?php
 
+use App\Models\Package;
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -33,7 +33,7 @@ test('user tanpa kampanye phishing mendapat score 100 untuk sinyal phishing', fu
         'started_at' => now(),
     ]);
 
-    $scorer = new AwarenessScore();
+    $scorer = new AwarenessScore;
     $result = $scorer->compute(
         collect(),
         collect(),
@@ -91,7 +91,7 @@ test('user dengan 1 click dari 1 campaign mendapat score 50', function () {
 
     $targets = PhishingTarget::where('user_id', $user->id)->get();
 
-    $scorer = new AwarenessScore();
+    $scorer = new AwarenessScore;
     $result = $scorer->compute(
         collect(),
         collect(),
@@ -126,7 +126,7 @@ test('tenant tanpa fitur phishing tidak punya sinyal phishing dan bobot renormal
         'started_at' => now(),
     ]);
 
-    $scorer = new AwarenessScore();
+    $scorer = new AwarenessScore;
     $result = $scorer->compute(
         collect(),
         collect(),
@@ -185,7 +185,7 @@ test('user dengan 2 click dari 4 campaign mendapat score 75', function () {
 
     $targets = PhishingTarget::where('user_id', $user->id)->get();
 
-    $scorer = new AwarenessScore();
+    $scorer = new AwarenessScore;
     $result = $scorer->compute(
         collect(),
         collect(),

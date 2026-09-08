@@ -1,10 +1,9 @@
 <?php
 
 use App\Models\ModuleAssignment;
+use App\Models\Package;
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
-use App\Models\Package;
-use App\Models\QuizAttempt;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
@@ -24,7 +23,7 @@ test('tenant reports index shows summary and user list', function () {
         'includes_all_modules' => true,
         'is_active' => true,
     ]);
-    
+
     $tenant = Tenant::factory()->create();
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
@@ -33,9 +32,9 @@ test('tenant reports index shows summary and user list', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    
+
     // Create module + assignments
     $module = TrainingModule::create([
         'title' => 'Security 101',
@@ -44,7 +43,7 @@ test('tenant reports index shows summary and user list', function () {
         'status' => 'published',
         'is_active' => true,
     ]);
-    
+
     $user1 = User::factory()->create(['tenant_id' => $tenant->id]);
     ModuleAssignment::create([
         'user_id' => $user1->id,
@@ -54,9 +53,9 @@ test('tenant reports index shows summary and user list', function () {
         'score' => 85,
         'completed_at' => now(),
     ]);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Tenant/Reports/Index')
@@ -77,7 +76,7 @@ test('tenant reports CSV export works for Pro Package', function () {
         'includes_all_modules' => true,
         'is_active' => true,
     ]);
-    
+
     $tenant = Tenant::factory()->create();
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
@@ -86,12 +85,12 @@ test('tenant reports CSV export works for Pro Package', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Test User', 'email' => 'test@example.com']);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
-    
+
     $response->assertOk();
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     expect($response->getContent())->toContain('user_name,email,awareness_score');
@@ -107,7 +106,7 @@ test('tenant reports CSV export shows locked page for Starter Package', function
         'includes_all_modules' => false,
         'is_active' => true,
     ]);
-    
+
     $tenant = Tenant::factory()->create();
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
@@ -116,11 +115,11 @@ test('tenant reports CSV export shows locked page for Starter Package', function
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
-    
+
     $response->assertInertia(fn ($page) => $page
         ->component('Shared/FeatureLocked')
         ->where('feature', 'Export Reports')
@@ -130,12 +129,12 @@ test('tenant reports CSV export shows locked page for Starter Package', function
 test('tenant admin cannot view user detail from another tenant', function () {
     $tenant1 = Tenant::factory()->create();
     $tenant2 = Tenant::factory()->create();
-    
+
     $admin1 = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant1->id]);
     $user2 = User::factory()->create(['tenant_id' => $tenant2->id]);
-    
+
     $response = $this->actingAs($admin1)->get(route('tenant.reports.users.show', $user2->id));
-    
+
     $response->assertStatus(403);
 });
 
@@ -143,9 +142,9 @@ test('tenant admin can view user detail from own tenant', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports.users.show', $user->id));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Tenant/UserDetailReport')
@@ -162,7 +161,7 @@ test('tenant reports include phishing data in user list', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    
+
     // Create phishing campaign + target
     $campaign = PhishingCampaign::create([
         'tenant_id' => $tenant->id,
@@ -173,7 +172,7 @@ test('tenant reports include phishing data in user list', function () {
         'status' => 'sent',
         'created_by' => $admin->id,
     ]);
-    
+
     PhishingTarget::create([
         'campaign_id' => $campaign->id,
         'user_id' => $user->id,
@@ -181,9 +180,9 @@ test('tenant reports include phishing data in user list', function () {
         'status' => 'sent',
         'clicked_at' => now(),
     ]);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports'));
-    
+
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('Tenant/Reports/Index')
@@ -200,7 +199,7 @@ test('CSV export does not include sensitive fields', function () {
         'includes_all_modules' => true,
         'is_active' => true,
     ]);
-    
+
     $tenant = Tenant::factory()->create();
     $tenant->subscriptions()->update(['status' => 'ended', 'ends_at' => now()]);
     Subscription::create([
@@ -209,15 +208,15 @@ test('CSV export does not include sensitive fields', function () {
         'status' => 'active',
         'started_at' => now(),
     ]);
-    
+
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create([
         'tenant_id' => $tenant->id,
         'password' => bcrypt('secret123'),
     ]);
-    
+
     $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
-    
+
     $csv = $response->getContent();
     expect($csv)->not->toContain('secret123');
     expect($csv)->toContain('user_name,email,awareness_score');

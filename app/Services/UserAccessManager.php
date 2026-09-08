@@ -10,9 +10,7 @@ use App\Support\Audit\Audit;
 
 class UserAccessManager
 {
-    public function __construct(protected TenantEntitlement $entitlement)
-    {
-    }
+    public function __construct(protected TenantEntitlement $entitlement) {}
 
     public function hasModuleAccess(User $user, TrainingModule $module): bool
     {
@@ -117,12 +115,14 @@ class UserAccessManager
             'granted_by' => $actor->id,
         ]);
     }
+
     public function hasModuleAccessById(User $user, int $moduleId): bool
     {
-        $module = \App\Models\TrainingModule::find($moduleId);
-        if (!$module) {
+        $module = TrainingModule::find($moduleId);
+        if (! $module) {
             return false;
         }
+
         return $this->hasModuleAccess($user, $module);
     }
 }

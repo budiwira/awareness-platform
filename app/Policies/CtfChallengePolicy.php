@@ -26,4 +26,4 @@ class CtfChallengePolicy
     {
         return $user->role->value === 'super_admin';
     }
-}   
+}

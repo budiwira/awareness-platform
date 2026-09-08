@@ -38,7 +38,7 @@ class AwarenessScore
         Collection $ttxScores,
         int $totalCtfPoints = 0,
         ?array $entitledFeatures = null,
-        Collection $phishingTargets = null
+        ?Collection $phishingTargets = null
     ): array {
         $completion = $this->completion($assignments);
         $quiz = $this->quizPerformance($quizAttempts);
@@ -71,7 +71,7 @@ class AwarenessScore
 
         foreach (self::WEIGHTS as $key => $weight) {
             $isLocked = in_array($key, $lockedSignals, true);
-            
+
             if ($isLocked) {
                 $breakdown[] = [
                     'key' => $key,
@@ -84,7 +84,7 @@ class AwarenessScore
             } else {
                 $normalizedWeight = $entitledWeightSum > 0 ? $weight / $entitledWeightSum : 0;
                 $overall += $scores[$key] * $normalizedWeight;
-                
+
                 $breakdown[] = [
                     'key' => $key,
                     'label' => $this->labelForKey($key),

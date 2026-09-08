@@ -22,8 +22,8 @@ class UserQuizReviewTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $Package = Package::create([
-            'name' => 'Pro-' . uniqid(),
-            'slug' => 'pro-' . uniqid(),
+            'name' => 'Pro-'.uniqid(),
+            'slug' => 'pro-'.uniqid(),
             'price_monthly' => 100,
             'max_users' => 100,
             'features' => ['training'],
@@ -226,7 +226,7 @@ class UserQuizReviewTest extends TestCase
         $response = $this->actingAs($user)->get(route('user.training.quiz.review', $attempt->id));
 
         $response->assertOk();
-        
+
         // Review harus tampilkan urutan asli (q1, q2) bukan urutan teracak
         $questions = $response->viewData('page')['props']['questions'];
         expect(count($questions))->toBe(2);
@@ -261,12 +261,12 @@ class UserQuizReviewTest extends TestCase
         $response = $this->actingAs($user)->get(route('user.training.quiz.review', $attempt->id));
 
         $response->assertOk();
-        
+
         $questions = $response->viewData('page')['props']['questions'];
-        
+
         // Opsi harus urutan asli
         expect($questions[0]['options'])->toBe(['Serangan email', 'Virus', 'Firewall', 'Antivirus']);
-        
+
         // User jawab indeks teracak 2, yang map ke asli 0 (benar)
         expect($questions[0]['user_answer_index'])->toBe(0);
         expect($questions[0]['correct_index'])->toBe(0);

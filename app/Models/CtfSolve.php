@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -12,11 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $tenant_id
  * @property int $challenge_id
  * @property int $points
- * @property \Illuminate\Support\Carbon $solved_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\User $user
- * @property-read \App\Models\CtfChallenge $challenge
+ * @property Carbon $solved_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read User $user
+ * @property-read CtfChallenge $challenge
  */
 class CtfSolve extends Model
 {
@@ -31,7 +32,7 @@ class CtfSolve extends Model
         return $this->belongsTo(User::class);
     }
 
-        public function challenge(): BelongsTo
+    public function challenge(): BelongsTo
     {
         return $this->belongsTo(CtfChallenge::class, 'challenge_id');
     }

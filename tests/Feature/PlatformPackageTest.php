@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Package;
 use App\Models\User;
 
 test('super admin can create Package', function () {

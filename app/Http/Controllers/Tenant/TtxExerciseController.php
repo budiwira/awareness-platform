@@ -11,6 +11,7 @@ use App\Models\TtxTeam;
 use App\Models\TtxTeamMember;
 use App\Models\User;
 use App\Notifications\TtxInvitation;
+use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,9 +29,9 @@ class TtxExerciseController extends Controller
     public function index(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur TTX Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
@@ -59,9 +60,9 @@ class TtxExerciseController extends Controller
     public function store(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
@@ -95,9 +96,9 @@ class TtxExerciseController extends Controller
     public function show(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
-            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
+            return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur TTX Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
                 'cta' => 'Ajukan Upgrade',
@@ -120,8 +121,8 @@ class TtxExerciseController extends Controller
     public function storeTeam(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
@@ -147,8 +148,8 @@ class TtxExerciseController extends Controller
     public function storeTeamMember(Request $request, TtxTeam $team)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
@@ -183,8 +184,8 @@ class TtxExerciseController extends Controller
     public function advance(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
@@ -205,8 +206,8 @@ class TtxExerciseController extends Controller
     public function storeInject(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 
@@ -232,9 +233,9 @@ class TtxExerciseController extends Controller
     public function evaluateForm(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
-            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
+            return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur TTX Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Tabletop Exercise.',
                 'cta' => 'Ajukan Upgrade',
@@ -260,8 +261,8 @@ class TtxExerciseController extends Controller
     public function evaluateStore(Request $request, TtxExercise $exercise)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ttx')) {
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ttx')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur TTX.');
         }
 

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\PackageRequest;
 use App\Models\Subscription;
+use App\Models\Tenant;
 use App\Models\User;
+use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +21,7 @@ class BillingController extends Controller
         $tenant = $request->user()->tenant;
 
         $current = $tenant->currentSubscription();
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
         $features = $entitlement->getEntitledFeatures($tenant);
         $moduleIds = $entitlement->getEntitledModuleIds($tenant);
         $Package = $current->Package ?? Package::where('slug', 'starter')->first();
@@ -30,7 +32,7 @@ class BillingController extends Controller
             'current_subscription' => $current,
             'entitlements' => [
                 'features' => $features,
-                'module_info' => $Package?->includes_all_modules ? 'Semua modul published' : count($moduleIds) . ' modul kurasi',
+                'module_info' => $Package?->includes_all_modules ? 'Semua modul published' : count($moduleIds).' modul kurasi',
                 'module_ids' => $moduleIds,
             ],
             'user_count' => User::where('tenant_id', $tenant->id)->count(),
@@ -53,7 +55,7 @@ class BillingController extends Controller
             'tenant_id' => ['required', 'exists:tenants,id'], // Super admin perlu specify tenant
         ]);
 
-        $tenant = \App\Models\Tenant::findOrFail($validated['tenant_id']);
+        $tenant = Tenant::findOrFail($validated['tenant_id']);
         $Package = Package::findOrFail($validated['package_id']);
 
         // Aturan bisnis: tidak bisa memilih Package di bawah jumlah user saat ini

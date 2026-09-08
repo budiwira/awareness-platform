@@ -2,8 +2,8 @@
 
 namespace App\Services\Reporting;
 
-use App\Models\PhishingCampaign;
 use App\Models\Package;
+use App\Models\PhishingCampaign;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -17,21 +17,21 @@ class PlatformAnalyticsService
     public function getPlatformSummary(): array
     {
         $totalTenants = Tenant::count();
-        
+
         // Active tenants: have active subscription
         $activeTenants = Tenant::whereHas('subscriptions', function ($q) {
             $q->where('status', 'active');
         })->count();
-        
+
         // Total users across all tenants
         $totalUsers = User::whereNull('deleted_at')->count();
-        
+
         // Average platform awareness score
         $avgPlatformScore = DB::table('module_assignments')
             ->where('status', 'completed')
             ->whereNotNull('score')
             ->avg('score') ?? 0;
-        
+
         return [
             'total_tenants' => $totalTenants,
             'active_tenants' => $activeTenants,
@@ -39,7 +39,7 @@ class PlatformAnalyticsService
             'avg_platform_awareness_score' => round($avgPlatformScore, 1),
         ];
     }
-    
+
     /**
      * Get top tenants by risk
      */
@@ -48,23 +48,23 @@ class PlatformAnalyticsService
         $tenants = Tenant::withCount('users')
             ->with('subscriptions.Package')
             ->get();
-        
+
         $riskData = [];
-        
+
         foreach ($tenants as $tenant) {
             $totalAssignments = DB::table('module_assignments')
                 ->where('tenant_id', $tenant->id)
                 ->count();
-            
+
             $completedAssignments = DB::table('module_assignments')
                 ->where('tenant_id', $tenant->id)
                 ->where('status', 'completed')
                 ->count();
-            
+
             $completionRate = $totalAssignments > 0
                 ? round(($completedAssignments / $totalAssignments) * 100, 1)
                 : 0;
-            
+
             $phishingClicked = DB::table('phishing_targets')
                 ->whereIn('campaign_id', function ($q) use ($tenant) {
                     $q->select('id')
@@ -73,18 +73,18 @@ class PlatformAnalyticsService
                 })
                 ->whereNotNull('clicked_at')
                 ->count();
-            
+
             $avgScore = DB::table('module_assignments')
                 ->where('tenant_id', $tenant->id)
                 ->where('status', 'completed')
                 ->whereNotNull('score')
                 ->avg('score') ?? 0;
-            
+
             // Risk score (lower completion + lower score + more phishing clicks = higher risk)
             $riskScore = (100 - $completionRate) + (100 - $avgScore) + ($phishingClicked * 5);
-            
+
             $currentSubscription = $tenant->currentSubscription();
-            
+
             $riskData[] = [
                 'tenant_id' => $tenant->id,
                 'tenant_name' => $tenant->name,
@@ -96,15 +96,15 @@ class PlatformAnalyticsService
                 'current_plan' => $currentSubscription->Package->name ?? 'No Package',
             ];
         }
-        
+
         // Sort by risk score descending
         usort($riskData, function ($a, $b) {
             return $b['risk_score'] <=> $a['risk_score'];
         });
-        
+
         return array_slice($riskData, 0, 5);
     }
-    
+
     /**
      * Get Package distribution
      */
@@ -113,7 +113,7 @@ class PlatformAnalyticsService
         $packages = Package::withCount(['subscriptions' => function ($q) {
             $q->where('status', 'active');
         }])->get();
-        
+
         $distribution = [];
         foreach ($packages as $Package) {
             $distribution[] = [
@@ -122,10 +122,10 @@ class PlatformAnalyticsService
                 'tenant_count' => $Package->subscriptions_count,
             ];
         }
-        
+
         return $distribution;
     }
-    
+
     /**
      * Get phishing adoption metrics
      */
@@ -135,18 +135,18 @@ class PlatformAnalyticsService
             $q->where('is_active', true)
                 ->whereJsonContains('features', 'phishing');
         })->count();
-        
+
         $tenantsActivelySending = Tenant::whereHas('subscriptions.Package', function ($q) {
             $q->where('is_active', true)
                 ->whereJsonContains('features', 'phishing');
         })
-        ->whereHas('users', function ($q) {
-            $q->whereHas('phishingCampaignsCreated');
-        })
-        ->count();
-        
+            ->whereHas('users', function ($q) {
+                $q->whereHas('phishingCampaignsCreated');
+            })
+            ->count();
+
         $totalCampaigns = PhishingCampaign::count();
-        
+
         return [
             'tenants_with_phishing_feature' => $tenantsWithPhishing,
             'tenants_actively_sending' => $tenantsActivelySending,

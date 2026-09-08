@@ -20,12 +20,12 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->text('email_snapshot')->nullable(); // JSON: {subject, body}
             $table->timestamps();
-            
+
             $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
         });
 
         DB::statement('ALTER TABLE phishing_campaigns ENABLE ROW LEVEL SECURITY');
-        
+
         DB::statement('DROP POLICY IF EXISTS phishing_campaigns_tenant_isolation ON phishing_campaigns');
         DB::statement("
             CREATE POLICY phishing_campaigns_tenant_isolation ON phishing_campaigns
@@ -35,7 +35,7 @@ return new class extends Migration
                 OR NULLIF(current_setting('app.role', true), '') = 'super_admin'
             )
         ");
-        
+
         DB::statement('DROP POLICY IF EXISTS phishing_campaigns_insert_policy ON phishing_campaigns');
         DB::statement("
             CREATE POLICY phishing_campaigns_insert_policy ON phishing_campaigns
@@ -44,7 +44,7 @@ return new class extends Migration
                 tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid
             )
         ");
-        
+
         DB::statement('DROP POLICY IF EXISTS phishing_campaigns_update_policy ON phishing_campaigns');
         DB::statement("
             CREATE POLICY phishing_campaigns_update_policy ON phishing_campaigns

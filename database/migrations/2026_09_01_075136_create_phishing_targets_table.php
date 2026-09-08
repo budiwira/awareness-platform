@@ -17,12 +17,12 @@ return new class extends Migration
             $table->string('status', 20)->default('sent'); // sent|clicked
             $table->timestamp('clicked_at')->nullable();
             $table->timestamps();
-            
+
             $table->index(['campaign_id', 'status']);
         });
 
         DB::statement('ALTER TABLE phishing_targets ENABLE ROW LEVEL SECURITY');
-        
+
         DB::statement('DROP POLICY IF EXISTS phishing_targets_tenant_isolation ON phishing_targets');
         DB::statement("
             CREATE POLICY phishing_targets_tenant_isolation ON phishing_targets

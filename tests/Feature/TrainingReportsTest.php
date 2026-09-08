@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\ModuleAssignment;
+use App\Models\Package;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
@@ -34,16 +36,16 @@ test('user sees own score page with stats', function () {
 });
 test('tenant admin can export csv report', function () {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create(['name' => 'E-' . uniqid(), 'slug' => 'e-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training', 'reports_export'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'E-'.uniqid(), 'slug' => 'e-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training', 'reports_export'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Budi Export']);
 
     $response = $this->actingAs($admin)->get(route('tenant.reports.export'));
-    
+
     $response->assertOk();
     $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-    
+
     $content = $response->getContent();
     expect($content)->toContain('Budi Export');
 });

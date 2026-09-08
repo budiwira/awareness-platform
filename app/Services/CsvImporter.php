@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 class CsvImporter
 {
     private array $allowedRoles = ['user', 'tenant_admin'];
+
     private int $maxRows = 500;
 
     public function importUsers(UploadedFile $file, string $tenantId, int $actorId): array
@@ -24,7 +25,7 @@ class CsvImporter
 
         // Skip header
         $header = fgetcsv($handle);
-        if (!$header || strtolower(trim($header[0] ?? '')) !== 'name') {
+        if (! $header || strtolower(trim($header[0] ?? '')) !== 'name') {
             fclose($handle);
             throw ValidationException::withMessages(['file' => 'Format CSV tidak valid. Kolom pertama harus "name".']);
         }
@@ -39,7 +40,9 @@ class CsvImporter
                 throw ValidationException::withMessages(['file' => "Maksimal {$this->maxRows} baris data."]);
             }
 
-            if (count($data) < 3) continue;
+            if (count($data) < 3) {
+                continue;
+            }
 
             $name = trim($data[0]);
             $email = trim($data[1]);
@@ -48,7 +51,7 @@ class CsvImporter
             // Sanitasi CSV Injection (Excel Formula Injection)
             $name = $this->sanitizeCsvInjection($name);
 
-            if (!in_array($role, $this->allowedRoles)) {
+            if (! in_array($role, $this->allowedRoles)) {
                 fclose($handle);
                 throw ValidationException::withMessages(['file' => "Role '{$role}' tidak valid pada baris ke-{$rowCount}. Hanya 'user' atau 'tenant_admin' yang diperbolehkan."]);
             }
@@ -78,6 +81,7 @@ class CsvImporter
             }
             DB::commit();
             Audit::log('user.bulk_imported', null, ['count' => count($rows), 'actor_id' => $actorId]);
+
             return $rows;
         } catch (UniqueConstraintViolationException $e) {
             DB::rollBack();
@@ -92,8 +96,9 @@ class CsvImporter
     {
         // Mencegah Excel Formula Injection dengan menambahkan tanda kutip satu di awal
         if (preg_match('/^[=+\-@]/', $value)) {
-            return "'" . $value;
+            return "'".$value;
         }
+
         return $value;
     }
 }

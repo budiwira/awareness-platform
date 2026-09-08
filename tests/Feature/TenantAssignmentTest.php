@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\ModuleAssignment;
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
@@ -26,8 +28,8 @@ test('tenant admin can view assignments for their users', function () {
 
 test('tenant admin can assign a module to a user', function () {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create(['name' => 'Ass-' . uniqid(), 'slug' => 'ass-' . uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Ass-'.uniqid(), 'slug' => 'ass-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create(['title' => 'Test', 'content' => '...', 'duration_minutes' => 10, 'is_active' => true, 'status' => 'published']);
@@ -49,7 +51,7 @@ test('tenant admin can assign a module to a user', function () {
 test('tenant admin cannot assign module to user from another tenant', function () {
     $tenantA = Tenant::factory()->create();
     $tenantB = Tenant::factory()->create();
-    
+
     $adminA = User::factory()->tenantAdmin()->create(['tenant_id' => $tenantA->id]);
     $userB = User::factory()->create(['tenant_id' => $tenantB->id]);
     $module = TrainingModule::create(['title' => 'Test', 'content' => '...', 'duration_minutes' => 10, 'is_active' => true]);

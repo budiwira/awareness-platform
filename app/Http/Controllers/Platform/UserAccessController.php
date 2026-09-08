@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
+use App\Models\UserFeatureAccess;
 use App\Models\UserModuleAccess;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use App\Models\UserFeatureAccess;
 use Inertia\Inertia;
 
 class UserAccessController extends Controller
@@ -41,12 +41,12 @@ class UserAccessController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role->value ?? $user->role,
-                'modules' => $modules->map(fn($m) => [
+                'modules' => $modules->map(fn ($m) => [
                     'module_id' => $m->id,
                     'title' => $m->title,
                     'is_allowed' => $moduleOverrides[$m->id] ?? true,
                 ])->values(),
-                'features' => collect($entitledFeatures)->map(fn($key) => [
+                'features' => collect($entitledFeatures)->map(fn ($key) => [
                     'key' => $key,
                     'is_allowed' => $featureOverrides[$key] ?? true,
                 ])->values(),
@@ -92,7 +92,7 @@ class UserAccessController extends Controller
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
         $invalidModuleIds = array_values(array_diff($requestedModuleIds, $entitledModuleIds));
 
-        if (!empty($invalidModuleIds)) {
+        if (! empty($invalidModuleIds)) {
             $msg = 'Modul tidak termasuk dalam paket tenant';
 
             return $isInertia
@@ -104,7 +104,7 @@ class UserAccessController extends Controller
         $entitledFeatures = $entitlement->getEntitledFeatures($tenant);
         $invalidFeatureKeys = array_values(array_diff($requestedFeatureKeys, $entitledFeatures));
 
-        if (!empty($invalidFeatureKeys)) {
+        if (! empty($invalidFeatureKeys)) {
             $msg = 'Fitur tidak termasuk dalam paket tenant';
 
             return $isInertia

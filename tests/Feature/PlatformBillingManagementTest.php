@@ -5,6 +5,7 @@ use App\Models\PackageRequest;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\BillingRequestResolved;
 use Illuminate\Support\Facades\Notification;
 
 test('super admin can view all billing requests across tenants', function () {
@@ -55,7 +56,7 @@ test('super admin can approve billing request and creates active subscription', 
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'billing.request_approved']);
 
-    Notification::assertSentTo($tenantAdmin, \App\Notifications\BillingRequestResolved::class);
+    Notification::assertSentTo($tenantAdmin, BillingRequestResolved::class);
 });
 
 test('super admin can reject billing request', function () {
@@ -90,7 +91,7 @@ test('super admin can reject billing request', function () {
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'billing.request_rejected']);
 
-    Notification::assertSentTo($tenantAdmin, \App\Notifications\BillingRequestResolved::class);
+    Notification::assertSentTo($tenantAdmin, BillingRequestResolved::class);
 });
 
 test('approve fails when Package max_users below current active user count (downgrade guard)', function () {
@@ -146,7 +147,7 @@ test('super admin can set Package directly via tenants page', function () {
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'billing.package_set_by_admin']);
 
-    Notification::assertSentTo($tenantAdmin, \App\Notifications\BillingRequestResolved::class);
+    Notification::assertSentTo($tenantAdmin, BillingRequestResolved::class);
 });
 
 test('set Package fails when Package max_users below current active user count (downgrade guard)', function () {

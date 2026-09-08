@@ -2,15 +2,14 @@
 
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\Package;
-use App\Models\Subscription;
+use Illuminate\Http\UploadedFile;
 
 test('tenant admin can import users via CSV', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
     $csvContent = "name,email,role\nBudi,budi@test.local,user\nSiti,siti@test.local,tenant_admin\n";
-    $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('users.csv', $csvContent);
+    $file = UploadedFile::fake()->createWithContent('users.csv', $csvContent);
 
     $this->actingAs($admin)
         ->post(route('tenant.users.import'), ['file' => $file])
@@ -27,7 +26,7 @@ test('CSV injection is sanitized', function () {
 
     // Payload berbahaya Excel Formula Injection
     $csvContent = "name,email,role\n=cmd|' /C calc'!A0,evil@test.local,user\n";
-    $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('evil.csv', $csvContent);
+    $file = UploadedFile::fake()->createWithContent('evil.csv', $csvContent);
 
     $this->actingAs($admin)
         ->post(route('tenant.users.import'), ['file' => $file])
@@ -43,7 +42,7 @@ test('invalid role in CSV rejects entire import', function () {
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
     $csvContent = "name,email,role\nBudi,budi@test.local,super_admin\n";
-    $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('bad.csv', $csvContent);
+    $file = UploadedFile::fake()->createWithContent('bad.csv', $csvContent);
 
     $this->actingAs($admin)
         ->post(route('tenant.users.import'), ['file' => $file])

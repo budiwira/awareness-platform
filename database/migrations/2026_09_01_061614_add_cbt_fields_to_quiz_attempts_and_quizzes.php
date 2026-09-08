@@ -23,7 +23,7 @@ return new class extends Migration
             $table->timestamp('submitted_at')->nullable()->after('deadline_at');
             $table->jsonb('question_order')->nullable()->after('answers');
             $table->jsonb('option_orders')->nullable()->after('question_order');
-            
+
             $table->integer('score')->nullable()->change();
             $table->boolean('passed')->nullable()->change();
         });

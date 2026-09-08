@@ -4,41 +4,44 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property string $name
  * @property string $email
- * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $remember_token
  * @property string|null $avatar_path
  * @property string|null $tenant_id
- * @property \App\Enums\UserRole $role
+ * @property UserRole $role
  * @property bool $is_active
  * @property int $login_streak
- * @property \Illuminate\Support\Carbon|null $last_login_date
+ * @property Carbon|null $last_login_date
  * @property bool $show_on_leaderboard
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Tenant|null $tenant
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ModuleAssignment> $moduleAssignments
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\ModuleAssignment> $assignments
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CaseParticipation> $caseParticipations
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CtfSolve> $ctfSolves
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\TtxScore> $ttxScores
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\QuizAttempt> $quizAttempts
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PhishingTarget> $phishingTargets
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\PhishingCampaign> $phishingCampaignsCreated
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\UserBadge> $userBadges
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Badge> $badges
+ * @property Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Tenant|null $tenant
+ * @property-read Collection<int, ModuleAssignment> $moduleAssignments
+ * @property-read Collection<int, ModuleAssignment> $assignments
+ * @property-read Collection<int, CaseParticipation> $caseParticipations
+ * @property-read Collection<int, CtfSolve> $ctfSolves
+ * @property-read Collection<int, TtxScore> $ttxScores
+ * @property-read Collection<int, QuizAttempt> $quizAttempts
+ * @property-read Collection<int, PhishingTarget> $phishingTargets
+ * @property-read Collection<int, PhishingCampaign> $phishingCampaignsCreated
+ * @property-read Collection<int, UserBadge> $userBadges
+ * @property-read Collection<int, Badge> $badges
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -110,43 +113,47 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->role === UserRole::User;
     }
-        public function moduleAssignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+
+    public function moduleAssignments(): HasMany
     {
         return $this->hasMany(ModuleAssignment::class);
     }
-        public function caseParticipations(): \Illuminate\Database\Eloquent\Relations\HasMany
+
+    public function caseParticipations(): HasMany
     {
         return $this->hasMany(CaseParticipation::class);
     }
-        public function ctfSolves(): \Illuminate\Database\Eloquent\Relations\HasMany
+
+    public function ctfSolves(): HasMany
     {
         return $this->hasMany(CtfSolve::class);
     }
-        public function ttxScores(): \Illuminate\Database\Eloquent\Relations\HasMany
+
+    public function ttxScores(): HasMany
     {
         return $this->hasMany(TtxScore::class);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\ModuleAssignment, $this>
+     * @return HasMany<ModuleAssignment, $this>
      */
-    public function assignments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function assignments(): HasMany
     {
         return $this->hasMany(ModuleAssignment::class);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\QuizAttempt, $this>
+     * @return HasMany<QuizAttempt, $this>
      */
-    public function quizAttempts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function quizAttempts(): HasMany
     {
         return $this->hasMany(QuizAttempt::class);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\PhishingTarget, $this>
+     * @return HasMany<PhishingTarget, $this>
      */
-    public function phishingTargets(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function phishingTargets(): HasMany
     {
         return $this->hasMany(PhishingTarget::class);
     }

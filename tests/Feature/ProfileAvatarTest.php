@@ -139,7 +139,7 @@ class ProfileAvatarTest extends TestCase
         $response = $this->actingAs($user)->get(route('user.dashboard'));
 
         $response->assertOk();
-        
+
         $authUser = $response->viewData('page')['props']['auth']['user'];
         expect($authUser['avatar_path'])->toBe('avatars/test.jpg');
     }
@@ -157,7 +157,7 @@ class ProfileAvatarTest extends TestCase
         $response = $this->actingAs($user)->get(route('user.dashboard'));
 
         $response->assertOk();
-        
+
         $authUser = $response->viewData('page')['props']['auth']['user'];
         expect($authUser['avatar_path'])->toBeNull();
         expect($authUser['name'])->toBe('John Doe');

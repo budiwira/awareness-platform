@@ -22,7 +22,7 @@ return new class extends Migration
         foreach ($tables as $table) {
             try {
                 DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON {$table} TO awareness_app");
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Tabel mungkin belum ada, skip
             }
         }
@@ -30,7 +30,7 @@ return new class extends Migration
         // Grant untuk sequences (jika ada)
         try {
             DB::statement('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO awareness_app');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Skip jika error
         }
     }

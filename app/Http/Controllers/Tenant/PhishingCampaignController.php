@@ -7,6 +7,7 @@ use App\Mail\PhishingSimMail;
 use App\Models\PhishingCampaign;
 use App\Models\PhishingTarget;
 use App\Models\User;
+use App\Services\TenantEntitlement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -17,9 +18,9 @@ class PhishingCampaignController extends Controller
     public function index(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'phishing')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'phishing')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur Simulasi Phishing Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Simulasi Phishing.',
@@ -41,9 +42,9 @@ class PhishingCampaignController extends Controller
     public function create(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'phishing')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'phishing')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur Simulasi Phishing Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Simulasi Phishing.',
@@ -64,9 +65,9 @@ class PhishingCampaignController extends Controller
     public function store(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'phishing')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'phishing')) {
             abort(403, 'Fitur tidak tersedia');
         }
 
@@ -106,9 +107,9 @@ class PhishingCampaignController extends Controller
     public function show(Request $request, PhishingCampaign $campaign)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'phishing')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'phishing')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur Simulasi Phishing Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Simulasi Phishing.',
@@ -136,7 +137,7 @@ class PhishingCampaignController extends Controller
         $stats = [
             'total' => $targets->count(),
             'clicked' => $targets->where('status', 'clicked')->count(),
-            'click_rate' => $targets->count() > 0 
+            'click_rate' => $targets->count() > 0
                 ? round($targets->where('status', 'clicked')->count() / $targets->count() * 100, 1)
                 : 0,
         ];
@@ -160,9 +161,9 @@ class PhishingCampaignController extends Controller
     public function send(Request $request, PhishingCampaign $campaign)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'phishing')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'phishing')) {
             abort(403, 'Fitur tidak tersedia');
         }
 

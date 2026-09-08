@@ -18,7 +18,7 @@ class PlatformReportController extends Controller
         $topTenants = $this->analyticsService->getTopTenantsByRisk();
         $planDistribution = $this->analyticsService->getPlanDistribution();
         $phishingAdoption = $this->analyticsService->getPhishingAdoption();
-        
+
         return Inertia::render('Platform/Dashboard', [
             'summary' => $summary,
             'top_tenants_by_risk' => $topTenants,

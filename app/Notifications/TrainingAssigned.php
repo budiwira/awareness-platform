@@ -20,7 +20,7 @@ class TrainingAssigned extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => 'Anda ditugaskan modul training baru: ' . $this->module->title,
+            'message' => 'Anda ditugaskan modul training baru: '.$this->module->title,
             'module_id' => $this->module->id,
         ];
     }

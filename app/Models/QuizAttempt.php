@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -12,18 +13,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $user_id
  * @property string $tenant_id
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $deadline_at
- * @property \Illuminate\Support\Carbon|null $submitted_at
+ * @property Carbon|null $started_at
+ * @property Carbon|null $deadline_at
+ * @property Carbon|null $submitted_at
  * @property int|null $score
  * @property bool|null $passed
  * @property array|null $answers
  * @property array|null $question_order
  * @property array|null $option_orders
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Quiz $quiz
- * @property-read \App\Models\User $user
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Quiz $quiz
+ * @property-read User $user
  */
 class QuizAttempt extends Model
 {

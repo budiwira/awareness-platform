@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         DB::statement('ALTER TABLE training_modules ENABLE ROW LEVEL SECURITY');
-        
+
         DB::statement('DROP POLICY IF EXISTS training_modules_select_policy ON training_modules');
         DB::statement("
             CREATE POLICY training_modules_select_policy ON training_modules

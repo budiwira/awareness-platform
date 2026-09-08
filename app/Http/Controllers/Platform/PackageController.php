@@ -54,7 +54,7 @@ class PackageController extends Controller
             'is_active' => true,
         ]);
 
-        if (!$includesAll && !empty($validated['module_ids'])) {
+        if (! $includesAll && ! empty($validated['module_ids'])) {
             $package->modules()->attach($validated['module_ids']);
         }
 

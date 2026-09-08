@@ -23,6 +23,7 @@ class TenantController extends Controller
                 $current = $tenant->subscriptions->where('status', 'active')->sortByDesc('started_at')->first();
                 $data = $tenant->toArray();
                 $data['current_package'] = $current?->package?->name;
+
                 return $data;
             });
 

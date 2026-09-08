@@ -5,6 +5,8 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
 use App\Models\QuizAttempt;
+use App\Services\TenantEntitlement;
+use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,9 +18,9 @@ class ModuleQuizController extends Controller
         $this->ensureOwner($request, $assignment);
 
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
-            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+        $entitlement = app(TenantEntitlement::class);
+        if (! $tenant || ! $entitlement->hasModule($tenant, $assignment->training_module_id)) {
+            return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Modul Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan modul ini.',
                 'cta' => 'Hubungi admin organisasi',
@@ -26,8 +28,8 @@ class ModuleQuizController extends Controller
         }
 
         // Per-user access check
-        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById($request->user(), $assignment->training_module_id)) {
-            return \Inertia\Inertia::render('Shared/FeatureLocked', [
+        if (! app(UserAccessManager::class)->hasModuleAccessById($request->user(), $assignment->training_module_id)) {
+            return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Akses Modul Dibatasi',
                 'message' => 'Admin telah membatasi akses Anda ke modul ini.',
                 'cta' => 'Hubungi admin organisasi',
@@ -99,22 +101,22 @@ class ModuleQuizController extends Controller
         $this->ensureOwner($request, $assignment);
 
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
-        
-        if (!$tenant || !$entitlement->hasModule($tenant, $assignment->training_module_id)) {
+        $entitlement = app(TenantEntitlement::class);
+
+        if (! $tenant || ! $entitlement->hasModule($tenant, $assignment->training_module_id)) {
             return response()->json(['message' => 'Organisasi Anda belum mengaktifkan modul ini.'], 403);
         }
 
         $quiz = $assignment->module->quiz;
 
-        if (!$quiz || !$quiz->is_active) {
+        if (! $quiz || ! $quiz->is_active) {
             return response()->json(['message' => 'Quiz tidak aktif.'], 422);
         }
 
         $user = $request->user();
 
         // Per-user access check: revoked user blocked
-        if (!app(\App\Services\UserAccessManager::class)->hasModuleAccessById($user, $quiz->training_module_id)) {
+        if (! app(UserAccessManager::class)->hasModuleAccessById($user, $quiz->training_module_id)) {
             return response()->json(['message' => 'Akses modul dibatasi oleh admin untuk user ini.'], 403);
         }
 
@@ -225,7 +227,7 @@ class ModuleQuizController extends Controller
             $givenShuffledIndex = (int) $givenShuffledIndex;
             $optionOrder = $attempt->option_orders[$question->id] ?? [];
 
-            if (!isset($optionOrder[$givenShuffledIndex])) {
+            if (! isset($optionOrder[$givenShuffledIndex])) {
                 continue;
             }
 
@@ -311,13 +313,13 @@ class ModuleQuizController extends Controller
         $reviewQuestions = [];
         foreach ($questions as $question) {
             $optionOrder = $attempt->option_orders[$question->id] ?? [];
-            
+
             // Susun opsi sesuai urutan asli (BUKAN teracak)
             $originalOptions = $question->options;
-            
+
             // Jawaban user (indeks teracak)
             $userShuffledIndex = $attempt->answers[$question->id] ?? null;
-            
+
             // Map ke indeks asli
             $userOriginalIndex = null;
             if ($userShuffledIndex !== null && isset($optionOrder[$userShuffledIndex])) {
@@ -367,7 +369,7 @@ class ModuleQuizController extends Controller
         $shuffledQuestions = [];
         foreach ($attempt->question_order as $questionId) {
             $question = $questions[$questionId] ?? null;
-            if (!$question) {
+            if (! $question) {
                 continue;
             }
 
@@ -416,7 +418,7 @@ class ModuleQuizController extends Controller
                 $givenShuffledIndex = (int) $givenShuffledIndex;
                 $optionOrder = $attempt->option_orders[$question->id] ?? [];
 
-                if (!isset($optionOrder[$givenShuffledIndex])) {
+                if (! isset($optionOrder[$givenShuffledIndex])) {
                     continue;
                 }
 

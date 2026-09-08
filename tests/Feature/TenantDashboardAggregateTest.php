@@ -1,17 +1,19 @@
 <?php
 
-use App\Models\User;
-use App\Models\Tenant;
-use App\Models\ModuleAssignment;
-use App\Models\QuizAttempt;
 use App\Enums\UserRole;
+use App\Models\Package;
+use App\Models\Subscription;
+use App\Models\Tenant;
+use App\Models\TtxPlaybook;
+use App\Models\TtxRunbook;
+use App\Models\User;
+
 use function Pest\Laravel\actingAs;
-use function Pest\Laravel\get;
 
 beforeEach(function () {
     $this->tenant = Tenant::factory()->create(['status' => 'active']);
-    $Package = \App\Models\Package::create(['name' => 'Agg-'.uniqid(), 'slug' => 'agg-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training','ttx'], 'includes_all_modules' => true, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $this->tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Agg-'.uniqid(), 'slug' => 'agg-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['training', 'ttx'], 'includes_all_modules' => true, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $this->tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $this->admin = User::factory()->create([
         'tenant_id' => $this->tenant->id,
         'role' => UserRole::TenantAdmin,
@@ -37,7 +39,7 @@ test('tenant dashboard memuat agregat kesadaran', function () {
 });
 
 test('tenant admin dapat membuka playbook detail', function () {
-    $playbook = \App\Models\TtxPlaybook::create([
+    $playbook = TtxPlaybook::create([
         'tenant_id' => $this->tenant->id,
         'title' => 'Playbook Test',
         'description' => 'Deskripsi test',
@@ -57,7 +59,7 @@ test('tenant admin dapat membuka playbook detail', function () {
 });
 
 test('tenant admin dapat membuka runbook detail', function () {
-    $runbook = \App\Models\TtxRunbook::create([
+    $runbook = TtxRunbook::create([
         'tenant_id' => $this->tenant->id,
         'title' => 'Runbook Test',
         'description' => 'Deskripsi runbook',
@@ -83,7 +85,7 @@ test('tenant lain tidak dapat membuka playbook tenant lain', function () {
         'role' => UserRole::TenantAdmin,
     ]);
 
-    $playbook = \App\Models\TtxPlaybook::create([
+    $playbook = TtxPlaybook::create([
         'tenant_id' => $this->tenant->id,
         'title' => 'Playbook Tenant 1',
         'description' => 'Test',
@@ -103,7 +105,7 @@ test('tenant lain tidak dapat membuka runbook tenant lain', function () {
         'role' => UserRole::TenantAdmin,
     ]);
 
-    $runbook = \App\Models\TtxRunbook::create([
+    $runbook = TtxRunbook::create([
         'tenant_id' => $this->tenant->id,
         'title' => 'Runbook Tenant 1',
         'description' => 'Test',

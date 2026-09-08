@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Package;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\UserDeletedByAdmin;
 use Illuminate\Support\Facades\Notification;
 
 test('super admin can view all users across tenants', function () {
@@ -68,7 +70,7 @@ test('super admin can soft delete user from any tenant', function () {
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.soft_deleted_by_admin']);
 
-    Notification::assertSentTo($tenantAdmin, \App\Notifications\UserDeletedByAdmin::class);
+    Notification::assertSentTo($tenantAdmin, UserDeletedByAdmin::class);
 });
 
 test('super admin cannot delete themselves', function () {
@@ -146,7 +148,7 @@ test('soft delete notifies all tenant admins of that tenant', function () {
     $this->actingAs($superAdmin)
         ->post(route('platform.users.destroy'), ['user_id' => $userToDelete->id]);
 
-    Notification::assertSentTo([$tenantAdmin1, $tenantAdmin2], \App\Notifications\UserDeletedByAdmin::class);
+    Notification::assertSentTo([$tenantAdmin1, $tenantAdmin2], UserDeletedByAdmin::class);
 });
 
 test('soft delete does not notify tenant admins from other tenants', function () {
@@ -163,8 +165,8 @@ test('soft delete does not notify tenant admins from other tenants', function ()
     $this->actingAs($superAdmin)
         ->post(route('platform.users.destroy'), ['user_id' => $userToDelete->id]);
 
-    Notification::assertSentTo($tenantAdmin1, \App\Notifications\UserDeletedByAdmin::class);
-    Notification::assertNotSentTo($tenantAdmin2, \App\Notifications\UserDeletedByAdmin::class);
+    Notification::assertSentTo($tenantAdmin1, UserDeletedByAdmin::class);
+    Notification::assertNotSentTo($tenantAdmin2, UserDeletedByAdmin::class);
 });
 
 test('downgrade guard counts only non-deleted users', function () {
@@ -179,7 +181,7 @@ test('downgrade guard counts only non-deleted users', function () {
         $u->delete();
     }
 
-    $smallPlan = \App\Models\Package::create(['name' => 'Small', 'slug' => 'small', 'price_monthly' => 500, 'max_users' => 5, 'is_active' => true]);
+    $smallPlan = Package::create(['name' => 'Small', 'slug' => 'small', 'price_monthly' => 500, 'max_users' => 5, 'is_active' => true]);
 
     // Harus sukses karena hanya 5 active users (deleted tidak dihitung)
     $response = $this->actingAs($superAdmin)

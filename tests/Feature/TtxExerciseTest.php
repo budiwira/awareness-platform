@@ -1,22 +1,25 @@
 <?php
 
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
+use App\Models\TtxTeam;
 use App\Models\User;
 
 function makeTtxFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create([
-        'name' => 'Ttx-' . uniqid(),
-        'slug' => 'ttx-' . uniqid(),
+    $Package = Package::create([
+        'name' => 'Ttx-'.uniqid(),
+        'slug' => 'ttx-'.uniqid(),
         'price_monthly' => 100,
         'max_users' => 100,
         'features' => ['ttx'],
         'includes_all_modules' => false,
         'is_active' => true,
     ]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
@@ -50,7 +53,7 @@ test('cannot add member from another tenant', function () {
     $outsider = User::factory()->create(['tenant_id' => $otherTenant->id]);
 
     $ex = TtxExercise::create(['tenant_id' => $tenant->id, 'title' => 'TTX']);
-    $team = \App\Models\TtxTeam::create(['tenant_id' => $tenant->id, 'exercise_id' => $ex->id, 'name' => 'Tim A']);
+    $team = TtxTeam::create(['tenant_id' => $tenant->id, 'exercise_id' => $ex->id, 'name' => 'Tim A']);
 
     $this->actingAs($admin)
         ->post(route('tenant.ttx.teams.members.store', $team), ['user_id' => $outsider->id, 'role_in_team' => 'member'])

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Models\QuizAttempt;
 use App\Models\TrainingModule;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
@@ -45,7 +46,7 @@ class TrainingModuleController extends Controller
         $stats = [
             'assignments_count' => $module->assignments()->count(),
             'completed_count' => $module->assignments()->where('status', 'completed')->count(),
-            'avg_score' => round(\App\Models\QuizAttempt::whereHas('quiz', fn($q) => $q->where('training_module_id', $module->id))->where('status', 'submitted')->avg('score') ?? 0),
+            'avg_score' => round(QuizAttempt::whereHas('quiz', fn ($q) => $q->where('training_module_id', $module->id))->where('status', 'submitted')->avg('score') ?? 0),
         ];
 
         return Inertia::render('Platform/TrainingModules/Show', [

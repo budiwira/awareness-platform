@@ -5,6 +5,8 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
+use App\Services\TenantEntitlement;
+use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,9 +16,9 @@ class CtfController extends Controller
     public function index(Request $request)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ctf')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ctf')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Fitur CTF Terkunci',
                 'message' => 'Organisasi Anda belum mengaktifkan fitur Capture The Flag.',
@@ -25,7 +27,7 @@ class CtfController extends Controller
         }
 
         // Per-user feature access check
-        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
+        if (! app(UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Akses Dibatasi',
                 'message' => 'Admin telah membatasi akses Anda ke fitur CTF.',
@@ -59,14 +61,14 @@ class CtfController extends Controller
     public function submit(Request $request, CtfChallenge $challenge)
     {
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$tenant || !$entitlement->hasFeature($tenant, 'ctf')) {
+        if (! $tenant || ! $entitlement->hasFeature($tenant, 'ctf')) {
             abort(403, 'Organisasi Anda belum mengaktifkan fitur CTF.');
         }
 
         // Per-user feature access check
-        if (!app(\App\Services\UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
+        if (! app(UserAccessManager::class)->hasFeatureAccess($request->user(), 'ctf')) {
             abort(403, 'Admin telah membatasi akses Anda ke fitur CTF.');
         }
 

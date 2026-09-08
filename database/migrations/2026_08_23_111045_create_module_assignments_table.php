@@ -12,20 +12,20 @@ return new class extends Migration
         Schema::create('module_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->uuid('tenant_id')->index(); 
+            $table->uuid('tenant_id')->index();
             $table->foreignId('training_module_id')->constrained('training_modules')->cascadeOnDelete();
-            
-            $table->string('status', 20)->default('assigned'); 
+
+            $table->string('status', 20)->default('assigned');
             $table->timestamp('completed_at')->nullable();
-            $table->integer('score')->nullable(); 
-            
+            $table->integer('score')->nullable();
+
             $table->timestamps();
 
             $table->unique(['user_id', 'training_module_id']);
         });
 
         DB::statement('ALTER TABLE module_assignments ENABLE ROW LEVEL SECURITY');
-        
+
         DB::statement('DROP POLICY IF EXISTS module_assignments_tenant_isolation ON module_assignments');
         DB::statement("
             CREATE POLICY module_assignments_tenant_isolation ON module_assignments

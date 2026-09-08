@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Package;
 use App\Models\ModuleAssignment;
+use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;

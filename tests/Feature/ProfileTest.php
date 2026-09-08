@@ -64,7 +64,7 @@ test('user can delete their account', function () {
         ->assertRedirect('/');
 
     $this->assertGuest();
-    
+
     // User sekarang soft deleted, bukan hard deleted
     $user->refresh();
     $this->assertNotNull($user->deleted_at);

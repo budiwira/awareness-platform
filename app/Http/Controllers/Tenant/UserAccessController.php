@@ -66,7 +66,7 @@ class UserAccessController extends Controller
         $requestedIds = $validated['module_ids'];
         $invalidIds = array_diff($requestedIds, $entitledModuleIds);
 
-        if (!empty($invalidIds)) {
+        if (! empty($invalidIds)) {
             $msg = 'Modul tidak termasuk dalam paket tenant';
 
             return $isInertia

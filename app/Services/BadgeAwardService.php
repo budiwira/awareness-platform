@@ -163,7 +163,7 @@ class BadgeAwardService
         $caseCount = $user->caseParticipations()
             ->where('status', 'completed')
             ->count();
-        
+
         if ($caseCount >= 1) {
             $this->checkAndAward($user, 'first_case_completed', 1);
         }

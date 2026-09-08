@@ -6,12 +6,13 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
+use App\Services\TenantEntitlement;
 
 function createPlanWithModules(string $slug, array $features, bool $includesAll, array $modules = []): Package
 {
     $Package = Package::create([
         'name' => ucfirst($slug),
-        'slug' => $slug . '-' . uniqid(),
+        'slug' => $slug.'-'.uniqid(),
         'price_monthly' => 500,
         'max_users' => 100,
         'features' => $features,
@@ -19,7 +20,7 @@ function createPlanWithModules(string $slug, array $features, bool $includesAll,
         'is_active' => true,
     ]);
 
-    if (!$includesAll && !empty($modules)) {
+    if (! $includesAll && ! empty($modules)) {
         $Package->modules()->attach($modules);
     }
 
@@ -89,6 +90,7 @@ test('starter entitlements prop tanpa ttx', function () {
         ->get(route('tenant.dashboard'))
         ->assertInertia(function ($page) {
             $props = $page->toArray()['props'] ?? [];
+
             return $page;
         });
 });
@@ -126,7 +128,7 @@ test('includes_all_modules otomatis dapat modul published baru', function () {
 
     $newModule = TrainingModule::create(['title' => 'New Published', 'content' => 'c', 'duration_minutes' => 10, 'is_active' => true, 'status' => 'published']);
 
-    $entitlement = app(\App\Services\TenantEntitlement::class);
+    $entitlement = app(TenantEntitlement::class);
     expect($entitlement->hasModule($tenant, $newModule->id))->toBeTrue();
 });
 
@@ -138,7 +140,7 @@ test('custom Package dengan modul pilihan enforcement benar', function () {
     $custom = createPlanWithModules('custom', ['training'], false, [$m1->id]);
     Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $custom->id, 'status' => 'active', 'started_at' => now()]);
 
-    $entitlement = app(\App\Services\TenantEntitlement::class);
+    $entitlement = app(TenantEntitlement::class);
     expect($entitlement->hasModule($tenant, $m1->id))->toBeTrue()
         ->and($entitlement->hasModule($tenant, $m2->id))->toBeFalse();
 });
@@ -153,7 +155,7 @@ test('flash entitlements setelah set-package berisi nama Package', function () {
             'tenant_id' => $tenant->id,
             'package_id' => $Package->id,
         ])
-        ->assertSessionHas('success', fn($v) => str_contains($v, $Package->name));
+        ->assertSessionHas('success', fn ($v) => str_contains($v, $Package->name));
 });
 
 test('riwayat tetap terbaca setelah downgrade', function () {

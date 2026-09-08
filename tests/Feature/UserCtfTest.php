@@ -2,6 +2,8 @@
 
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -9,16 +11,16 @@ use Inertia\Testing\AssertableInertia as Assert;
 function makeCtfFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create([
-        'name' => 'Ent-' . uniqid(),
-        'slug' => 'ent-' . uniqid(),
+    $Package = Package::create([
+        'name' => 'Ent-'.uniqid(),
+        'slug' => 'ent-'.uniqid(),
         'price_monthly' => 100,
         'max_users' => 100,
         'features' => ['ctf'],
         'includes_all_modules' => false,
         'is_active' => true,
     ]);
-    \App\Models\Subscription::create([
+    Subscription::create([
         'tenant_id' => $tenant->id,
         'package_id' => $Package->id,
         'status' => 'active',

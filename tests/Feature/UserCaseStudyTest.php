@@ -3,6 +3,8 @@
 use App\Models\CaseParticipation;
 use App\Models\CaseScene;
 use App\Models\CaseStudy;
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -10,8 +12,8 @@ use Inertia\Testing\AssertableInertia as Assert;
 function makeCaseFixture(): array
 {
     $tenant = Tenant::factory()->create();
-    $Package = \App\Models\Package::create(['name' => 'Case-'.uniqid(), 'slug' => 'case-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
-    \App\Models\Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
+    $Package = Package::create(['name' => 'Case-'.uniqid(), 'slug' => 'case-'.uniqid(), 'price_monthly' => 100, 'max_users' => 100, 'features' => ['case_studies'], 'includes_all_modules' => false, 'is_active' => true]);
+    Subscription::create(['tenant_id' => $tenant->id, 'package_id' => $Package->id, 'status' => 'active', 'started_at' => now()]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $case = CaseStudy::create(['title' => 'Ransomware', 'difficulty' => 'beginner', 'duration_minutes' => 15, 'is_active' => true, 'status' => 'published']);

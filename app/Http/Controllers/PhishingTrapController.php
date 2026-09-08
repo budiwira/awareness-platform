@@ -16,7 +16,7 @@ class PhishingTrapController extends Controller
             ->where('status', 'sent')
             ->first();
 
-        if (!$target) {
+        if (! $target) {
             abort(404);
         }
 
@@ -42,11 +42,11 @@ class PhishingTrapController extends Controller
             ->where('is_active', true)
             ->where(function ($q) {
                 $q->where('title', 'like', '%Phishing%')
-                  ->orWhere('title', 'like', '%Email%');
+                    ->orWhere('title', 'like', '%Email%');
             })
             ->first();
 
-        if (!$remedialModule) {
+        if (! $remedialModule) {
             return;
         }
 

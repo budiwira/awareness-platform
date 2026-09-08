@@ -10,6 +10,7 @@ use App\Models\ModuleAssignment;
 use App\Models\PhishingTarget;
 use App\Models\QuizAttempt;
 use App\Models\TtxScore;
+use App\Services\TenantEntitlement;
 use App\Support\Scoring\AwarenessScore;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,7 +34,7 @@ class MyScoreController extends Controller
 
         $totalCtfPoints = (int) CtfChallenge::where('is_active', true)->sum('points');
         $tenant = $request->user()->tenant;
-        $entitlement = $tenant ? app(\App\Services\TenantEntitlement::class)->getEntitledFeatures($tenant) : null;
+        $entitlement = $tenant ? app(TenantEntitlement::class)->getEntitledFeatures($tenant) : null;
 
         $score = (new AwarenessScore)->compute($assignments, $attempts, $cases, $solves, $ttx, $totalCtfPoints, $entitlement, $phishingTargets);
 

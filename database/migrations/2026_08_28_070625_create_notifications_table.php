@@ -33,7 +33,7 @@ return new class extends Migration
         DB::statement("CREATE POLICY notifications_delete_policy ON notifications FOR DELETE USING (notifiable_id = NULLIF(current_setting('app.user_id', true), '')::bigint OR NULLIF(current_setting('app.role', true), '') = 'super_admin')");
 
         DB::statement('DROP POLICY IF EXISTS notifications_insert_policy ON notifications');
-        DB::statement("CREATE POLICY notifications_insert_policy ON notifications FOR INSERT WITH CHECK (true)");
+        DB::statement('CREATE POLICY notifications_insert_policy ON notifications FOR INSERT WITH CHECK (true)');
     }
 
     public function down(): void

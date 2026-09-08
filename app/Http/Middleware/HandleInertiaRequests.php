@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantEntitlement;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -17,11 +18,11 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $entitlements = null;
-        
+
         if ($request->user() && $request->user()->tenant) {
-            $entitlement = app(\App\Services\TenantEntitlement::class);
+            $entitlement = app(TenantEntitlement::class);
             $tenant = $request->user()->tenant;
-            
+
             $entitlements = [
                 'features' => $entitlement->getEntitledFeatures($tenant),
                 'module_ids' => $entitlement->getEntitledModuleIds($tenant),

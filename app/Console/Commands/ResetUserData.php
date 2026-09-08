@@ -41,6 +41,7 @@ class ResetUserData extends Command
         if (! $dry) {
             if (! $this->option('force') && ! $this->confirm('Lanjutkan reset?', false)) {
                 $this->info('Dibatalkan.');
+
                 return self::SUCCESS;
             }
         } else {
@@ -58,13 +59,13 @@ class ResetUserData extends Command
         $failed = [];
 
         foreach ($tables as $table) {
-            $exists = DB::connection($conn)->select('SELECT to_regclass(?) AS t', ['public.' . $table])[0]->t;
+            $exists = DB::connection($conn)->select('SELECT to_regclass(?) AS t', ['public.'.$table])[0]->t;
             if ($exists === null) {
                 continue;
             }
             $count = (int) DB::connection($conn)->table($table)->count();
 
-            $this->line(sprintf('  - %-24s %s', $table, ($dry ? 'akan dihapus: ' : 'dihapus: ') . $count));
+            $this->line(sprintf('  - %-24s %s', $table, ($dry ? 'akan dihapus: ' : 'dihapus: ').$count));
 
             if (! $dry && $count > 0) {
                 try {
@@ -83,7 +84,7 @@ class ResetUserData extends Command
         if (! $dry) {
             DB::connection($conn)->table('users')->where('role', '!=', 'super_admin')->delete();
         }
-        $this->line(sprintf('  - %-24s %s', 'users (non super_admin)', ($dry ? 'akan dihapus: ' : 'dihapus: ') . $userCount));
+        $this->line(sprintf('  - %-24s %s', 'users (non super_admin)', ($dry ? 'akan dihapus: ' : 'dihapus: ').$userCount));
 
         if ($withTenants) {
             foreach (['subscriptions', 'tenants'] as $table) {
@@ -91,7 +92,7 @@ class ResetUserData extends Command
                 if (! $dry) {
                     DB::connection($conn)->table($table)->delete();
                 }
-                $this->line(sprintf('  - %-24s %s', $table, ($dry ? 'akan dihapus: ' : 'dihapus: ') . $count));
+                $this->line(sprintf('  - %-24s %s', $table, ($dry ? 'akan dihapus: ' : 'dihapus: ').$count));
             }
         }
 

@@ -5,7 +5,6 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
-use App\Models\UserFeatureAccess;
 use App\Models\UserModuleAccess;
 use App\Services\UserAccessManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;

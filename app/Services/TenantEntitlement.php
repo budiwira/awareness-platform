@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
@@ -34,9 +36,9 @@ class TenantEntitlement
     {
         $subscription = $this->resolveSubscription($tenant);
 
-        $package = $subscription?->package ?? \App\Models\Package::where('slug', 'free')->first();
+        $package = $subscription?->package ?? Package::where('slug', 'free')->first();
 
-        if (!$package) {
+        if (! $package) {
             return true;
         }
 
@@ -61,7 +63,7 @@ class TenantEntitlement
 
         $subscription = $this->resolveSubscription($tenant);
 
-        if (!$subscription || !$subscription->package) {
+        if (! $subscription || ! $subscription->package) {
             return $this->memo[$memoKey] = false;
         }
 
@@ -95,7 +97,7 @@ class TenantEntitlement
         $ids = Cache::remember($cacheKey, 300, function () use ($tenant) {
             $subscription = $this->resolveSubscription($tenant);
 
-            if (!$subscription || !$subscription->package) {
+            if (! $subscription || ! $subscription->package) {
                 return [];
             }
 
@@ -128,7 +130,7 @@ class TenantEntitlement
         $features = Cache::remember($cacheKey, 300, function () use ($tenant) {
             $subscription = $this->resolveSubscription($tenant);
 
-            if (!$subscription || !$subscription->package) {
+            if (! $subscription || ! $subscription->package) {
                 return [];
             }
 
@@ -141,7 +143,7 @@ class TenantEntitlement
     /**
      * Resolve current subscription â€” memo per request untuk hindari N+1.
      */
-    private function resolveSubscription(Tenant $tenant): ?\App\Models\Subscription
+    private function resolveSubscription(Tenant $tenant): ?Subscription
     {
         $memoKey = "subscription:{$tenant->id}";
         if (array_key_exists($memoKey, $this->memo)) {

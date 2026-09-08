@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\UserBadge;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,10 +20,10 @@ class ProfileController extends Controller
     public function edit(Request $request): Response
     {
         $user = $request->user();
-        
+
         // Hitung earned badges
-        $earnedBadges = \App\Models\UserBadge::where('user_id', $user->id)->count();
-        
+        $earnedBadges = UserBadge::where('user_id', $user->id)->count();
+
         return Inertia::render('Profile/Edit', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
@@ -37,7 +38,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        
+
         $request->user()->fill($validated);
 
         if ($request->user()->isDirty('email')) {
@@ -93,7 +94,7 @@ class ProfileController extends Controller
 
         // Simpan file baru
         $file = $request->file('avatar');
-        $filename = \Str::random(40) . '.' . $file->getClientOriginalExtension();
+        $filename = \Str::random(40).'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('avatars', $filename, 'public');
 
         // Update user

@@ -7,6 +7,7 @@ use App\Models\ModuleAssignment;
 use App\Models\TrainingModule;
 use App\Models\User;
 use App\Notifications\TrainingAssigned;
+use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -20,7 +21,7 @@ class ModuleAssignmentController extends Controller
 
         $tenantId = $request->user()->tenant_id;
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
         $assignments = ModuleAssignment::with(['user:id,name,email', 'module:id,title,duration_minutes'])
@@ -61,9 +62,9 @@ class ModuleAssignmentController extends Controller
 
         // Validasi entitlement: modul harus ter-entitle
         $tenant = $request->user()->tenant;
-        $entitlement = app(\App\Services\TenantEntitlement::class);
+        $entitlement = app(TenantEntitlement::class);
 
-        if (!$entitlement->hasModule($tenant, $validated['training_module_id'])) {
+        if (! $entitlement->hasModule($tenant, $validated['training_module_id'])) {
             return redirect()->back()->withErrors(['training_module_id' => 'Modul ini tidak termasuk dalam Package organisasi Anda.']);
         }
 

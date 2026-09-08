@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Tenant;
 
-use App\Services\CsvImporter;
-use App\Services\TenantEntitlement;
-use Illuminate\Http\UploadedFile;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\CsvImporter;
+use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -35,7 +34,7 @@ class UserController extends Controller
         Gate::authorize('create', User::class);
 
         // Hard limit check
-        if (!app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
+        if (! app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
             abort(403, 'Upgrade package Anda untuk menambah user.');
         }
 
@@ -104,12 +103,13 @@ class UserController extends Controller
 
         return redirect()->route('tenant.users.index');
     }
-        public function import(Request $request)
+
+    public function import(Request $request)
     {
         Gate::authorize('create', User::class);
 
         // Hard limit check
-        if (!app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
+        if (! app(TenantEntitlement::class)->canAddUser($request->user()->tenant)) {
             abort(403, 'Upgrade package Anda untuk menambah user.');
         }
 
@@ -117,7 +117,7 @@ class UserController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'], // Max 2MB
         ]);
 
-        $importer = new CsvImporter();
+        $importer = new CsvImporter;
         $importer->importUsers(
             $validated['file'],
             $request->user()->tenant_id,
