@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Playwright session files
+tests/e2e/.auth/
+test-results/
+playwright-report/
