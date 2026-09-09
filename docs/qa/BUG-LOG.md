@@ -131,3 +131,22 @@ Catatan: berarti akar B02/B04 BUKAN (hanya) RLS â€” ada penyebab kedua.
 - Gate pipeline: Gate 0 (dep audit) + Gate 1-3 (Pint/Larastan/Pest)
 - Temuan data: tenant Acme/Beta di DB development tidak punya user (seed tidak konsisten) — bukan bug kode; dropdown kosong adalah expected behavior untuk tenant tanpa user
 - Governance: branch protection enforce server-side, PR workflow end-to-end, secret scan clean, LICENSE MIT
+
+
+## B33: Quiz scoring bug - null answer dianggap benar bila correct_index = 0
+
+**Severity:** Critical (skor salah, leaderboard rusak, badge salah award)
+**Ditemukan:** Invariant test ScoringCalculatorTest sebelum refactor controller
+**Akar masalah:** `(int) null === 0` di PHP, sehingga `$userAnswer !== null` check wajib
+**Lokasi:** `app/Support/Scoring/ScoringCalculator.php:21`
+**Fix:** Explicit null check sebelum cast ke int
+**Status:** ? Fixed + guarded by invariant test (7 tests, 19 assertions)
+
+**Impact kalau lolos ke production:**
+- User submit quiz kosong (answers = [])
+- Kebetulan jawaban benar ada di index 0
+- Skor = 100, lulus, badge "perfect score" awarded
+- Leaderboard ranking salah
+- Trust user hilang
+
+**Lesson learned:** Extract-refactor wajib baca implementasi penuh, bukan hanya grep pattern.
