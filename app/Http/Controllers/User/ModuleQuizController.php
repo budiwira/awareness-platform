@@ -8,11 +8,16 @@ use App\Models\QuizAttempt;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
+use App\Support\Scoring\ScoringCalculator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ModuleQuizController extends Controller
 {
+    public function __construct(
+        private ScoringCalculator $calculator
+    ) {}
+
     public function show(Request $request, ModuleAssignment $assignment)
     {
         $this->ensureOwner($request, $assignment);
@@ -215,31 +220,14 @@ class ModuleQuizController extends Controller
         $isExpired = $attempt->deadline_at && now()->greaterThan($attempt->deadline_at);
         $status = $isExpired ? 'expired' : 'submitted';
 
-        // Mapping jawaban dari posisi teracak ke indeks asli
-        $correct = 0;
-        foreach ($questions as $question) {
-            $givenShuffledIndex = $validated['answers'][$question->id] ?? null;
-
-            if ($givenShuffledIndex === null) {
-                continue;
-            }
-
-            $givenShuffledIndex = (int) $givenShuffledIndex;
-            $optionOrder = $attempt->option_orders[$question->id] ?? [];
-
-            if (! isset($optionOrder[$givenShuffledIndex])) {
-                continue;
-            }
-
-            $originalIndex = $optionOrder[$givenShuffledIndex];
-
-            if ($originalIndex === $question->correct_index) {
-                $correct++;
-            }
-        }
-
-        $score = $questions->count() > 0 ? (int) round($correct / $questions->count() * 100) : 0;
-        $passed = $score >= $quiz->passing_score;
+        $scoring = $this->calculator->quiz(
+            $questions->values(),
+            $validated['answers'],
+            $attempt->option_orders ?? [],
+            $quiz->passing_score
+        );
+        $score = $scoring['score'];
+        $passed = $scoring['passed'];
 
         $attempt->update([
             'status' => $status,
@@ -405,33 +393,14 @@ class ModuleQuizController extends Controller
         $quiz = $attempt->quiz;
         $questions = $quiz->questions;
 
-        // Hitung score dari jawaban yang ada (jika ada)
-        $correct = 0;
-        if ($attempt->answers) {
-            foreach ($questions as $question) {
-                $givenShuffledIndex = $attempt->answers[$question->id] ?? null;
-
-                if ($givenShuffledIndex === null) {
-                    continue;
-                }
-
-                $givenShuffledIndex = (int) $givenShuffledIndex;
-                $optionOrder = $attempt->option_orders[$question->id] ?? [];
-
-                if (! isset($optionOrder[$givenShuffledIndex])) {
-                    continue;
-                }
-
-                $originalIndex = $optionOrder[$givenShuffledIndex];
-
-                if ($originalIndex === $question->correct_index) {
-                    $correct++;
-                }
-            }
-        }
-
-        $score = $questions->count() > 0 ? (int) round($correct / $questions->count() * 100) : 0;
-        $passed = $score >= $quiz->passing_score;
+        $scoring = $this->calculator->quiz(
+            $questions->values(),
+            $attempt->answers ?? [],
+            $attempt->option_orders ?? [],
+            $quiz->passing_score
+        );
+        $score = $scoring['score'];
+        $passed = $scoring['passed'];
 
         $attempt->update([
             'status' => 'expired',
