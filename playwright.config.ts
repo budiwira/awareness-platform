@@ -18,6 +18,13 @@ export default defineConfig({
         storageState: 'tests/e2e/.auth/superadmin.json',
       },
     },
+    {
+      name: 'mobile',
+      use: {
+        ...devices['Pixel 5'],  // Chromium mobile, bukan WebKit
+        storageState: 'tests/e2e/.auth/superadmin.json',
+      },
+    },
   ],
   webServer: {
     command: 'php artisan serve',
