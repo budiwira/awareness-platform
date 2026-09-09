@@ -150,3 +150,10 @@ Catatan: berarti akar B02/B04 BUKAN (hanya) RLS — ada penyebab kedua.
 - Trust user hilang
 
 **Lesson learned:** Extract-refactor wajib baca implementasi penuh, bukan hanya grep pattern.
+## B34: Weak postgres superuser password di .env
+
+**Severity:** Medium (admin account dengan password lemah)
+**Lokasi:** `.env:73` (`DB_ADMIN_PASSWORD=budi1234`)
+**Dampak:** Kalau attacker dapat .env, mereka punya superuser akses ke seluruh PostgreSQL instance
+**Fix:** Ganti ke random 24-char password, rotate di PostgreSQL (`ALTER USER postgres WITH PASSWORD '...'`)
+**Status:** ? Pending (akan di-fix bersama rotation drill minggu depan)
