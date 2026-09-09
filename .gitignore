@@ -28,8 +28,4 @@ tests/e2e/.auth/
 test-results/
 playwright-report/
 
-# Backup + audit artifacts (jangan di-track)
-*.sql
-!database/migrations/*.sql
-gitleaks-report.json
-backup_before_audit.sql
+docs/ops/BACKUP-LOG.md
