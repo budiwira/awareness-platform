@@ -10,16 +10,34 @@ class ScoringCalculator
     private const QUALITY_POINTS = ['best' => 100, 'acceptable' => 60, 'poor' => 0];
 
     /**
-     * Hitung skor quiz dari answers vs questions.
+     * Hitung skor quiz dengan semantik shuffled options.
      *
+     * @param  Collection  $questions  pertanyaan dengan properti correct_index
+     * @param  array  $answers  map question_id => shuffled index pilihan user
+     * @param  array  $optionOrders  map question_id => [shuffled_idx => original_idx]
      * @return array{score: int, passed: bool}
      */
-    public function quiz(Collection $questions, array $answers, int $passingScore): array
+    public function quiz(Collection $questions, array $answers, array $optionOrders, int $passingScore): array
     {
         $correct = 0;
-        foreach ($questions as $q) {
-            $userAnswer = $answers[$q->id] ?? null;
-            if ($userAnswer !== null && (int) $userAnswer === (int) $q->correct_option_index) {
+
+        foreach ($questions as $question) {
+            $givenShuffledIndex = $answers[$question->id] ?? null;
+
+            if ($givenShuffledIndex === null) {
+                continue;
+            }
+
+            $givenShuffledIndex = (int) $givenShuffledIndex;
+            $optionOrder = $optionOrders[$question->id] ?? [];
+
+            if (! isset($optionOrder[$givenShuffledIndex])) {
+                continue;
+            }
+
+            $originalIndex = $optionOrder[$givenShuffledIndex];
+
+            if ($originalIndex === $question->correct_index) {
                 $correct++;
             }
         }
@@ -52,17 +70,11 @@ class ScoringCalculator
         return ['score' => $score, 'breakdown' => $breakdown];
     }
 
-    /**
-     * Hitung poin CTF (binary: solved/not).
-     */
     public function ctf(CtfChallenge $challenge): int
     {
         return $challenge->points;
     }
 
-    /**
-     * Hitung skor TTX dari inject submissions.
-     */
     public function ttx(array $injectScores): int
     {
         if (empty($injectScores)) {
