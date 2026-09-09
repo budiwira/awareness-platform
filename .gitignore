@@ -27,3 +27,5 @@ Thumbs.db
 tests/e2e/.auth/
 test-results/
 playwright-report/
+
+docs/ops/BACKUP-LOG.md
