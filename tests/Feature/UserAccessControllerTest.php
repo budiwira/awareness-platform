@@ -68,7 +68,7 @@ test('tenant admin can revoke module access via HTTP', function () {
     ]);
 });
 
-test('tenant admin cannot modify user from other tenant (403)', function () {
+test('tenant admin cannot modify user from other tenant (404 - existence hiding)', function () {
     $otherTenant = Tenant::factory()->create();
     $otherUser = User::factory()->create(['tenant_id' => $otherTenant->id]);
 
@@ -77,7 +77,7 @@ test('tenant admin cannot modify user from other tenant (403)', function () {
         'is_allowed' => true,
     ]);
 
-    $response->assertForbidden();
+    $response->assertNotFound();
 });
 
 test('regular user cannot access endpoint (403)', function () {

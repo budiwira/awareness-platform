@@ -16,6 +16,7 @@ class UserAccessController extends Controller
 {
     public function show(Request $request, User $user)
     {
+        abort_unless($user->tenant_id === $request->user()->tenant_id, 404);
         Gate::authorize('update', $user);
 
         $tenant = $request->user()->tenant;
@@ -48,6 +49,7 @@ class UserAccessController extends Controller
 
     public function update(Request $request, User $user)
     {
+        abort_unless($user->tenant_id === $request->user()->tenant_id, 404);
         Gate::authorize('update', $user);
 
         $tenant = $request->user()->tenant;
