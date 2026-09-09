@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { Head, router, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseButton, BaseCard } from '@/Components';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     user: Object,
@@ -10,7 +12,8 @@ const props = defineProps({
 
 const localModules = ref(props.modules.map(m => ({ ...m })));
 const saving = ref(false);
-const savedMessage = ref('');
+
+const toast = useToast();
 
 const toggleModule = (module) => {
     module.is_allowed = !module.is_allowed;
@@ -18,27 +21,18 @@ const toggleModule = (module) => {
 
 const saveChanges = () => {
     saving.value = true;
-    savedMessage.value = '';
 
-    const moduleIds = localModules.value.map(m => m.id);
-    const allowedIds = localModules.value.filter(m => m.is_allowed).map(m => m.id);
-
-    // Revoke modules yang tidak allowed
-    const toRevoke = localModules.value.filter(m => !m.is_allowed).map(m => m.id);
-    const toGrant = allowedIds;
-
-    // Kirim satu request update untuk semua
     router.post(route('tenant.users.access.update', props.user.id), {
         module_ids: localModules.value.map(m => m.id),
-        is_allowed: true, // default, akan di-override per module
+        is_allowed: true,
     }, {
         onSuccess: () => {
             saving.value = false;
-            savedMessage.value = 'Perubahan akses disimpan.';
-            setTimeout(() => savedMessage.value = '', 3000);
+            toast.success('Perubahan akses berhasil disimpan.');
         },
         onError: () => {
             saving.value = false;
+            toast.error('Gagal menyimpan perubahan. Silakan coba lagi.');
         },
     });
 };
@@ -54,22 +48,18 @@ const saveChanges = () => {
             </Link>
         </div>
 
-        <div class="card p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="font-display text-xl font-bold t-ink">{{ user.name }}</h2>
-                    <p class="text-sm t-muted">{{ user.email }}</p>
+        <BaseCard>
+            <template #header>
+                <div class="flex items-center justify-between w-full">
+                    <div>
+                        <h2 class="font-display text-xl font-bold t-ink">{{ user.name }}</h2>
+                        <p class="text-sm t-muted">{{ user.email }}</p>
+                    </div>
+                    <BaseButton variant="primary" :loading="saving" @click="saveChanges">
+                        Simpan Perubahan
+                    </BaseButton>
                 </div>
-                <button
-                    @click="saveChanges"
-                    :disabled="saving"
-                    class="btn btn-primary"
-                >
-                    {{ saving ? 'Menyimpan...' : 'Simpan Perubahan' }}
-                </button>
-            </div>
-
-            <p v-if="savedMessage" class="text-sm text-green-600 mb-4">{{ savedMessage }}</p>
+            </template>
 
             <p class="text-sm t-muted mb-6">
                 Aktifkan atau nonaktifkan akses modul untuk user ini. Modul yang dinonaktifkan tidak akan muncul di dashboard user.
@@ -93,6 +83,7 @@ const saveChanges = () => {
                             @click="toggleModule(module)"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                             :class="module.is_allowed ? 'bg-green-600' : 'bg-gray-300'"
+                            :aria-label="`Toggle akses untuk ${module.title}`"
                         >
                             <span
                                 class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -105,6 +96,6 @@ const saveChanges = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </BaseCard>
     </AppLayout>
 </template>
