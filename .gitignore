@@ -29,7 +29,3 @@ test-results/
 playwright-report/
 
 docs/ops/BACKUP-LOG.md
-*.sql
-!database/migrations/*.sql
-gitleaks-report.json
-backup_before_audit.sql
