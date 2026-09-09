@@ -26,7 +26,7 @@
 - [ ] **Enkripsi at-rest** dump + .env (ACL folder sudah membatasi, enkripsi belum)
 - [ ] **Offsite copy** (lokasi saat ini = satu titik kegagalan)
 - [ ] **Role dedicated `awareness_backup`** (CREATEDB + BYPASSRLS, NOLOGIN interaktif) — dev masih pakai owner
-- [ ] **Rotasi password postgres superuser** (lihat BUG-LOG B34: `budi1234` lemah)
+- [x] **Rotasi password postgres superuser** (lihat BUG-LOG B34: `budi1234` lemah)
 - [ ] **Alerting** kalau task harian gagal (cek BACKUP-LOG.md atau Event Viewer)
 
 ## Catatan Keamanan
