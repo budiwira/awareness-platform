@@ -13,12 +13,11 @@ use App\Models\User;
 /**
  * Regression tests untuk B33: null/missing answers dalam array harus dihitung sebagai salah,
  * bukan benar (karena (int)null === 0 di PHP).
- * 
+ *
  * Catatan: Empty array [] dan null ditolak di validation layer (422), bukan di scoring layer.
- * 
+ *
  * @see docs/qa/BUG-LOG.md B33
  */
-
 function makeB33QuizFixture(): array
 {
     $tenant = Tenant::factory()->create();
@@ -29,13 +28,13 @@ function makeB33QuizFixture(): array
         'max_users' => 100,
         'features' => ['training'],
         'includes_all_modules' => true,
-        'is_active' => true
+        'is_active' => true,
     ]);
     Subscription::create([
         'tenant_id' => $tenant->id,
         'package_id' => $Package->id,
         'status' => 'active',
-        'started_at' => now()
+        'started_at' => now(),
     ]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create([
@@ -43,13 +42,13 @@ function makeB33QuizFixture(): array
         'content' => 'x',
         'duration_minutes' => 10,
         'status' => 'published',
-        'is_active' => true
+        'is_active' => true,
     ]);
     $quiz = Quiz::create([
         'training_module_id' => $module->id,
         'title' => 'Quiz B33',
         'passing_score' => 50,
-        'duration_minutes' => 30
+        'duration_minutes' => 30,
     ]);
 
     // Q1: correct_index = 0
@@ -57,14 +56,14 @@ function makeB33QuizFixture(): array
         'quiz_id' => $quiz->id,
         'question' => 'Q1?',
         'options' => ['A', 'B', 'C', 'D'],
-        'correct_index' => 0
+        'correct_index' => 0,
     ]);
     // Q2: correct_index = 1
     $q2 = QuizQuestion::create([
         'quiz_id' => $quiz->id,
         'question' => 'Q2?',
         'options' => ['A', 'B', 'C', 'D'],
-        'correct_index' => 1
+        'correct_index' => 1,
     ]);
 
     $assignment = ModuleAssignment::create([
