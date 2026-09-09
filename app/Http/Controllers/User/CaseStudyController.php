@@ -8,12 +8,15 @@ use App\Models\CaseStudy;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
+use App\Support\Scoring\ScoringCalculator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CaseStudyController extends Controller
 {
-    private const QUALITY_POINTS = ['best' => 100, 'acceptable' => 60, 'poor' => 0];
+    public function __construct(
+        private ScoringCalculator $calculator
+    ) {}
 
     public function index(Request $request)
     {
@@ -169,17 +172,13 @@ class CaseStudyController extends Controller
             }
         }
 
-        // SCORING SERVER-SIDE
         $decisions = [];
-        $total = 0;
-
         foreach ($scenes as $scene) {
-            $idx = (int) $validated['answers'][$scene->id];
-            $decisions[$scene->id] = $idx;
-            $total += self::QUALITY_POINTS[$scene->options[$idx]['quality']];
+            $decisions[$scene->id] = (int) $validated['answers'][$scene->id];
         }
 
-        $score = (int) round($total / $scenes->count());
+        $scoring = $this->calculator->caseStudy($scenes, $decisions);
+        $score = $scoring['score'];
 
         $participation->update([
             'decisions' => $decisions,
