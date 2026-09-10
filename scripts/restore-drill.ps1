@@ -21,7 +21,9 @@ try {
     foreach ($l in $lines) { if ($l -match "^([A-Z0-9_]+)=(.*)$") { $kv[$Matches[1]] = $Matches[2] } }
     $keyHex = $kv["BACKUP_ENCRYPTION_KEY"]
     if (-not $keyHex) { throw "BACKUP_ENCRYPTION_KEY tidak ada di .env" }
-    $env:PGPASSWORD = $kv["DB_OWNER_PASSWORD"]
+    $backupUser = if ($kv["BACKUP_DB_USERNAME"]) { $kv["BACKUP_DB_USERNAME"] } else { $kv["DB_OWNER_USERNAME"] }
+    $backupPass = if ($kv["BACKUP_DB_PASSWORD"]) { $kv["BACKUP_DB_PASSWORD"] } else { $kv["DB_OWNER_PASSWORD"] }
+    $env:PGPASSWORD = $backupPass
     $conn = @("-h", $kv["DB_HOST"], "-p", $kv["DB_PORT"], "-U", $kv["DB_OWNER_USERNAME"])
 
     function Invoke-Sql($db, $sql) {

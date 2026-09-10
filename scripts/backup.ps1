@@ -12,6 +12,7 @@ $exitCode = 0
 
 try {
     Import-Module (Join-Path $ProjectRoot "scripts\modules\Crypto.psm1") -Force
+    Import-Module (Join-Path $ProjectRoot "scripts\modules\Alert.psm1") -Force
 
     # --- 1. Locate pg_dump ---
     $pgDump = (Get-Command pg_dump -ErrorAction SilentlyContinue).Source
@@ -32,8 +33,10 @@ try {
 
     # --- 3. DB dump (plaintext sementara) ---
     $dumpPlain = Join-Path $backupDir ("db_" + $kv["DB_DATABASE"] + ".dump")
-    $env:PGPASSWORD = $kv["DB_OWNER_PASSWORD"]
-    $out = & $pgDump -h $kv["DB_HOST"] -p $kv["DB_PORT"] -U $kv["DB_OWNER_USERNAME"] `
+    $backupUser = if ($kv["BACKUP_DB_USERNAME"]) { $kv["BACKUP_DB_USERNAME"] } else { $kv["DB_OWNER_USERNAME"] }
+    $backupPass = if ($kv["BACKUP_DB_PASSWORD"]) { $kv["BACKUP_DB_PASSWORD"] } else { $kv["DB_OWNER_PASSWORD"] }
+    $env:PGPASSWORD = $backupPass
+    $out = & $pgDump -h $kv["DB_HOST"] -p $kv["DB_PORT"] -U $backupUser `
         -Fc --no-owner --no-privileges $kv["DB_DATABASE"] -f $dumpPlain 2>&1
     Remove-Item Env:\PGPASSWORD
     if ($LASTEXITCODE -ne 0) { throw "pg_dump exit $LASTEXITCODE : $($out -join ' | ')" }
@@ -73,13 +76,20 @@ try {
     $logEntries += "- FAILED: $($_.Exception.Message)"
     $exitCode = 1
 } finally {
-    # --- 7. Retensi ---
+    # --- 7. Alert ---
+    if ($exitCode -eq 0) {
+        Write-BackupEvent -Status Success -Message "Backup selesai: $($logEntries -join ' | ')" -ExitCode 0
+    } else {
+        Write-BackupEvent -Status Failure -Message "Backup GAGAL: $($logEntries -join ' | ')" -ExitCode 1
+    }
+
+    # --- 8. Retensi ---
     $cutoff = (Get-Date).AddDays(-$RetentionDays)
     $old = Get-ChildItem $BackupRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt $cutoff }
     foreach ($d in $old) { Remove-Item $d.FullName -Recurse -Force }
     if ($old) { $logEntries += "- Deleted $($old.Count) old backups" }
 
-    # --- 8. Log ---
+    # --- 9. Log ---
     $logFile = Join-Path $ProjectRoot "docs\ops\BACKUP-LOG.md"
     if (-not (Test-Path $logFile)) { "# Backup Log`n`n" | Set-Content $logFile }
     Add-Content $logFile -Value (($logEntries -join "`n") + "`n")
