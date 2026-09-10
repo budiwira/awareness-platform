@@ -32,8 +32,8 @@ Format enkripsi: `[IV 16 byte][ciphertext]`, key 32-byte hex dari `.env` (`BACKU
 - [x] **Enkripsi at-rest** dump + .env (AES-256-CBC, selesai 2026-09-10)
 - [x] **Rotasi password postgres superuser** (B34, selesai 2026-09-09)
 - [ ] **Offsite copy** (lokasi saat ini = satu titik kegagalan)
-- [ ] **Role dedicated `awareness_backup`** (CREATEDB + BYPASSRLS, NOLOGIN interaktif) — dev masih pakai owner
-- [ ] **Alerting** kalau task harian gagal (task terbukti jalan, tapi kegagalan masih silent)
+- [x] **Role dedicated `awareness_backup`** (CREATEDB + BYPASSRLS + SELECT-only, selesai 2026-09-10) (CREATEDB + BYPASSRLS, NOLOGIN interaktif) — dev masih pakai owner
+- [x] **Alerting** (ALERTS.log + toast on failure, selesai 2026-09-10) kalau task harian gagal (task terbukti jalan, tapi kegagalan masih silent)
 
 ## Catatan Keamanan
 - Dump berisi SELURUH data lintas tenant ? data paling sensitif
