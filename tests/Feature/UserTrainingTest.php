@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\ModuleAssignment;
+use App\Models\Package;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
@@ -25,6 +27,13 @@ test('user can view their own training assignments', function () {
 
 test('user can mark assignment as completed', function () {
     $tenant = Tenant::factory()->create();
+    $package = Package::create([
+        'name' => 'Training', 'slug' => 'training-'.uniqid(), 'price_monthly' => 100,
+        'max_users' => 100, 'features' => ['training'], 'includes_all_modules' => true, 'is_active' => true,
+    ]);
+    Subscription::create([
+        'tenant_id' => $tenant->id, 'package_id' => $package->id, 'status' => 'active', 'started_at' => now(),
+    ]);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create(['title' => 'Test', 'content' => '...', 'duration_minutes' => 10]);
 

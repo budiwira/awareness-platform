@@ -130,6 +130,19 @@ class MyTrainingController extends Controller
             abort(403, 'Anda tidak berhak mengubah assignment ini.');
         }
 
+        $user = $request->user();
+        abort_unless($user->tenant && app(TenantEntitlement::class)->hasModule($user->tenant, $assignment->training_module_id), 403, 'Organisasi Anda belum mengaktifkan modul ini.');
+        abort_unless(app(UserAccessManager::class)->hasModuleAccessById($user, $assignment->training_module_id), 403, 'Akses modul dibatasi oleh admin.');
+
+        $module = $assignment->module;
+        abort_if($module->posttest_quiz_id, 403, 'Selesaikan posttest untuk menyelesaikan modul ini.');
+        if ($module->pretest_quiz_id) {
+            abort_unless(QuizAttempt::where('quiz_id', $module->pretest_quiz_id)
+                ->where('user_id', $user->id)
+                ->where('status', 'submitted')
+                ->exists(), 403, 'Selesaikan pretest terlebih dahulu.');
+        }
+
         if ($assignment->status === 'completed') {
             return redirect()->back();
         }

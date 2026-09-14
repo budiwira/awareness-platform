@@ -13,6 +13,10 @@ const props = defineProps({
 });
 
 const state = ref('start'); // 'start' | 'attempt' | 'result'
+const quizRouteParams = computed(() => ({
+    assignment: props.assignment.id,
+    ...(props.quiz.purpose ? { purpose: props.quiz.purpose } : {}),
+}));
 const attemptId = ref(null);
 const questions = ref([]);
 const answers = ref({});
@@ -49,7 +53,7 @@ const startQuiz = async () => {
     submitting.value = true;
 
     try {
-        const response = await axios.post(route('user.training.quiz.start', props.assignment.id));
+        const response = await axios.post(route('user.training.quiz.start', quizRouteParams.value), { quiz_id: props.quiz.id });
 
         attemptId.value = response.data.attempt_id;
         questions.value = response.data.questions;
@@ -382,7 +386,7 @@ onUnmounted(() => {
                 <Link :href="route('user.quiz.result', result.attempt_id)" class="btn btn-primary">
                     Lihat Detail Hasil
                 </Link>
-                <Link v-if="!result.passed" :href="route('user.training.quiz', assignment.id)" class="btn">
+                <Link v-if="!result.passed" :href="route('user.training.quiz', quizRouteParams)" class="btn">
                     Coba Lagi
                 </Link>
                 <Link v-else :href="route('user.training.index')" class="btn">
