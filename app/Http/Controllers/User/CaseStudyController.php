@@ -207,6 +207,8 @@ class CaseStudyController extends Controller
 
         $this->ensureOwner($request, $participation);
 
+        abort_unless($participation->status === 'completed', 403, 'Selesaikan studi kasus terlebih dahulu untuk melihat hasil.');
+
         $participation->load('caseStudy.scenes');
 
         // Setelah selesai, feedback boleh ditampilkan (user sudah berkomitmen)
