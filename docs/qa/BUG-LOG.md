@@ -157,3 +157,12 @@ Catatan: berarti akar B02/B04 BUKAN (hanya) RLS â€” ada penyebab kedua.
 **Dampak:** Kalau attacker dapat .env, mereka punya superuser akses ke seluruh PostgreSQL instance
 **Fix:** Ganti ke random 24-char password, rotate di PostgreSQL (`ALTER USER postgres WITH PASSWORD '...'`)
 **Status:** ? Fixed (password rotated to random 24-char)
+## B35: composer manifest tidak ikut commit -> CI class not found
+
+**Severity:** Medium (CI blocker; bisa lolos jadi outage production kalau gate lemah)
+**Lokasi:** Commit F1 (composer.json + composer.lock tertinggal di working directory)
+**Dampak:** Gate 2 (PHPStan unknown class) + Gate 3 (Pest class not found) merah di CI; lokal hijau palsu karena vendor/ sudah punya package
+**Fix:** Commit composer.json + composer.lock bersama feature commit
+**Status:** Fixed (2026-09-14)
+
+**Lesson learned:** Ritual pre-commit wajib review `git status` untuk manifest dependency (composer.*, package*.json) — bukan hanya file kode. Lokal hijau != CI hijau.
