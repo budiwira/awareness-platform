@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RichContentSanitizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,13 +30,23 @@ class TrainingModule extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'title',
         'description',
         'content',
         'duration_minutes',
+        'content_html',
         'is_active',
         'status',
     ];
+
+    /**
+     * Boundary sanitasi: rich content dibersihkan SAAT assign, sebelum menyentuh DB.
+     */
+    public function setContentHtmlAttribute(?string $value): void
+    {
+        $this->attributes['content_html'] = $value === null ? null : RichContentSanitizer::clean($value);
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
