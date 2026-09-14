@@ -14,7 +14,7 @@ test('super admin can create module with draft status', function () {
     $this->actingAs($super)
         ->post(route('platform.modules.store'), [
             'title' => 'Password Security',
-            'content' => 'Gunakan password kuat...',
+            'content_html' => 'Gunakan password kuat...',
             'duration_minutes' => 15,
             'status' => 'draft',
         ])
@@ -29,7 +29,7 @@ test('super admin can publish a draft module', function () {
     $super = User::factory()->superAdmin()->create();
     $module = TrainingModule::create([
         'title' => 'Phishing 101',
-        'content' => 'Materi...',
+        'content_html' => 'Materi...',
         'duration_minutes' => 10,
         'status' => 'draft',
     ]);
@@ -46,7 +46,7 @@ test('super admin can archive a published module', function () {
     $super = User::factory()->superAdmin()->create();
     $module = TrainingModule::create([
         'title' => 'Phishing 101',
-        'content' => 'Materi...',
+        'content_html' => 'Materi...',
         'duration_minutes' => 10,
         'status' => 'published',
     ]);

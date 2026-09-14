@@ -19,7 +19,7 @@ test('super admin can create a training module', function () {
     $this->actingAs($super)
         ->post(route('platform.modules.store'), [
             'title' => 'Password Security',
-            'content' => 'Gunakan password kuat...',
+            'content_html' => 'Gunakan password kuat...',
             'duration_minutes' => 15,
             'status' => 'published',
         ])
