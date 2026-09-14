@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
 use App\Models\Quiz;
@@ -197,18 +198,14 @@ class ModuleQuizController extends Controller
 
     public function attempt(Request $request, QuizAttempt $attempt)
     {
-        if ($attempt->user_id !== $request->user()->id) {
-            abort(403, 'Anda tidak berhak mengakses attempt ini.');
-        }
+        $this->ensureAttemptAccess($request, $attempt);
 
         return $this->getAttemptPayload($attempt);
     }
 
     public function submit(Request $request, QuizAttempt $attempt)
     {
-        if ($attempt->user_id !== $request->user()->id) {
-            abort(403, 'Anda tidak berhak mengakses attempt ini.');
-        }
+        $this->ensureAttemptAccess($request, $attempt);
 
         if ($attempt->status !== 'in_progress') {
             return response()->json(['message' => 'Attempt ini sudah diselesaikan.'], 422);
@@ -388,6 +385,27 @@ class ModuleQuizController extends Controller
             $assignment->module->posttest_quiz_id => 'posttest',
             default => null,
         };
+    }
+
+    private function ensureAttemptAccess(Request $request, QuizAttempt $attempt): void
+    {
+        $user = $request->user();
+
+        abort_unless($user->role === UserRole::User, 403, 'Hanya learner yang dapat mengakses attempt ini.');
+        abort_unless($attempt->user_id === $user->id, 403, 'Anda tidak berhak mengakses attempt ini.');
+
+        $moduleId = $attempt->quiz->training_module_id;
+        abort_unless($moduleId !== null, 403, 'Attempt tidak terhubung ke modul.');
+
+        $hasAssignment = $user->moduleAssignments()
+            ->where('user_id', $user->id)
+            ->where('tenant_id', $user->tenant_id)
+            ->where('training_module_id', $moduleId)
+            ->exists();
+
+        abort_unless($hasAssignment, 403, 'Anda tidak memiliki assignment untuk modul ini.');
+        abort_unless($user->tenant && app(TenantEntitlement::class)->hasModule($user->tenant, $moduleId), 403, 'Organisasi Anda belum mengaktifkan modul ini.');
+        abort_unless(app(UserAccessManager::class)->hasModuleAccessById($user, $moduleId), 403, 'Akses modul dibatasi oleh admin.');
     }
 
     private function ensureOwner(Request $request, ModuleAssignment $assignment): void

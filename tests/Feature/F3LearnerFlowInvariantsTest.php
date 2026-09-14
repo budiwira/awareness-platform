@@ -370,3 +370,63 @@ test('invariant F3: misconfigured quiz links fail closed', function ($mismatch) 
     $this->postJson(route('user.training.quiz.start', $params))->assertUnprocessable();
     expect(QuizAttempt::where('user_id', $user->id)->exists())->toBeFalse();
 })->with(['module', 'purpose', 'shared']);
+
+test('invariant F3: running attempt requires current authorization for resume and submit', function ($change) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $response = $this->actingAs($user)->postJson(route('user.training.quiz.start', [
+        'assignment' => $assignment->id, 'purpose' => 'pretest',
+    ]))->assertOk();
+    $attempt = QuizAttempt::findOrFail($response->json('attempt_id'));
+    $before = $attempt->getAttributes();
+
+    if ($change === 'entitlement revoked') {
+        Subscription::where('tenant_id', $user->tenant_id)->update(['status' => 'cancelled']);
+    } elseif ($change === 'module access revoked') {
+        UserModuleAccess::create([
+            'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'training_module_id' => $module->id, 'is_allowed' => false,
+        ]);
+    } elseif ($change === 'assignment removed') {
+        $assignment->delete();
+    } elseif ($change === 'assignment belongs to another learner') {
+        $other = User::factory()->create(['tenant_id' => $user->tenant_id, 'role' => UserRole::User]);
+        $assignment->update(['user_id' => $other->id]);
+    } elseif ($change === 'wrong role') {
+        $user->update(['role' => UserRole::TenantAdmin]);
+        $this->actingAs($user);
+    } else {
+        $other = User::factory()->create([
+            'tenant_id' => $change === 'wrong tenant' ? Tenant::factory()->create()->id : $user->tenant_id,
+            'role' => UserRole::User,
+        ]);
+        $this->actingAs($other);
+    }
+
+    $this->getJson(route('user.training.quiz.attempt', $attempt))
+        ->assertForbidden()->assertJsonMissingPath('questions');
+    $this->postJson(route('user.training.quiz.submit', $attempt), [
+        'answers' => [$pretest->questions->first()->id => 0],
+    ])->assertForbidden();
+    expect($attempt->fresh()->getAttributes())->toBe($before);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'quiz.submitted', 'subject_id' => (string) $attempt->id]);
+})->with([
+    'entitlement revoked', 'module access revoked', 'assignment removed',
+    'assignment belongs to another learner', 'other learner', 'wrong tenant', 'wrong role',
+]);
+
+test('invariant F3: authorized learner can resume and submit the same running attempt', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $response = $this->actingAs($user)->postJson(route('user.training.quiz.start', [
+        'assignment' => $assignment->id, 'purpose' => 'pretest',
+    ]))->assertOk();
+    $attempt = QuizAttempt::findOrFail($response->json('attempt_id'));
+    $questionId = $pretest->questions->first()->id;
+
+    $this->getJson(route('user.training.quiz.attempt', $attempt))->assertOk()
+        ->assertJsonPath('attempt_id', $attempt->id)->assertJsonPath('quiz.id', $pretest->id)
+        ->assertJsonCount(1, 'questions')->assertJsonMissingPath('questions.0.correct_index');
+    $this->postJson(route('user.training.quiz.submit', $attempt), [
+        'answers' => [$questionId => array_search(0, $attempt->option_orders[$questionId], true)],
+    ])->assertOk()->assertJsonPath('score', 100)->assertJsonPath('status', 'submitted');
+    expect($assignment->fresh()->pretest_score)->toBe(100)->and($assignment->fresh()->score)->toBe(0);
+});
