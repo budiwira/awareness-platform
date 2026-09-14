@@ -243,11 +243,16 @@ class ModuleQuizController extends Controller
             ->first();
 
         if ($assignment instanceof ModuleAssignment) {
-            $assignment->score = max((int) ($assignment->score ?? 0), $score);
+            if ($quiz->purpose === 'pretest') {
+                $assignment->pretest_score = $score;
+                $assignment->pretest_completed_at = now();
+            } else {
+                $assignment->score = max((int) ($assignment->score ?? 0), $score);
 
-            if ($passed && $assignment->status !== 'completed') {
-                $assignment->status = 'completed';
-                $assignment->completed_at = now();
+                if ($passed && $assignment->status !== 'completed') {
+                    $assignment->status = 'completed';
+                    $assignment->completed_at = now();
+                }
             }
 
             $assignment->save();

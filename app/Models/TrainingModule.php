@@ -6,6 +6,7 @@ use App\Support\RichContentSanitizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -67,6 +68,18 @@ class TrainingModule extends Model
     public function quiz(): HasOne
     {
         return $this->hasOne(Quiz::class, 'training_module_id');
+    }
+
+    /** @return BelongsTo<Quiz, $this> */
+    public function pretestQuiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class, 'pretest_quiz_id');
+    }
+
+    /** @return BelongsTo<Quiz, $this> */
+    public function posttestQuiz(): BelongsTo
+    {
+        return $this->belongsTo(Quiz::class, 'posttest_quiz_id');
     }
 
     public function packages(): BelongsToMany
