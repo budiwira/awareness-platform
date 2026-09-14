@@ -2,27 +2,27 @@
 import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import QuillEditor from '@/Components/QuillEditor.vue';
 
-const props = defineProps({ module: Object });
+const props = defineProps({
+    module: Object,
+    quizzes: { type: Array, default: () => [] },
+});
 
 const errors = computed(() => usePage().props.errors ?? {});
 const isEdit = computed(() => props.module !== null);
 
 const step = ref(1);
 const form = ref({
-    title: props.module?.title || '',
-    description: props.module?.description || '',
-    duration_minutes: props.module?.duration_minutes || 15,
-    content: props.module?.content || '',
-    status: props.module?.status || 'draft',
+    title: props.module?.title ?? '',
+    description: props.module?.description ?? '',
+    duration_minutes: props.module?.duration_minutes ?? 15,
+    content_html: props.module?.content_html ?? '',
+    pretest_quiz_id: props.module?.pretest_quiz_id ?? null,
+    posttest_quiz_id: props.module?.posttest_quiz_id ?? null,
+    status: props.module?.status ?? 'draft',
     is_active: props.module?.is_active ?? true,
 });
-
-const contentBlocks = ref(
-    props.module?.content
-        ? props.module.content.split('\n\n').filter(b => b.trim()).map((text, i) => ({ id: Date.now() + i, text }))
-        : [{ id: Date.now(), text: '' }]
-);
 
 const steps = [
     { num: 1, label: 'Info Dasar' },
@@ -31,37 +31,15 @@ const steps = [
     { num: 4, label: 'Review & Publish' },
 ];
 
+const plainText = computed(() => form.value.content_html.replace(/<[^>]*>/g, '').trim());
+
 const canNext = computed(() => {
-    if (step.value === 1) return form.value.title && form.value.duration_minutes > 0;
-    if (step.value === 2) return contentBlocks.value.some(b => b.text.trim());
+    if (step.value === 1) return !!form.value.title && form.value.duration_minutes > 0;
+    if (step.value === 2) return plainText.value.length > 0;
     return true;
 });
 
-const addBlock = () => {
-    contentBlocks.value.push({ id: Date.now(), text: '' });
-};
-
-const removeBlock = (id) => {
-    if (contentBlocks.value.length > 1) {
-        contentBlocks.value = contentBlocks.value.filter(b => b.id !== id);
-    }
-};
-
-const moveUp = (index) => {
-    if (index > 0) {
-        const arr = [...contentBlocks.value];
-        [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
-        contentBlocks.value = arr;
-    }
-};
-
-const moveDown = (index) => {
-    if (index < contentBlocks.value.length - 1) {
-        const arr = [...contentBlocks.value];
-        [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
-        contentBlocks.value = arr;
-    }
-};
+const quizTitle = (id) => props.quizzes.find((q) => q.id === id)?.title ?? '-';
 
 const next = () => {
     if (canNext.value && step.value < 4) step.value++;
@@ -72,13 +50,38 @@ const prev = () => {
 };
 
 const submit = () => {
-    form.value.content = contentBlocks.value.map(b => b.text.trim()).filter(t => t).join('\n\n');
-    
     if (isEdit.value) {
         router.patch(route('platform.modules.update', props.module.id), form.value);
     } else {
         router.post(route('platform.modules.store'), form.value);
     }
+};
+
+// Upload gambar: module-scoped saat edit, module-agnostic saat create
+const uploadHandler = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const endpoint = isEdit.value
+        ? route('platform.modules.media.store', props.module.id)
+        : route('platform.media.store');
+
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message ?? 'Upload ditolak server');
+    }
+
+    const data = await response.json();
+    return data.url;
 };
 </script>
 
@@ -86,7 +89,6 @@ const submit = () => {
     <Head :title="isEdit ? 'Edit Modul' : 'Buat Modul Baru'" />
 
     <AppLayout :title="isEdit ? 'Edit Modul' : 'Buat Modul Baru'">
-        <!-- Progress stepper -->
         <div class="flex items-center justify-center gap-2 mb-8">
             <div v-for="s in steps" :key="s.num" class="flex items-center gap-2">
                 <div
@@ -103,26 +105,15 @@ const submit = () => {
         </div>
 
         <div class="card p-8 max-w-4xl mx-auto">
-            <!-- Step 1: Info Dasar -->
             <div v-if="step === 1" class="space-y-4 fade-in">
                 <div>
                     <label class="text-sm font-medium t-ink">Judul Modul</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" placeholder="Contoh: Phishing Awareness Fundamentals" />
                     <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm font-medium t-ink">Kategori</label>
-                        <select class="input mt-1 w-full">
-                            <option>General Security</option>
-                            <option>Phishing</option>
-                            <option>Password</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium t-ink">Durasi (menit)</label>
-                        <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
-                    </div>
+                <div>
+                    <label class="text-sm font-medium t-ink">Durasi (menit)</label>
+                    <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
                 </div>
                 <div>
                     <label class="text-sm font-medium t-ink">Deskripsi Singkat</label>
@@ -130,56 +121,51 @@ const submit = () => {
                 </div>
             </div>
 
-            <!-- Step 2: Materi -->
             <div v-if="step === 2" class="space-y-4 fade-in">
-                <p class="text-sm t-muted mb-4">Susun blok konten secara berurutan. Gunakan tombol untuk menambah, hapus, atau menggeser urutan.</p>
-                <div v-for="(block, i) in contentBlocks" :key="block.id" class="border b-line rounded-lg p-4 bg-app space-y-2">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold t-muted">Blok {{ i + 1 }}</span>
-                        <div class="flex gap-1">
-                            <button @click="moveUp(i)" :disabled="i === 0" class="p-1 t-muted hover:t-ink disabled:opacity-30" title="Naik">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
-                                </svg>
-                            </button>
-                            <button @click="moveDown(i)" :disabled="i === contentBlocks.length - 1" class="p-1 t-muted hover:t-ink disabled:opacity-30" title="Turun">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <button @click="removeBlock(block.id)" :disabled="contentBlocks.length === 1" class="p-1 text-red-500 hover:text-red-700 disabled:opacity-30" title="Hapus">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <textarea v-model="block.text" rows="4" class="input w-full" placeholder="Masukkan teks, HTML, atau markdown..."></textarea>
-                </div>
-                <button @click="addBlock" class="btn btn-secondary w-full">+ Tambah Blok Konten</button>
-            </div>
-
-            <!-- Step 3: Evaluasi -->
-            <div v-if="step === 3" class="space-y-4 fade-in">
-                <p class="text-sm t-muted">
-                    Kuis untuk modul ini dikelola di halaman <strong>Quizzes</strong>. Passing score bisa diatur di sana.
+                <p class="text-sm t-muted mb-4">
+                    Tulis materi dengan rich text editor. Toolbar: format teks, list, gambar (upload ke storage private), video (embed YouTube/Vimeo).
                 </p>
-                <div class="badge-warn  rounded-lg p-4 text-sm badge-warn">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Setelah modul dibuat, buka halaman <strong>Detail Modul</strong> dan klik <strong>"Kelola Kuis"</strong> untuk menambah pertanyaan.
+                <QuillEditor v-model="form.content_html" :upload-handler="uploadHandler" placeholder="Tulis materi modul di sini..." />
+                <p v-if="errors.content_html" class="text-xs text-red-600 mt-1">{{ errors.content_html }}</p>
+            </div>
+
+            <div v-if="step === 3" class="space-y-4 fade-in">
+                <div>
+                    <label class="text-sm font-medium t-ink">Pretest (opsional)</label>
+                    <select v-model="form.pretest_quiz_id" class="input mt-1 w-full">
+                        <option :value="null">Tanpa pretest</option>
+                        <option v-for="quiz in quizzes" :key="'pre-' + quiz.id" :value="quiz.id">
+                            {{ quiz.title }} (passing {{ quiz.passing_score }}%)
+                        </option>
+                    </select>
+                    <p class="text-xs t-muted mt-1">Baseline pengetahuan sebelum materi. Tidak menghitung score akhir.</p>
+                    <p v-if="errors.pretest_quiz_id" class="text-xs text-red-600 mt-1">{{ errors.pretest_quiz_id }}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium t-ink">Posttest</label>
+                    <select v-model="form.posttest_quiz_id" class="input mt-1 w-full">
+                        <option :value="null">Tanpa posttest</option>
+                        <option v-for="quiz in quizzes" :key="'post-' + quiz.id" :value="quiz.id">
+                            {{ quiz.title }} (passing {{ quiz.passing_score }}%)
+                        </option>
+                    </select>
+                    <p class="text-xs t-muted mt-1">Sumber score akhir modul dan learning gain.</p>
+                    <p v-if="errors.posttest_quiz_id" class="text-xs text-red-600 mt-1">{{ errors.posttest_quiz_id }}</p>
+                </div>
+                <div class="rounded-lg p-4 text-sm bg-surface2 t-muted">
+                    Belum punya quiz? Buat di halaman <a :href="route('platform.quizzes.index')" class="font-semibold underline">Quizzes</a>, lalu kembali ke wizard ini.
                 </div>
             </div>
 
-            <!-- Step 4: Review & Publish -->
             <div v-if="step === 4" class="space-y-6 fade-in">
                 <div class="bg-app border b-line rounded-lg p-6">
                     <div class="font-display text-xl font-bold t-ink mb-2">{{ form.title }}</div>
                     <div class="text-sm t-muted mb-4">{{ form.description }}</div>
-                    <div class="flex items-center gap-4 text-xs t-muted">
-                        <span>⏱ {{ form.duration_minutes }} menit</span>
-                        <span>📄 {{ contentBlocks.filter(b => b.text.trim()).length }} blok konten</span>
+                    <div class="flex flex-wrap items-center gap-4 text-xs t-muted">
+                        <span>{{ form.duration_minutes }} menit</span>
+                        <span>{{ plainText.length }} karakter materi</span>
+                        <span v-if="form.pretest_quiz_id">Pretest: {{ quizTitle(form.pretest_quiz_id) }}</span>
+                        <span v-if="form.posttest_quiz_id">Posttest: {{ quizTitle(form.posttest_quiz_id) }}</span>
                     </div>
                 </div>
                 <div>
@@ -189,37 +175,26 @@ const submit = () => {
                             <input type="radio" v-model="form.status" value="draft" class="chip-brand" />
                             <div>
                                 <div class="text-sm font-medium t-ink">Draft</div>
-                                <div class="text-xs t-muted">Simpan sebagai draft, tidak terlihat tenant.</div>
+                                <div class="text-xs t-muted">Tidak terlihat tenant.</div>
                             </div>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="radio" v-model="form.status" value="published" class="chip-brand" />
                             <div>
                                 <div class="text-sm font-medium t-ink">Published</div>
-                                <div class="text-xs t-muted">Publikasikan, tenant bisa menugaskan ke user.</div>
+                                <div class="text-xs t-muted">Tenant bisa menugaskan ke user.</div>
                             </div>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Navigation -->
             <div class="flex justify-between mt-8 pt-6 border-t b-line">
-                <button v-if="step > 1" @click="prev" class="btn btn-secondary">← Sebelumnya</button>
-                <div v-else></div>
-                <button v-if="step < 4" @click="next" :disabled="!canNext" class="btn btn-primary">Lanjut →</button>
-                <button v-else @click="submit" class="btn btn-primary">{{ isEdit ? 'Simpan Perubahan' : 'Buat Modul' }}</button>
+                <button v-if="step > 1" class="btn btn-secondary" @click="prev">Sebelumnya</button>
+                <span v-else></span>
+                <button v-if="step < 4" class="btn btn-primary" :disabled="!canNext" @click="next">Selanjutnya</button>
+                <button v-else class="btn btn-primary" @click="submit">{{ isEdit ? 'Update Modul' : 'Simpan Modul' }}</button>
             </div>
         </div>
     </AppLayout>
 </template>
-
-<style scoped>
-.fade-in {
-    animation: fadeIn 0.2s ease-in;
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-</style>

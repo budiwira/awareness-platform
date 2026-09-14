@@ -23,6 +23,8 @@
         "vue": "^3.4.0"
     },
     "dependencies": {
-        "nprogress": "^0.2.0"
+        "@vueup/vue-quill": "^1.5.5",
+        "nprogress": "^0.2.0",
+        "quill": "^2.0.3"
     }
 }
