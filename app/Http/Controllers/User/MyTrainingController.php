@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
+use App\Models\QuizAttempt;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
@@ -63,7 +64,6 @@ class MyTrainingController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
-        // Per-user access check: revoked user blocked
         if (! app(UserAccessManager::class)->hasModuleAccessById(auth()->user(), $assignment->training_module_id)) {
             return Inertia::render('Shared/FeatureLocked', [
                 'title' => 'Akses Modul Dibatasi',
@@ -72,10 +72,55 @@ class MyTrainingController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
-        $assignment->load(['module:id,title,description,content,duration_minutes']);
+        $assignment->load(['module.pretestQuiz', 'module.posttestQuiz']);
+        $module = $assignment->module;
+
+        $pretestAttempt = $module->pretest_quiz_id
+            ? QuizAttempt::where('quiz_id', $module->pretest_quiz_id)
+                ->where('user_id', auth()->id())
+                ->where('status', 'submitted')
+                ->latest('submitted_at')
+                ->first()
+            : null;
+
+        $posttestAttempt = $module->posttest_quiz_id
+            ? QuizAttempt::where('quiz_id', $module->posttest_quiz_id)
+                ->where('user_id', auth()->id())
+                ->whereIn('status', ['submitted', 'expired'])
+                ->where('passed', true)
+                ->latest('submitted_at')
+                ->first()
+            : null;
 
         return Inertia::render('User/MyTraining/Show', [
             'assignment' => $assignment,
+            'module' => [
+                'id' => $module->id,
+                'title' => $module->title,
+                'description' => $module->description,
+                'content_html' => $module->content_html,
+                'duration_minutes' => $module->duration_minutes,
+            ],
+            'pretestQuiz' => $module->pretestQuiz ? [
+                'id' => $module->pretestQuiz->id,
+                'title' => $module->pretestQuiz->title,
+                'passing_score' => $module->pretestQuiz->passing_score,
+            ] : null,
+            'posttestQuiz' => $module->posttestQuiz ? [
+                'id' => $module->posttestQuiz->id,
+                'title' => $module->posttestQuiz->title,
+                'passing_score' => $module->posttestQuiz->passing_score,
+            ] : null,
+            'pretestAttempt' => $pretestAttempt ? [
+                'id' => $pretestAttempt->id,
+                'score' => $pretestAttempt->score,
+                'submitted_at' => $pretestAttempt->submitted_at?->toIso8601String(),
+            ] : null,
+            'posttestAttempt' => $posttestAttempt ? [
+                'id' => $posttestAttempt->id,
+                'score' => $posttestAttempt->score,
+                'submitted_at' => $posttestAttempt->submitted_at?->toIso8601String(),
+            ] : null,
         ]);
     }
 
