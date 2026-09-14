@@ -135,7 +135,7 @@ class MyTrainingController extends Controller
         abort_unless(app(UserAccessManager::class)->hasModuleAccessById($user, $assignment->training_module_id), 403, 'Akses modul dibatasi oleh admin.');
 
         $module = $assignment->module;
-        abort_if($module->posttest_quiz_id, 403, 'Selesaikan posttest untuk menyelesaikan modul ini.');
+        abort_if($module->posttest_quiz_id !== null, 403, 'Selesaikan posttest untuk menyelesaikan modul ini.');
         if ($module->pretest_quiz_id) {
             abort_unless(QuizAttempt::where('quiz_id', $module->pretest_quiz_id)
                 ->where('user_id', $user->id)
