@@ -51,11 +51,12 @@ class MediaController extends Controller
         ]);
 
         $file = $request->file('file');
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+
         Storage::disk('private')->putFileAs('module-media', $file, $filename);
 
         $url = route('platform.media.serve', $filename);
 
         return response()->json(['url' => $url]);
-    }}
+    }
+}

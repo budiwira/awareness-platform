@@ -28,7 +28,7 @@ test('invariant: upload module-agnostic ke private disk', function () {
         ->assertOk()
         ->assertJsonStructure(['url']);
 
-    Storage::disk('private')->assertExists('module-media/' . basename(parse_url($response->json('url'), PHP_URL_PATH)));
+    Storage::disk('private')->assertExists('module-media/'.basename(parse_url($response->json('url'), PHP_URL_PATH)));
 });
 
 test('invariant: prune command hapus file yatim tua', function () {
@@ -48,8 +48,8 @@ test('invariant: prune command hapus file yatim tua', function () {
 
     $tenant = Tenant::factory()->create();
     $package = Package::create([
-        'name' => 'Test-' . uniqid(),
-        'slug' => 'test-' . uniqid(),
+        'name' => 'Test-'.uniqid(),
+        'slug' => 'test-'.uniqid(),
         'price_monthly' => 100,
         'max_users' => 100,
         'features' => ['training'],

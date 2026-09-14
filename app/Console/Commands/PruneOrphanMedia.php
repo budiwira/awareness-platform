@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class PruneOrphanMedia extends Command
 {
     protected $signature = 'media:prune-orphans {--days=7 : Hapus file yatim lebih tua dari N hari}';
+
     protected $description = 'Hapus file di module-media/ yang tidak direferensi content_html mana pun';
 
     public function handle()
@@ -29,7 +30,7 @@ class PruneOrphanMedia extends Command
             $filename = basename($file);
             $referenced = TrainingModule::where('content_html', 'LIKE', "%{$filename}%")->exists();
 
-            if (!$referenced) {
+            if (! $referenced) {
                 Storage::disk('private')->delete($file);
                 $this->info("Deleted orphan: {$filename}");
                 $orphanCount++;
