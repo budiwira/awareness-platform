@@ -36,6 +36,8 @@ class TrainingModule extends Model
         'content',
         'duration_minutes',
         'content_html',
+        'pretest_quiz_id',
+        'posttest_quiz_id',
         'is_active',
         'status',
     ];

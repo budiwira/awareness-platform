@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function () {
             // Media upload/serve untuk rich content editor
             Route::post('/modules/{module}/media', [PlatformMediaController::class, 'store'])->name('modules.media.store');
             Route::get('/media/{filename}', [PlatformMediaController::class, 'serve'])->name('media.serve');
+            Route::post('/media', [PlatformMediaController::class, 'storeGeneric'])->name('media.store');
 
             // Route Quizzes
             Route::get('/quizzes', [PlatformQuizController::class, 'index'])->name('quizzes.index');

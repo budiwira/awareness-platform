@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
+use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\TrainingModule;
 use App\Support\Audit\Audit;
@@ -62,6 +63,7 @@ class TrainingModuleController extends Controller
 
         return Inertia::render('Platform/TrainingModules/Wizard', [
             'module' => null,
+            'quizzes' => Quiz::orderBy('title')->get(['id', 'title', 'passing_score']),
         ]);
     }
 
@@ -73,6 +75,7 @@ class TrainingModuleController extends Controller
 
         return Inertia::render('Platform/TrainingModules/Wizard', [
             'module' => $module,
+            'quizzes' => Quiz::orderBy('title')->get(['id', 'title', 'passing_score']),
         ]);
     }
 
@@ -87,6 +90,8 @@ class TrainingModuleController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'pretest_quiz_id' => ['nullable', 'exists:quizzes,id'],
+            'posttest_quiz_id' => ['nullable', 'exists:quizzes,id'],
         ]);
 
         $cleanHtml = RichContentSanitizer::clean($validated['content_html']);
@@ -98,6 +103,8 @@ class TrainingModuleController extends Controller
             'content' => trim(strip_tags($cleanHtml)),
             'duration_minutes' => $validated['duration_minutes'],
             'status' => $validated['status'],
+            'pretest_quiz_id' => $validated['pretest_quiz_id'] ?? null,
+            'posttest_quiz_id' => $validated['posttest_quiz_id'] ?? null,
         ]);
 
         Audit::log('module.created', $module, ['title' => $module->title, 'status' => $module->status]);
@@ -116,6 +123,8 @@ class TrainingModuleController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published,archived'],
             'is_active' => ['required', 'boolean'],
+            'pretest_quiz_id' => ['nullable', 'exists:quizzes,id'],
+            'posttest_quiz_id' => ['nullable', 'exists:quizzes,id'],
         ]);
 
         $cleanHtml = RichContentSanitizer::clean($validated['content_html']);
