@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\QuizAttempt;
 use App\Models\TrainingModule;
 use App\Support\Audit\Audit;
+use App\Support\RichContentSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -82,16 +83,19 @@ class TrainingModuleController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'content' => ['required', 'string'],
+            'content_html' => ['required', 'string', 'max:65535'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
+        $cleanHtml = RichContentSanitizer::clean($validated['content_html']);
+
         $module = TrainingModule::create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
-            'content' => $validated['content'],
+            'content_html' => $cleanHtml,
+            'content' => trim(strip_tags($cleanHtml)),
             'duration_minutes' => $validated['duration_minutes'],
             'status' => $validated['status'],
         ]);
@@ -108,11 +112,15 @@ class TrainingModuleController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
-            'content' => ['required', 'string'],
+            'content_html' => ['required', 'string', 'max:65535'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published,archived'],
             'is_active' => ['required', 'boolean'],
         ]);
+
+        $cleanHtml = RichContentSanitizer::clean($validated['content_html']);
+        $validated['content_html'] = $cleanHtml;
+        $validated['content'] = trim(strip_tags($cleanHtml));
 
         $module->update($validated);
         Audit::log('module.updated', $module, ['title' => $module->title, 'status' => $module->status]);

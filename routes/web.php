@@ -6,6 +6,7 @@ use App\Http\Controllers\PhishingTrapController;
 use App\Http\Controllers\Platform\BillingRequestController as PlatformBillingRequestController;
 use App\Http\Controllers\Platform\CaseStudyController as PlatformCaseController;
 use App\Http\Controllers\Platform\CtfChallengeController as PlatformCtfController;
+use App\Http\Controllers\Platform\MediaController as PlatformMediaController;
 use App\Http\Controllers\Platform\PackageController as PlatformPackageController;
 use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
@@ -90,6 +91,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/modules/{module}/publish', [PlatformModuleController::class, 'publish'])->name('modules.publish');
             Route::post('/modules/{module}/archive', [PlatformModuleController::class, 'archive'])->name('modules.archive');
             Route::delete('/modules/{module}', [PlatformModuleController::class, 'destroy'])->name('modules.destroy');
+
+            // Media upload/serve untuk rich content editor
+            Route::post('/modules/{module}/media', [PlatformMediaController::class, 'store'])->name('modules.media.store');
+            Route::get('/media/{filename}', [PlatformMediaController::class, 'serve'])->name('media.serve');
 
             // Route Quizzes
             Route::get('/quizzes', [PlatformQuizController::class, 'index'])->name('quizzes.index');

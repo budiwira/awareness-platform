@@ -45,7 +45,12 @@ class TrainingModule extends Model
      */
     public function setContentHtmlAttribute(?string $value): void
     {
-        $this->attributes['content_html'] = $value === null ? null : RichContentSanitizer::clean($value);
+        $clean = $value === null ? null : RichContentSanitizer::clean($value);
+        $this->attributes['content_html'] = $clean;
+
+        if ($clean !== null) {
+            $this->attributes['content'] = trim(strip_tags($clean));
+        }
     }
 
     protected $casts = [
