@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import axios from 'axios';
 import QuillEditor from '@/Components/QuillEditor.vue';
 
 const props = defineProps({
@@ -66,22 +67,15 @@ const uploadHandler = async (file) => {
         ? route('platform.modules.media.store', props.module.id)
         : route('platform.media.store');
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            Accept: 'application/json',
-        },
-    });
+    try {
+        const response = await axios.post(endpoint, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
 
-    if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message ?? 'Upload ditolak server');
+        return response.data.url;
+    } catch (err) {
+        throw new Error(err.response?.data?.message ?? 'Upload ditolak server');
     }
-
-    const data = await response.json();
-    return data.url;
 };
 </script>
 
@@ -130,11 +124,12 @@ const uploadHandler = async (file) => {
             </div>
 
             <div v-if="step === 3" class="space-y-4 fade-in">
+                <p v-if="quizzes.length === 0" class="text-sm t-muted">Kuis pretest/posttest ditetapkan setelah modul dibuat, lewat halaman Edit modul ini (kuis wajib terikat pada modul).</p>
                 <div>
                     <label class="text-sm font-medium t-ink">Pretest (opsional)</label>
-                    <select v-model="form.pretest_quiz_id" class="input mt-1 w-full">
+                    <select v-model="form.pretest_quiz_id" :disabled="!isEdit" class="input mt-1 w-full">
                         <option :value="null">Tanpa pretest</option>
-                        <option v-for="quiz in quizzes" :key="'pre-' + quiz.id" :value="quiz.id">
+                        <option v-for="quiz in quizzes.filter(q => q.purpose === 'pretest')" :key="'pre-' + quiz.id" :value="quiz.id">
                             {{ quiz.title }} (passing {{ quiz.passing_score }}%)
                         </option>
                     </select>
@@ -143,9 +138,9 @@ const uploadHandler = async (file) => {
                 </div>
                 <div>
                     <label class="text-sm font-medium t-ink">Posttest</label>
-                    <select v-model="form.posttest_quiz_id" class="input mt-1 w-full">
+                    <select v-model="form.posttest_quiz_id" :disabled="!isEdit" class="input mt-1 w-full">
                         <option :value="null">Tanpa posttest</option>
-                        <option v-for="quiz in quizzes" :key="'post-' + quiz.id" :value="quiz.id">
+                        <option v-for="quiz in quizzes.filter(q => q.purpose === 'posttest')" :key="'post-' + quiz.id" :value="quiz.id">
                             {{ quiz.title }} (passing {{ quiz.passing_score }}%)
                         </option>
                     </select>
