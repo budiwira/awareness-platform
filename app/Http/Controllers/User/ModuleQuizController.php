@@ -277,13 +277,13 @@ class ModuleQuizController extends Controller
         $attempt->load('quiz:id,title,passing_score,training_module_id');
 
         // Cari assignment milik user ini untuk modul yang sama
-        $assignmentId = $request->user()->moduleAssignments()
+        $assignment = $request->user()->moduleAssignments()
             ->where('training_module_id', $attempt->quiz->training_module_id)
-            ->value('id');
+            ->first(['id', 'pretest_score', 'score']);
 
         return Inertia::render('User/MyTraining/Result', [
             'attempt' => $attempt,
-            'assignment_id' => $assignmentId,
+            'assignment' => $assignment,
         ]);
     }
 
