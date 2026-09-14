@@ -10,7 +10,7 @@ use HTMLPurifier_Config;
  *
  * Kontrak keamanan:
  * - Allowlist ketat: tidak ada script, tidak ada atribut on*, tidak ada javascript: URI
- * - Iframe HANYA untuk embed YouTube/Vimeo
+ * - Iframe HANYA untuk embed YouTube/Vimeo (semua varian URL canonical)
  * - Konten tenant admin = input UNTRUSTED, bahkan dari admin sekalipun
  */
 class RichContentSanitizer
@@ -19,10 +19,8 @@ class RichContentSanitizer
     {
         $config = HTMLPurifier_Config::createDefault();
 
-        // Path relative dari file ini: app/Support -> root -> storage/app/purifier
         $cachePath = dirname(__DIR__, 2).'/storage/app/purifier';
 
-        // Auto-create jika tidak ada (CI runner, fresh clone, dll)
         if (! is_dir($cachePath)) {
             mkdir($cachePath, 0755, true);
         }
@@ -30,7 +28,7 @@ class RichContentSanitizer
         $config->set('Cache.SerializerPath', $cachePath);
         $config->set('HTML.Allowed', 'p,ul,ol,li,strong,em,u,br,h2,h3,h4,blockquote,a[href|target],img[src|alt],iframe[src|width|height|frameborder]');
         $config->set('HTML.SafeIframe', true);
-        $config->set('URI.SafeIframeRegexp', '%^https://(www\.youtube\.com/embed/|player\.vimeo\.com/video/)%');
+        $config->set('URI.SafeIframeRegexp', '%^https://(?:www\.youtube(?:-nocookie)?\.com/embed/[a-zA-Z0-9_-]+|player\.vimeo\.com/video/[0-9]+)(?:[?#][^\s]*)?$%D');
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
         $config->set('AutoFormat.AutoParagraph', true);
         $config->set('AutoFormat.RemoveEmpty', true);

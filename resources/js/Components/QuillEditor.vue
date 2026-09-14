@@ -14,13 +14,29 @@ const emit = defineEmits(['update:modelValue']);
 const editorRef = ref(null);
 let quill = null;
 
-// watch?v=XXX / youtu.be/XXX -> youtube.com/embed/XXX ; vimeo.com/X -> player.vimeo.com/video/X
+// Selaras dengan URI.SafeIframeRegexp di RichContentSanitizer.
+const allowedVideoUrl = /^https:\/\/(?:www\.youtube(?:-nocookie)?\.com\/embed\/[a-zA-Z0-9_-]+|player\.vimeo\.com\/video\/[0-9]+)(?:[?#][^\s]*)?$/;
 const normalizeVideoUrl = (url) => {
-    let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if (m) return 'https://www.youtube.com/embed/' + m[1];
-    m = url.match(/vimeo\.com\/(\d+)/);
-    if (m) return 'https://player.vimeo.com/video/' + m[1];
-    return url;
+    try {
+        const parsed = new URL(url.trim());
+        if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port) return null;
+        if (allowedVideoUrl.test(parsed.href)) return parsed.href;
+
+        let id;
+        if (['youtube.com', 'www.youtube.com'].includes(parsed.hostname)) {
+            id = parsed.pathname === '/watch'
+                ? parsed.searchParams.get('v')
+                : parsed.pathname.match(/^\/(?:embed|live|shorts)\/([a-zA-Z0-9_-]+)$/)?.[1];
+        } else if (parsed.hostname === 'youtu.be') {
+            id = parsed.pathname.match(/^\/([a-zA-Z0-9_-]+)$/)?.[1];
+        } else if (['vimeo.com', 'www.vimeo.com'].includes(parsed.hostname)) {
+            id = parsed.pathname.match(/^\/([0-9]+)$/)?.[1];
+            return id ? 'https://player.vimeo.com/video/' + id : null;
+        }
+        return id && /^[a-zA-Z0-9_-]+$/.test(id) ? 'https://www.youtube.com/embed/' + id : null;
+    } catch {
+        return null;
+    }
 };
 
 const imageHandler = () => {
@@ -44,9 +60,15 @@ const imageHandler = () => {
 };
 
 const videoHandler = () => {
-    const url = prompt('Paste URL YouTube atau Vimeo:');
-    if (!url) return;
-    const normalized = normalizeVideoUrl(url.trim());
+    const raw = prompt('Paste URL YouTube atau Vimeo:');
+    if (!raw) return;
+
+    const normalized = normalizeVideoUrl(raw);
+    if (!normalized || !allowedVideoUrl.test(normalized)) {
+        alert('URL tidak dikenali sebagai YouTube atau Vimeo yang valid.');
+        return;
+    }
+
     const range = quill.getSelection(true);
     quill.insertEmbed(range.index, 'video', normalized);
     quill.setSelection(range.index + 1);
@@ -94,5 +116,10 @@ watch(() => props.modelValue, (newVal) => {
 <style scoped>
 :deep(.ql-editor) {
     min-height: 400px;
+}
+:deep(.ql-video) {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-width: 720px;
 }
 </style>

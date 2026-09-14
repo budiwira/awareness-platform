@@ -191,3 +191,12 @@ test('invariant: unauthorized user tidak bisa upload media', function () {
         ->postJson(route('platform.modules.media.store', $module), ['file' => $file])
         ->assertForbidden();
 });
+
+test('invariant: private disk terkonfigurasi di filesystems config', function () {
+    // Storage::fake() mendaftarkan disk dinamis dan bisa menyembunyikan config yang hilang.
+    // Test ini memverifikasi config nyata, bukan fake.
+    // Path Laravel menormalisasi ke forward slash bahkan di Windows.
+    $root = config('filesystems.disks.private.root');
+    expect(config('filesystems.disks.private.driver'))->toBe('local')
+        ->and($root)->toMatch('#[/\\\\]private$#');
+});

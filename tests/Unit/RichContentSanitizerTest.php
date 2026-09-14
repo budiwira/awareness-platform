@@ -43,3 +43,28 @@ test('format word dasar dipertahankan', function () {
         ->and($out)->toContain('<li>')
         ->and($out)->toContain('<ol>');
 });
+
+test('iframe nocookie dipertahankan tanpa atribut berbahaya', function () {
+    $url = 'https://www.youtube-nocookie.com/embed/abc123?rel=0';
+    $out = RichContentSanitizer::clean('<iframe src="'.$url.'" width="640" height="360" allow="camera; microphone" allowfullscreen onload="alert(1)" srcdoc="unsafe"></iframe>');
+    expect($out)->toContain($url)->toContain('width="640"')
+        ->not->toContain('allow=')->not->toContain('allowfullscreen')
+        ->not->toContain('onload')->not->toContain('srcdoc');
+});
+
+test('iframe hanya menerima URL embed HTTPS yang diizinkan', function ($url) {
+    $out = RichContentSanitizer::clean('<iframe src="'.$url.'"></iframe>');
+    expect($out)->not->toContain('<iframe');
+})->with([
+    'http://www.youtube.com/embed/abc123',
+    '//www.youtube.com/embed/abc123',
+    'https://www.youtube.com.evil.test/embed/abc123',
+    'https://www.youtube.com@evil.test/embed/abc123',
+    'https://www.youtube.com/watch?v=abc123',
+    'https://www.youtube-nocookie.com/watch?v=abc123',
+    'https://vimeo.com/123456',
+    'https://player.vimeo.com/video/not-a-number',
+    'https://www.youtube.com/embed/',
+    'https://www.youtube.com/embed/abc123/extra',
+    'javascript:alert(1)',
+]);

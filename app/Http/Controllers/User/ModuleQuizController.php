@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
+use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
@@ -41,7 +42,7 @@ class ModuleQuizController extends Controller
             ])->toResponse($request)->setStatusCode(403);
         }
 
-        $quiz = $assignment->module->quiz;
+        $quiz = $this->resolveQuiz($request, $assignment);
 
         if (! $quiz || ! $quiz->is_active) {
             return redirect()->route('user.training.index')->withErrors(['quiz' => 'Quiz belum tersedia untuk modul ini.']);
@@ -58,6 +59,7 @@ class ModuleQuizController extends Controller
                 'assignment' => ['id' => $assignment->id, 'module_title' => $assignment->module->title],
                 'quiz' => [
                     'id' => $quiz->id,
+                    'purpose' => $this->quizPurpose($assignment, $quiz),
                     'title' => $quiz->title,
                     'passing_score' => $quiz->passing_score,
                     'duration_minutes' => $quiz->duration_minutes,
@@ -91,6 +93,7 @@ class ModuleQuizController extends Controller
             'assignment' => ['id' => $assignment->id, 'module_title' => $assignment->module->title],
             'quiz' => [
                 'id' => $quiz->id,
+                'purpose' => $this->quizPurpose($assignment, $quiz),
                 'title' => $quiz->title,
                 'passing_score' => $quiz->passing_score,
                 'duration_minutes' => $quiz->duration_minutes,
@@ -112,11 +115,13 @@ class ModuleQuizController extends Controller
             return response()->json(['message' => 'Organisasi Anda belum mengaktifkan modul ini.'], 403);
         }
 
-        $quiz = $assignment->module->quiz;
+        $quiz = $this->resolveQuiz($request, $assignment);
 
         if (! $quiz || ! $quiz->is_active) {
             return response()->json(['message' => 'Quiz tidak aktif.'], 422);
         }
+
+        $request->validate(['quiz_id' => ['sometimes', 'integer', 'in:'.$quiz->id]]);
 
         $user = $request->user();
 
@@ -344,6 +349,45 @@ class ModuleQuizController extends Controller
             ],
             'questions' => $reviewQuestions,
         ]);
+    }
+
+    private function resolveQuiz(Request $request, ModuleAssignment $assignment): ?Quiz
+    {
+        $request->validate(['purpose' => ['sometimes', 'in:pretest,posttest']]);
+        $purpose = $request->query('purpose');
+        $module = $assignment->module;
+
+        $pretestCompleted = ! $module->pretest_quiz_id || QuizAttempt::where('quiz_id', $module->pretest_quiz_id)
+            ->where('user_id', $request->user()->id)
+            ->where('status', 'submitted')
+            ->exists();
+
+        $quiz = match ($purpose) {
+            'pretest' => $module->pretestQuiz,
+            'posttest' => $module->posttestQuiz,
+            default => $module->pretest_quiz_id || $module->posttest_quiz_id
+                ? (! $pretestCompleted ? $module->pretestQuiz : ($module->posttestQuiz ?? $module->pretestQuiz))
+                : $module->quiz,
+        };
+
+        if ($quiz) {
+            abort_unless($quiz->training_module_id === $module->id, 422, 'Quiz tidak sesuai dengan modul ini.');
+            $resolvedPurpose = $this->quizPurpose($assignment, $quiz);
+            abort_if($purpose && $resolvedPurpose !== $purpose, 422, 'Purpose quiz tidak sesuai.');
+            abort_if($resolvedPurpose && $quiz->purpose !== $resolvedPurpose, 422, 'Purpose quiz tidak sesuai.');
+            abort_if($resolvedPurpose === 'posttest' && ! $pretestCompleted, 403, 'Selesaikan pretest terlebih dahulu.');
+        }
+
+        return $quiz;
+    }
+
+    private function quizPurpose(ModuleAssignment $assignment, Quiz $quiz): ?string
+    {
+        return match ($quiz->id) {
+            $assignment->module->pretest_quiz_id => 'pretest',
+            $assignment->module->posttest_quiz_id => 'posttest',
+            default => null,
+        };
     }
 
     private function ensureOwner(Request $request, ModuleAssignment $assignment): void

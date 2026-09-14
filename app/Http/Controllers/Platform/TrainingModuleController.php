@@ -10,6 +10,7 @@ use App\Support\Audit\Audit;
 use App\Support\RichContentSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TrainingModuleController extends Controller
@@ -63,7 +64,7 @@ class TrainingModuleController extends Controller
 
         return Inertia::render('Platform/TrainingModules/Wizard', [
             'module' => null,
-            'quizzes' => Quiz::orderBy('title')->get(['id', 'title', 'passing_score']),
+            'quizzes' => collect(),
         ]);
     }
 
@@ -75,7 +76,7 @@ class TrainingModuleController extends Controller
 
         return Inertia::render('Platform/TrainingModules/Wizard', [
             'module' => $module,
-            'quizzes' => Quiz::orderBy('title')->get(['id', 'title', 'passing_score']),
+            'quizzes' => Quiz::where('training_module_id', $module->id)->orderBy('title')->get(['id', 'title', 'passing_score', 'purpose']),
         ]);
     }
 
@@ -90,8 +91,8 @@ class TrainingModuleController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'pretest_quiz_id' => ['nullable', 'exists:quizzes,id'],
-            'posttest_quiz_id' => ['nullable', 'exists:quizzes,id'],
+            'pretest_quiz_id' => ['prohibited'],
+            'posttest_quiz_id' => ['prohibited'],
         ]);
 
         $cleanHtml = RichContentSanitizer::clean($validated['content_html']);
@@ -103,8 +104,6 @@ class TrainingModuleController extends Controller
             'content' => trim(strip_tags($cleanHtml)),
             'duration_minutes' => $validated['duration_minutes'],
             'status' => $validated['status'],
-            'pretest_quiz_id' => $validated['pretest_quiz_id'] ?? null,
-            'posttest_quiz_id' => $validated['posttest_quiz_id'] ?? null,
         ]);
 
         Audit::log('module.created', $module, ['title' => $module->title, 'status' => $module->status]);
@@ -123,8 +122,8 @@ class TrainingModuleController extends Controller
             'duration_minutes' => ['required', 'integer', 'min:1'],
             'status' => ['required', 'in:draft,published,archived'],
             'is_active' => ['required', 'boolean'],
-            'pretest_quiz_id' => ['nullable', 'exists:quizzes,id'],
-            'posttest_quiz_id' => ['nullable', 'exists:quizzes,id'],
+            'pretest_quiz_id' => ['nullable', 'integer', Rule::exists('quizzes', 'id')->where('training_module_id', $module->id)->where('purpose', 'pretest')],
+            'posttest_quiz_id' => ['nullable', 'integer', Rule::exists('quizzes', 'id')->where('training_module_id', $module->id)->where('purpose', 'posttest')],
         ]);
 
         $cleanHtml = RichContentSanitizer::clean($validated['content_html']);

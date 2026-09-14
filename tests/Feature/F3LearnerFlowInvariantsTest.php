@@ -10,6 +10,8 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
+use App\Models\UserModuleAccess;
+use Inertia\Testing\AssertableInertia as Assert;
 
 function buildAssignmentWithQuizzes()
 {
@@ -221,3 +223,150 @@ test('invariant F3: learning gain computed correctly', function () {
         ->and($assignment->score)->toBe(100)
         ->and($learningGain)->toBe(100);
 });
+test('invariant F3: learner dapat membuka halaman quiz pretest via purpose', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+
+    $this->actingAs($user)
+        ->get(route('user.training.quiz', ['assignment' => $assignment->id, 'purpose' => 'pretest']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('User/MyTraining/Quiz')
+            ->where('quiz.title', 'Pretest')
+            ->where('quiz.purpose', 'pretest')
+        );
+});
+
+test('invariant F3: start dengan purpose=pretest membuat attempt hanya di quiz pretest', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+
+    $this->actingAs($user)
+        ->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'pretest']))
+        ->assertOk();
+
+    expect(QuizAttempt::where('quiz_id', $pretest->id)->where('user_id', $user->id)->exists())->toBeTrue()
+        ->and(QuizAttempt::where('quiz_id', $posttest->id)->where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+test('invariant F3: posttest show and start require a submitted pretest, regardless of score', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    QuizAttempt::create([
+        'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'submitted', 'started_at' => now(), 'submitted_at' => now(), 'score' => 0, 'passed' => false,
+    ]);
+
+    $this->actingAs($user)->get(route('user.training.quiz', ['assignment' => $assignment->id, 'purpose' => 'posttest']))
+        ->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('User/MyTraining/Quiz')->where('quiz.id', $posttest->id)->where('quiz.purpose', 'posttest'));
+    $this->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'posttest']), ['quiz_id' => $posttest->id])
+        ->assertOk()->assertJsonPath('quiz.id', $posttest->id);
+    expect(QuizAttempt::where('status', 'in_progress')->where('user_id', $user->id)->pluck('quiz_id')->all())->toBe([$posttest->id]);
+});
+
+test('invariant F3: missing or unfinished pretest blocks posttest show and start', function ($status) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    if ($status) {
+        QuizAttempt::create([
+            'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'status' => $status, 'started_at' => now(),
+        ]);
+    }
+    $params = ['assignment' => $assignment->id, 'purpose' => 'posttest'];
+    $this->actingAs($user)->get(route('user.training.quiz', $params))->assertForbidden();
+    $this->postJson(route('user.training.quiz.start', $params))->assertForbidden();
+    expect(QuizAttempt::where('quiz_id', $posttest->id)->exists())->toBeFalse();
+})->with([null, 'in_progress', 'expired']);
+
+test('invariant F3: default quiz follows module flow and a stale quiz id is rejected', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $this->actingAs($user)->get(route('user.training.quiz', $assignment))
+        ->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('User/MyTraining/Quiz')->where('quiz.id', $pretest->id)->where('quiz.purpose', 'pretest'));
+    $this->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'pretest']), ['quiz_id' => $posttest->id])
+        ->assertUnprocessable()->assertJsonValidationErrors('quiz_id');
+    expect(QuizAttempt::where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+test('invariant F3: required posttest cannot be bypassed by manual completion', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertForbidden();
+    expect($assignment->fresh()->status)->toBe('assigned')->and($assignment->fresh()->completed_at)->toBeNull();
+});
+
+test('invariant F3: authorized manual completion without posttest respects pretest', function ($hasPretest) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $module->update(['posttest_quiz_id' => null, 'pretest_quiz_id' => $hasPretest ? $pretest->id : null]);
+    if ($hasPretest) {
+        $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertForbidden();
+        QuizAttempt::create([
+            'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'status' => 'submitted', 'started_at' => now(), 'submitted_at' => now(), 'score' => 0, 'passed' => false,
+        ]);
+    }
+    $this->actingAs($user)->patch(route('user.training.complete', $assignment))->assertRedirect(route('user.training.index'));
+    expect($assignment->fresh()->status)->toBe('completed');
+    $this->assertDatabaseHas('audit_logs', ['action' => 'training.completed']);
+})->with([false, true]);
+
+test('invariant F3: manual completion requires entitlement and user access', function ($revoked) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $module->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
+    if ($revoked) {
+        UserModuleAccess::create([
+            'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'training_module_id' => $module->id, 'is_allowed' => false,
+        ]);
+    } else {
+        Subscription::where('tenant_id', $user->tenant_id)->update(['status' => 'cancelled']);
+    }
+    $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertForbidden();
+    expect($assignment->fresh()->status)->toBe('assigned');
+})->with([false, true]);
+
+test('invariant F3: other users and tenants cannot open, start or complete an assignment', function ($crossTenant) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $other = User::factory()->create([
+        'tenant_id' => $crossTenant ? Tenant::factory()->create()->id : $user->tenant_id,
+        'role' => UserRole::User,
+    ]);
+    $params = ['assignment' => $assignment->id, 'purpose' => 'pretest'];
+    $this->actingAs($other)->get(route('user.training.quiz', $params))->assertForbidden();
+    $this->postJson(route('user.training.quiz.start', $params))->assertForbidden();
+    $this->patchJson(route('user.training.complete', $assignment))->assertForbidden();
+    expect(QuizAttempt::where('user_id', $other->id)->exists())->toBeFalse();
+})->with([false, true]);
+
+test('invariant F3: tenant admin cannot use learner quiz or completion routes', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $user->update(['role' => UserRole::TenantAdmin]);
+    $params = ['assignment' => $assignment->id, 'purpose' => 'pretest'];
+    $this->actingAs($user)->get(route('user.training.quiz', $params))->assertForbidden();
+    $this->postJson(route('user.training.quiz.start', $params))->assertForbidden();
+    $this->patchJson(route('user.training.complete', $assignment))->assertForbidden();
+});
+
+test('invariant F3: posttest without pretest opens and starts the configured quiz', function () {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $module->update(['pretest_quiz_id' => null]);
+    $params = ['assignment' => $assignment->id, 'purpose' => 'posttest'];
+    $this->actingAs($user)->get(route('user.training.quiz', $params))
+        ->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('User/MyTraining/Quiz')->where('quiz.id', $posttest->id)->where('quiz.purpose', 'posttest'));
+    $this->postJson(route('user.training.quiz.start', $params), ['quiz_id' => $posttest->id])
+        ->assertOk()->assertJsonPath('quiz.id', $posttest->id);
+});
+
+test('invariant F3: misconfigured quiz links fail closed', function ($mismatch) {
+    [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    if ($mismatch === 'module') {
+        $otherModule = TrainingModule::create(['title' => 'Other', 'content' => 'x', 'duration_minutes' => 10]);
+        $pretest->update(['training_module_id' => $otherModule->id]);
+    } elseif ($mismatch === 'purpose') {
+        $module->update(['pretest_quiz_id' => $posttest->id, 'posttest_quiz_id' => null]);
+    } else {
+        $module->update(['posttest_quiz_id' => $pretest->id]);
+    }
+    $params = ['assignment' => $assignment->id, 'purpose' => $mismatch === 'shared' ? 'posttest' : 'pretest'];
+    $this->actingAs($user)->getJson(route('user.training.quiz', $params))->assertUnprocessable();
+    $this->postJson(route('user.training.quiz.start', $params))->assertUnprocessable();
+    expect(QuizAttempt::where('user_id', $user->id)->exists())->toBeFalse();
+})->with(['module', 'purpose', 'shared']);
