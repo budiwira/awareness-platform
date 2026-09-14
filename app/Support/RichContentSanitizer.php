@@ -22,22 +22,15 @@ class RichContentSanitizer
         // Path relative dari file ini: app/Support -> root -> storage/app/purifier
         $cachePath = dirname(__DIR__, 2).'/storage/app/purifier';
 
+        // Auto-create jika tidak ada (CI runner, fresh clone, dll)
+        if (! is_dir($cachePath)) {
+            mkdir($cachePath, 0755, true);
+        }
+
         $config->set('Cache.SerializerPath', $cachePath);
-
-        // Catatan: allowfullscreen tidak dimasukkan karena HTMLPurifier core tidak support attribute itu tanpa custom definition.
-        $config->set(
-            'HTML.Allowed',
-            'p,ul,ol,li,strong,em,u,br,h2,h3,h4,blockquote,a[href|target],img[src|alt],iframe[src|width|height|frameborder]'
-        );
-
+        $config->set('HTML.Allowed', 'p,ul,ol,li,strong,em,u,br,h2,h3,h4,blockquote,a[href|target],img[src|alt],iframe[src|width|height|frameborder]');
         $config->set('HTML.SafeIframe', true);
-
-        // Hanya izinkan embed YouTube dan Vimeo.
-        $config->set(
-            'URI.SafeIframeRegexp',
-            '%^https://(www\.youtube\.com/embed/|player\.vimeo\.com/video/)%'
-        );
-
+        $config->set('URI.SafeIframeRegexp', '%^https://(www\.youtube\.com/embed/|player\.vimeo\.com/video/)%');
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
         $config->set('AutoFormat.AutoParagraph', true);
         $config->set('AutoFormat.RemoveEmpty', true);
