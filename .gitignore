@@ -29,3 +29,8 @@ test-results/
 playwright-report/
 
 docs/ops/BACKUP-LOG.md
+
+# Local artifacts - never commit
+/backup_before_audit.sql
+/gitleaks-report.json
+
