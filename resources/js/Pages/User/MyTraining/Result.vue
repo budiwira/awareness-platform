@@ -1,10 +1,16 @@
 <script setup>
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     attempt: Object,
-    assignment_id: { type: Number, default: null },
+    assignment: Object,
+});
+
+const learningGain = computed(() => {
+    if (!props.assignment?.pretest_score || !props.attempt?.score) return null;
+    return props.attempt.score - props.assignment.pretest_score;
 });
 </script>
 
@@ -15,34 +21,32 @@ defineProps({
         <div class="max-w-xl mx-auto card p-8 text-center">
             <div
                 class="mx-auto w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold mb-4"
-                :class="attempt.passed ? 'badge-ok' : 'bg-red-100 text-red-700'"
+                :class="attempt.passed ? 'badge-ok' : 'badge-danger'"
             >
-                {{ attempt.score }}
+                {{ attempt.score }}%
             </div>
 
-            <h2 class="text-xl font-bold t-ink mb-1">{{ attempt.quiz.title }}</h2>
-            <p class="text-sm t-muted mb-6">Nilai kelulusan: {{ attempt.quiz.passing_score }}%</p>
+            <h1 class="font-display text-2xl font-bold mb-2">{{ attempt.quiz.title }}</h1>
+            <p class="text-sm mb-6" :style="{ color: attempt.passed ? 'var(--success)' : 'var(--danger)' }">
+                {{ attempt.passed ? 'Lulus' : 'Belum Lulus' }}
+            </p>
 
-            <span
-                class="inline-block px-4 py-1.5 rounded-full text-sm font-medium mb-8"
-                :class="attempt.passed ? 'badge-ok' : 'bg-red-100 text-red-700'"
-            >
-                {{ attempt.passed ? '✓ LULUS — Modul selesai' : 'BELUM LULUS — Coba lagi' }}
-            </span>
+            <div v-if="learningGain !== null" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="text-sm font-medium mb-1" style="color: var(--t-ink);">Learning Gain</div>
+                <div class="text-2xl font-bold" :style="{ color: learningGain > 0 ? 'var(--success)' : 'var(--danger)' }">
+                    {{ learningGain > 0 ? '+' : '' }}{{ learningGain }}%
+                </div>
+                <div class="text-xs mt-1" style="color: var(--t-muted);">
+                    Pretest: {{ assignment.pretest_score }}% ? Posttest: {{ attempt.score }}%
+                </div>
+            </div>
 
-            <div class="flex justify-center gap-3">
-                <Link
-                    :href="route('user.training.index')"
-                    class="btn btn-secondary"
-                >
-                    Ke Daftar Training
+            <div class="flex gap-3 justify-center">
+                <Link v-if="assignment" :href="route('user.training.show', assignment.id)" class="btn">
+                    Kembali ke Modul
                 </Link>
-                <Link
-                    v-if="!attempt.passed && assignment_id"
-                    :href="route('user.training.quiz', assignment_id)"
-                    class="btn btn-primary"
-                >
-                    Ulangi Quiz
+                <Link :href="route('user.training.index')" class="btn btn-primary">
+                    Daftar Training
                 </Link>
             </div>
         </div>
