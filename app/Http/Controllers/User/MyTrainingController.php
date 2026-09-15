@@ -9,6 +9,7 @@ use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class MyTrainingController extends Controller
@@ -147,14 +148,16 @@ class MyTrainingController extends Controller
             return redirect()->back();
         }
 
-        $assignment->update([
-            'status' => 'completed',
-            'completed_at' => now(),
-        ]);
+        DB::transaction(function () use ($assignment) {
+            $assignment->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+            ]);
 
-        Audit::log('training.completed', $assignment, [
-            'module_id' => $assignment->training_module_id,
-        ]);
+            Audit::log('training.completed', $assignment, [
+                'module_id' => $assignment->training_module_id,
+            ]);
+        });
 
         return redirect()->route('user.training.index');
     }

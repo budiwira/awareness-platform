@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\AuditLog;
 use App\Models\ModuleAssignment;
 use App\Models\Package;
 use App\Models\Quiz;
@@ -12,6 +13,52 @@ use App\Models\TrainingModule;
 use App\Models\User;
 use App\Models\UserModuleAccess;
 use Inertia\Testing\AssertableInertia as Assert;
+
+test('Audit: invalid submit creates no result or success event', function () {
+    [$user, , , $quiz, $assignment] = buildAssignmentWithQuizzes();
+    $attempt = QuizAttempt::create([
+        'quiz_id' => $quiz->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'in_progress', 'started_at' => now(),
+    ]);
+    $this->actingAs($user)->postJson(route('user.training.quiz.submit', $attempt), [])
+        ->assertUnprocessable();
+    expect($assignment->fresh()->score)->toBe(0);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'quiz.submitted']);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
+});
+
+test('Audit: admin score and progress changes are traceable without unrelated data', function () {
+    [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
+    $admin = User::factory()->create(['tenant_id' => $user->tenant_id, 'role' => UserRole::TenantAdmin]);
+    $this->actingAs($admin)->patch(route('tenant.assignments.update', $assignment), [
+        'status' => 'in_progress', 'score' => 42,
+    ])->assertRedirect();
+    $event = AuditLog::where('action', 'assignment.result_changed')->sole();
+    expect($event->actor_user_id)->toBe($admin->id)
+        ->and($event->tenant_id)->toBe($user->tenant_id)
+        ->and($event->subject_type)->toBe($assignment->getMorphClass())
+        ->and($event->subject_id)->toBe((string) $assignment->id)
+        ->and($event->properties)->toEqual([
+            'module_id' => $module->id, 'user_id' => $user->id,
+            'before' => ['status' => 'assigned', 'score' => 0],
+            'after' => ['status' => 'in_progress', 'score' => 42],
+        ]);
+});
+
+test('Audit: audit failure rolls back manual completion', function () {
+    [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
+    $module->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
+    AuditLog::creating(function (AuditLog $log) {
+        if ($log->action === 'training.completed') {
+            throw new RuntimeException('Audit unavailable');
+        }
+    });
+    $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertStatus(500);
+    expect($assignment->fresh()->status)->toBe('assigned')
+        ->and($assignment->fresh()->completed_at)->toBeNull();
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'training.completed']);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
+});
 
 function buildAssignmentWithQuizzes()
 {
@@ -180,6 +227,22 @@ test('invariant F3: posttest passed mark completed', function () {
     $assignment->refresh();
     expect($assignment->status)->toBe('completed')
         ->and($assignment->completed_at)->not->toBeNull();
+
+    $event = AuditLog::where('action', 'quiz.submitted')->sole();
+    expect($event->actor_user_id)->toBe($user->id)
+        ->and($event->tenant_id)->toBe($user->tenant_id)
+        ->and($event->subject_id)->toBe((string) $attempt->id)
+        ->and($event->properties)->toEqual([
+            'score' => 100, 'passed' => true, 'status' => 'submitted',
+            'quiz_id' => $posttest->id, 'purpose' => 'posttest',
+            'module_id' => $module->id, 'assignment_id' => $assignment->id,
+        ]);
+    $change = AuditLog::where('action', 'assignment.result_changed')->sole();
+    expect($change->subject_id)->toBe((string) $assignment->id)
+        ->and($change->properties['before'])->toEqual(['status' => 'assigned', 'completed_at' => null, 'score' => 0])
+        ->and($change->properties['after']['score'])->toBe(100)
+        ->and($change->properties['after']['status'])->toBe('completed')
+        ->and($change->properties['after']['completed_at'])->not->toBeNull();
 });
 
 test('invariant F3: learning gain computed correctly', function () {
@@ -305,6 +368,13 @@ test('invariant F3: authorized manual completion without posttest respects prete
     $this->actingAs($user)->patch(route('user.training.complete', $assignment))->assertRedirect(route('user.training.index'));
     expect($assignment->fresh()->status)->toBe('completed');
     $this->assertDatabaseHas('audit_logs', ['action' => 'training.completed']);
+    $change = AuditLog::where('action', 'assignment.result_changed')->sole();
+    expect($change->actor_user_id)->toBe($user->id)
+        ->and($change->subject_id)->toBe((string) $assignment->id)
+        ->and($change->properties['before']['status'])->toBe('assigned')
+        ->and($change->properties['before']['completed_at'])->toBeNull()
+        ->and($change->properties['after']['status'])->toBe('completed')
+        ->and($change->properties['after']['completed_at'])->not->toBeNull();
 })->with([false, true]);
 
 test('invariant F3: manual completion requires entitlement and user access', function ($revoked) {
@@ -409,6 +479,7 @@ test('invariant F3: running attempt requires current authorization for resume an
     ])->assertForbidden();
     expect($attempt->fresh()->getAttributes())->toBe($before);
     $this->assertDatabaseMissing('audit_logs', ['action' => 'quiz.submitted', 'subject_id' => (string) $attempt->id]);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
 })->with([
     'entitlement revoked', 'module access revoked', 'assignment removed',
     'assignment belongs to another learner', 'other learner', 'wrong tenant', 'wrong role',

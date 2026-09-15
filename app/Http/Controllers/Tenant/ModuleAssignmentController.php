@@ -10,6 +10,7 @@ use App\Notifications\TrainingAssigned;
 use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -104,14 +105,16 @@ class ModuleAssignmentController extends Controller
             'score' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
-        $assignment->update($validated);
+        DB::transaction(function () use ($assignment, $validated) {
+            $assignment->update($validated);
 
-        if ($validated['status'] === 'completed') {
-            $assignment->completed_at = now();
-            $assignment->save();
-        }
+            if ($validated['status'] === 'completed') {
+                $assignment->completed_at = now();
+                $assignment->save();
+            }
 
-        Audit::log('assignment.updated', $assignment, ['status' => $validated['status']]);
+            Audit::log('assignment.updated', $assignment, ['status' => $validated['status']]);
+        });
 
         return redirect()->route('tenant.assignments.index')->with('success', 'Perubahan disimpan.');
     }
