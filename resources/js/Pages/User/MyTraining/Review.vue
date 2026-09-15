@@ -19,32 +19,26 @@ const formatDate = (dateString) => {
     <Head :title="`Review: ${quiz.title}`" />
 
     <AppLayout :title="`Review: ${quiz.title}`">
-        <Link :href="route('user.score')" class="inline-flex items-center gap-2 mb-6 transition-colors" style="color: var(--muted)">
+        <Link :href="route('user.score')" class="inline-flex items-center gap-2 mb-8 transition-colors" style="color: var(--t-muted)">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Kembali ke Skor Saya
         </Link>
 
-        <div class="card p-6 mb-6">
+        <div class="card p-6 mb-8">
             <div class="flex items-start justify-between">
                 <div>
-                    <div class="text-sm mb-1" style="color: var(--muted)">Skor Anda</div>
-                    <div class="font-display text-4xl font-bold mb-2" style="color: var(--ink)">{{ attempt.score }}</div>
-                    <span 
-                        class="badge"
-                        :style="{ 
-                            background: attempt.passed ? 'var(--brand-soft)' : 'var(--danger-bg)', 
-                            color: attempt.passed ? 'var(--brand-strong)' : 'var(--danger)' 
-                        }"
-                    >
-                        {{ attempt.passed ? 'Lulus' : 'Tidak Lulus' }}
+                    <div class="text-sm mb-1 t-muted">Skor Anda</div>
+                    <div class="font-display text-4xl font-bold mb-2 t-ink">{{ attempt.score }}%</div>
+                    <span class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
+                        {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
                     </span>
                 </div>
                 <div class="text-right">
-                    <div class="text-sm" style="color: var(--muted)">Passing Score</div>
-                    <div class="font-semibold text-2xl" style="color: var(--ink)">{{ quiz.passing_score }}</div>
-                    <div class="text-xs mt-1" style="color: var(--muted)">{{ formatDate(attempt.submitted_at) }}</div>
+                    <div class="text-sm t-muted">Nilai kelulusan</div>
+                    <div class="font-semibold text-2xl t-ink">{{ quiz.passing_score }}%</div>
+                    <div class="text-xs mt-1 t-muted">{{ formatDate(attempt.submitted_at) }}</div>
                 </div>
             </div>
         </div>
@@ -63,7 +57,7 @@ const formatDate = (dateString) => {
                         {{ index + 1 }}
                     </div>
                     <div class="flex-1">
-                        <div class="font-medium mb-4" style="color: var(--ink)">{{ q.question }}</div>
+                        <div class="font-medium mb-4 t-ink">{{ q.question }}</div>
                         
                         <div class="space-y-2 mb-4">
                             <div 
@@ -106,7 +100,7 @@ const formatDate = (dateString) => {
                                     >
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                                     </svg>
-                                    <span 
+                                    <span
                                         class="flex-1"
                                         :style="{ 
                                             color: optIndex === q.correct_index 
@@ -123,14 +117,14 @@ const formatDate = (dateString) => {
                                         class="text-xs font-medium"
                                         style="color: var(--brand-strong)"
                                     >
-                                        Jawaban Benar
+                                        Jawaban benar
                                     </span>
                                     <span 
                                         v-else-if="optIndex === q.user_answer_index"
                                         class="text-xs font-medium"
                                         style="color: var(--danger)"
                                     >
-                                        Jawaban Anda
+                                        Jawaban Anda · Salah
                                     </span>
                                 </div>
                             </div>
@@ -141,8 +135,8 @@ const formatDate = (dateString) => {
                             class="p-4 rounded-lg"
                             style="background: var(--surface2)"
                         >
-                            <div class="text-xs font-semibold mb-1" style="color: var(--muted)">PENJELASAN</div>
-                            <div class="text-sm" style="color: var(--ink)">{{ q.explanation }}</div>
+                            <div class="text-xs font-semibold mb-1 t-muted">PENJELASAN</div>
+                            <div class="text-sm t-ink">{{ q.explanation }}</div>
                         </div>
                     </div>
                 </div>
