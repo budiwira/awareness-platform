@@ -42,12 +42,12 @@ const statusBadge = (status) =>
 </script>
 
 <template>
-    <Head title="Tenants" />
+    <Head title="Organisasi" />
 
-    <AppLayout title="Organizations">
+    <AppLayout title="Organisasi">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
-                Provisioning organisasi pelanggan. Setiap tenant terisolasi penuh oleh RLS.
+                Kelola organisasi pelanggan dan akses pengguna secara terpusat. Setiap tenant terisolasi penuh oleh RLS.
             </p>
             <button
                 @click="showCreate = !showCreate"
@@ -58,9 +58,13 @@ const statusBadge = (status) =>
         </div>
 
         <div v-if="showCreate" class="card p-6 mb-6">
+            <div class="mb-4">
+                <h2 class="font-semibold t-ink">Tambah organisasi baru</h2>
+                <p class="text-sm t-muted mt-1">Buat ruang kerja terpisah untuk organisasi pelanggan.</p>
+            </div>
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="text-sm t-muted">Nama Organisasi</label>
+                    <label class="text-sm t-muted">Nama organisasi</label>
                     <input
                         v-model="form.name"
                         type="text"
@@ -82,10 +86,10 @@ const statusBadge = (status) =>
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left t-muted border-b b-line">
-                        <th class="px-6 py-3 font-medium">Name</th>
+                        <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Slug</th>
-                        <th class="px-6 py-3 font-medium">Users</th>
-                        <th class="px-6 py-3 font-medium">Package</th>
+                        <th class="px-6 py-3 font-medium">Pengguna</th>
+                        <th class="px-6 py-3 font-medium">Paket</th>
                         <th class="px-6 py-3 font-medium">Status</th>
                         <th class="px-6 py-3 font-medium">Aksi</th>
                     </tr>
@@ -96,18 +100,18 @@ const statusBadge = (status) =>
                         <td class="px-6 py-3 t-muted">{{ tenant.slug }}</td>
                         <td class="px-6 py-3 t-muted">{{ tenant.users_count }}</td>
                         <td class="px-6 py-3">
-                            <span v-if="tenant.current_package" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{{ tenant.current_package }}</span>
+                            <span v-if="tenant.current_package" class="badge">{{ tenant.current_package }}</span>
                             <span v-else class="text-xs t-muted">Belum ada paket</span>
                         </td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(tenant.status)">
-                                {{ tenant.status }}
+                                {{ tenant.status === 'active' ? 'Aktif' : 'Tidak aktif' }}
                             </span>
                         </td>
                         <td class="px-6 py-3">
                             <Link :href="route('platform.tenants.user-access.show', tenant.id)" class="btn bg-surface2 hover:bg-surface2 t-ink text-xs py-1 px-3 mr-2">Kelola Akses</Link>
                             <button @click="openSetPlan(tenant)" class="btn btn-primary text-xs py-1 px-3">
-                                Set Package
+                                Atur paket
                             </button>
                         </td>
                     </tr>
@@ -115,17 +119,18 @@ const statusBadge = (status) =>
             </table>
         </div>
 
-        <!-- Set Package Modal -->
+        <!-- Modal pengaturan paket -->
         <div v-if="showSetPlan" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in">
             <div class="card p-6 max-w-md w-full mx-4">
-                <h3 class="text-lg font-semibold mb-4">Set Package untuk {{ selectedTenant?.name }}</h3>
+                <h3 class="text-lg font-semibold mb-1">Atur paket organisasi</h3>
+                <p class="text-sm t-muted mb-4">{{ selectedTenant?.name }}</p>
                 <form @submit.prevent="submitSetPlan" class="space-y-4">
                     <div>
-                        <label class="text-sm t-muted">Pilih Package</label>
+                        <label class="text-sm t-muted">Pilih paket</label>
                         <select v-model="planForm.package_id" required class="input mt-1 w-full">
-                            <option :value="null" disabled>-- Pilih Package --</option>
+                            <option :value="null" disabled>-- Pilih paket --</option>
                             <option v-for="Package in packages" :key="Package.id" :value="Package.id">
-                                {{ Package.name }} ({{ Package.max_users }} users max)
+                                {{ Package.name }} (maks. {{ Package.max_users }} pengguna)
                             </option>
                         </select>
                     </div>
