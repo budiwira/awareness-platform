@@ -14,6 +14,7 @@ use App\Notifications\TtxInvitation;
 use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class TtxExerciseController extends Controller
@@ -71,8 +72,8 @@ class TtxExerciseController extends Controller
             'scenario' => ['nullable', 'string'],
             'objectives' => ['nullable', 'string'],
             'scope' => ['nullable', 'string', 'max:100'],
-            'playbook_id' => ['nullable', 'exists:ttx_playbooks,id'],
-            'runbook_id' => ['nullable', 'exists:ttx_runbooks,id'],
+            'playbook_id' => ['nullable', Rule::exists('ttx_playbooks', 'id')->where('tenant_id', $request->user()->tenant_id)],
+            'runbook_id' => ['nullable', Rule::exists('ttx_runbooks', 'id')->where('tenant_id', $request->user()->tenant_id)],
             'scheduled_at' => ['nullable', 'date'],
         ]);
 
