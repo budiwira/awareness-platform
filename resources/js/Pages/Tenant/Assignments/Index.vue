@@ -43,16 +43,26 @@ const updateStatus = (assignment, status) => {
         score: status === 'completed' ? 100 : null, // Simplifikasi untuk MVP
     });
 };
+
+const statusLabel = (status) => ({
+    assigned: 'Ditugaskan',
+    in_progress: 'Sedang berjalan',
+    completed: 'Selesai',
+}[status] ?? status);
 </script>
 
 <template>
     <Head title="Training Assignments" />
 
     <AppLayout title="Training Assignments">
-        <div class="flex items-center justify-between mb-6">
-            <p class="text-sm t-muted">
-                Tugaskan modul training kepada anggota organisasi Anda.
-            </p>
+        <div class="flex items-end justify-between gap-6 mb-8 flex-wrap">
+            <div>
+                <div class="text-sm font-medium t-muted mb-2">Manajemen penugasan</div>
+                <h1 class="font-display text-2xl font-bold t-ink">Training anggota</h1>
+                <p class="text-sm t-muted mt-2 max-w-xl">
+                    Atur modul yang perlu diselesaikan anggota dan pantau progresnya dari satu tempat.
+                </p>
+            </div>
             <div class="flex items-center gap-3">
                 <select v-model="sortBy" class="input text-sm">
                     <option value="terbaru">Terbaru</option>
@@ -62,29 +72,37 @@ const updateStatus = (assignment, status) => {
                     @click="showForm = !showForm"
                     class="btn btn-primary"
                 >
-                    + Tugaskan Modul
+                    Tugaskan modul
                 </button>
             </div>
         </div>
 
-        <div v-if="showForm" class="card p-6 mb-6">
-            <div class="font-semibold t-ink mb-4">Tugaskan Modul Baru</div>
+        <div v-if="showForm" class="card p-6 mb-8">
+            <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                    <div class="font-semibold t-ink">Buat penugasan baru</div>
+                    <p class="text-sm t-muted mt-1">Pilih anggota dan modul yang akan masuk ke daftar training mereka.</p>
+                </div>
+                <button type="button" @click="showForm = false" class="text-sm t-muted hover:text-[var(--ink)] transition-colors">
+                    Tutup
+                </button>
+            </div>
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
-                    <label class="text-sm t-muted">Pilih User</label>
+                    <label class="text-sm t-muted">Anggota</label>
                     <select v-model="form.user_id" required class="input mt-1 w-full">
-                        <option value="" disabled>-- Pilih User --</option>
+                        <option value="" disabled>Pilih anggota</option>
                         <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-sm t-muted">Pilih Modul</label>
+                    <label class="text-sm t-muted">Modul training</label>
                     <select v-model="form.training_module_id" required class="input mt-1 w-full">
-                        <option value="" disabled>-- Pilih Modul --</option>
+                        <option value="" disabled>Pilih modul</option>
                         <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }} ({{ mod.duration_minutes }}m)</option>
                     </select>
                 </div>
-                <button class="btn btn-primary">Simpan</button>
+                <button class="btn btn-primary">Buat penugasan</button>
             </form>
             <p v-if="errors.user_id" class="text-xs text-red-600 mt-2">{{ errors.user_id }}</p>
         </div>
@@ -93,7 +111,7 @@ const updateStatus = (assignment, status) => {
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left t-muted border-b b-line">
-                        <th class="px-6 py-3 font-medium">User</th>
+                        <th class="px-6 py-3 font-medium">Anggota</th>
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Tanggal Penugasan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
@@ -115,19 +133,23 @@ const updateStatus = (assignment, status) => {
                                       'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
                                       'badge-ok': assignment.status === 'completed'
                                   }">
-                                {{ assignment.status.replace('_', ' ') }}
+                                {{ statusLabel(assignment.status) }}
                             </span>
                         </td>
                         <td class="px-6 py-3 text-right space-x-2">
                             <button v-if="assignment.status !== 'completed'" 
                                     @click="updateStatus(assignment, 'completed')" 
-                                    class="badge-ok text-sm font-medium hover:badge-ok transition-colors">
-                                Tandai Selesai
+                                    class="text-xs font-medium t-muted hover:text-[var(--danger)] transition-colors">
+                                Koreksi: tandai selesai
                             </button>
                         </td>
                     </tr>
                     <tr v-if="sortedAssignments.length === 0">
-                        <td colspan="5" class="px-6 py-8 text-center t-muted">Belum ada assignment.</td>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="font-semibold t-ink">Belum ada penugasan</div>
+                            <p class="text-sm t-muted mt-1">Buat penugasan pertama untuk mulai mengatur training anggota.</p>
+                            <button @click="showForm = true" class="btn btn-primary mt-4">Buat penugasan</button>
+                        </td>
                     </tr>
                 </tbody>
             </table>

@@ -141,7 +141,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <div class="flex items-center justify-between w-full">
                     <h3 class="font-display font-semibold t-ink">Phishing Awareness</h3>
                     <Link :href="route('tenant.phishing.index')" class="text-sm text-brand hover:underline">
-                        Kelola Kampanye ?
+                        Kelola kampanye
                     </Link>
                 </div>
             </template>
@@ -165,12 +165,16 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
         </BaseCard>
 
         <!-- Quick actions -->
+        <div class="mb-4">
+            <div class="text-sm font-medium t-muted">Akses cepat</div>
+            <p class="text-sm mt-1 t-muted">Kelola program awareness dan pantau tindak lanjut organisasi.</p>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link :href="route('tenant.assignments.index')">
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
                         <div class="font-display font-semibold t-ink">Penugasan Training</div>
-                        <span class="chip-brand">?</span>
+                        <span class="text-xs font-medium t-muted">Kelola</span>
                     </div>
                     <p class="text-sm mt-1" style="color: var(--muted)">Tugaskan modul ke anggota.</p>
                 </BaseCard>
@@ -179,7 +183,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
                         <div class="font-display font-semibold t-ink">Simulasi TTX</div>
-                        <span class="chip-brand">?</span>
+                        <span class="text-xs font-medium t-muted">Buka</span>
                     </div>
                     <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
                 </BaseCard>
@@ -188,7 +192,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
                         <div class="font-display font-semibold t-ink">Laporan</div>
-                        <span class="chip-brand">?</span>
+                        <span class="text-xs font-medium t-muted">Lihat</span>
                     </div>
                     <p class="text-sm mt-1" style="color: var(--muted)">Skor awareness + ekspor CSV.</p>
                 </BaseCard>
@@ -197,7 +201,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
                         <div class="font-display font-semibold t-ink">Billing</div>
-                        <span class="chip-brand">?</span>
+                        <span class="text-xs font-medium t-muted">Kelola</span>
                     </div>
                     <p class="text-sm mt-1" style="color: var(--muted)">Package & langganan organisasi.</p>
                 </BaseCard>
