@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Badge;
 use App\Models\User;
 use App\Models\UserBadge;
+use App\Support\Tenant\CurrentTenant;
 use Illuminate\Support\Facades\DB;
 
 class BadgeAwardService
@@ -36,15 +37,28 @@ class BadgeAwardService
      */
     public function awardBadge(User $user, Badge $badge): void
     {
-        // Set RLS context untuk insert
-        DB::statement("SELECT set_config('app.tenant_id', '{$user->tenant_id}', false)");
+        $db = DB::connection();
+        $previousTenantId = $db->selectOne("SELECT current_setting('app.tenant_id', true) AS tenant_id")->tenant_id;
+        $tenant = app(CurrentTenant::class);
+        $previousCurrentTenant = $tenant->id();
 
-        UserBadge::create([
-            'user_id' => $user->id,
-            'badge_id' => $badge->id,
-            'tenant_id' => $user->tenant_id,
-            'earned_at' => now(),
-        ]);
+        try {
+            // Roll back a failed insert before restoring context, even inside an outer transaction.
+            $db->transaction(function () use ($db, $tenant, $user, $badge) {
+                $db->statement("SELECT set_config('app.tenant_id', ?, false)", [$user->tenant_id ?? '']);
+                $tenant->set($user->tenant_id);
+
+                UserBadge::create([
+                    'user_id' => $user->id,
+                    'badge_id' => $badge->id,
+                    'tenant_id' => $user->tenant_id,
+                    'earned_at' => now(),
+                ]);
+            });
+        } finally {
+            $tenant->set($previousCurrentTenant);
+            $db->statement("SELECT set_config('app.tenant_id', ?, false)", [$previousTenantId ?? '']);
+        }
     }
 
     /**

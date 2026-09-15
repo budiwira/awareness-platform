@@ -9,7 +9,10 @@ use App\Models\TrainingModule;
 use App\Models\User;
 use App\Models\UserBadge;
 use App\Services\BadgeAwardService;
+use App\Support\Tenant\CurrentTenant;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
     // Set super admin context untuk fixture creation
@@ -143,3 +146,47 @@ test('badge is not awarded twice', function () {
 
     expect($count)->toBe(1);
 });
+
+test('BadgeAward restores caller TenantContext after success or failure', function (string $outcome, string $role) {
+    $this->artisan('db:seed', ['--class' => 'BadgeSeeder']);
+    $badge = Badge::where('criteria_type', 'first_module_completed')->firstOrFail();
+    $caller = User::factory()->create();
+    $previousTenant = $role === 'tenant_admin' ? $caller->tenant_id : null;
+    DB::statement("SELECT set_config('app.tenant_id', ?, false), set_config('app.user_id', ?, false), set_config('app.role', ?, false)", [
+        $previousTenant ?? '', (string) $caller->id, $role,
+    ]);
+    app(CurrentTenant::class)->set($previousTenant);
+
+    $dbRole = DB::selectOne('SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user');
+    expect($dbRole->rolsuper)->toBeFalse()->and($dbRole->rolbypassrls)->toBeFalse();
+    DB::statement('ALTER TABLE user_badges FORCE ROW LEVEL SECURITY');
+    $before = (array) DB::selectOne("SELECT current_setting('app.tenant_id', true) AS tenant_id, current_setting('app.user_id', true) AS user_id, current_setting('app.role', true) AS role");
+    $transactionLevel = DB::transactionLevel();
+
+    if ($outcome === 'database failure') {
+        $this->badgeService->awardBadge($this->user, $badge);
+    }
+
+    $failure = new RuntimeException('Badge listener failed');
+    Event::listen('eloquent.creating: '.UserBadge::class, function () use ($outcome, $failure) {
+        expect(DB::selectOne("SELECT current_setting('app.tenant_id', true) AS id")->id)->toBe($this->tenant->id)
+            ->and(app(CurrentTenant::class)->id())->toBe($this->tenant->id);
+        if ($outcome === 'listener failure') {
+            throw $failure;
+        }
+    });
+
+    try {
+        $this->badgeService->awardBadge($this->user, $badge);
+        expect($outcome)->toBe('success');
+    } catch (QueryException $exception) {
+        expect($outcome)->toBe('database failure')
+            ->and($exception->errorInfo[0])->toBe('23505');
+    } catch (RuntimeException $exception) {
+        expect($outcome)->toBe('listener failure')->and($exception)->toBe($failure);
+    }
+
+    expect((array) DB::selectOne("SELECT current_setting('app.tenant_id', true) AS tenant_id, current_setting('app.user_id', true) AS user_id, current_setting('app.role', true) AS role"))->toBe($before)
+        ->and(app(CurrentTenant::class)->id())->toBe($previousTenant)
+        ->and(DB::transactionLevel())->toBe($transactionLevel);
+})->with(['success', 'listener failure', 'database failure'])->with(['tenant_admin', 'super_admin', '']);

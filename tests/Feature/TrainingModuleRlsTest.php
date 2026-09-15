@@ -70,6 +70,8 @@ test('TrainingModule RLS preserves platform admin reads and writes across tenant
         ->assertInertia(fn (Assert $page) => $page->has('modules', 4));
     $this->get(route('platform.modules.show', $this->foreign))->assertOk();
 
+    // HTTP middleware clears context; direct service queries need their own platform context.
+    DB::statement("SELECT set_config('app.role', 'super_admin', false)");
     expect(TrainingModule::whereKey($this->foreign->id)->update(['title' => 'Updated']))->toBe(1);
     $created = TrainingModule::create([
         'tenant_id' => $this->tenantB->id, 'title' => 'Created by platform', 'content' => 'Materi',

@@ -6,7 +6,7 @@ class CurrentTenant
 {
     private ?string $tenantId = null;
 
-    public function set(string $tenantId): void
+    public function set(?string $tenantId): void
     {
         $this->tenantId = $tenantId;
     }
