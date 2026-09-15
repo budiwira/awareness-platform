@@ -87,7 +87,7 @@ const getAssignmentStatusLabel = (status) => {
             </div>
         </div>
 
-        <!-- Training Assignments -->
+        <!-- Penugasan Pelatihan -->
         <div class="card overflow-hidden mb-8">
             <div class="px-6 py-4 border-b b-line">
                 <div class="font-semibold t-ink">Penugasan Pelatihan</div>
@@ -98,7 +98,7 @@ const getAssignmentStatusLabel = (status) => {
                     <tr class="text-left border-b b-line t-muted">
                         <th class="px-6 py-3 font-medium">Modul</th>
                         <th class="px-6 py-3 font-medium">Status</th>
-                        <th class="px-6 py-3 font-medium text-right">Score</th>
+                        <th class="px-6 py-3 font-medium text-right">Nilai</th>
                         <th class="px-6 py-3 font-medium">Tanggal Selesai</th>
                     </tr>
                 </thead>
@@ -120,7 +120,7 @@ const getAssignmentStatusLabel = (status) => {
             </div>
         </div>
 
-        <!-- Quiz Attempts -->
+        <!-- Percobaan Kuis -->
         <div class="card overflow-hidden mb-8">
             <div class="px-6 py-4 border-b b-line">
                 <div class="font-semibold t-ink">Percobaan Kuis</div>
@@ -130,7 +130,7 @@ const getAssignmentStatusLabel = (status) => {
                 <thead>
                     <tr class="text-left border-b b-line t-muted">
                         <th class="px-6 py-3 font-medium">Quiz</th>
-                        <th class="px-6 py-3 font-medium text-right">Score</th>
+                        <th class="px-6 py-3 font-medium text-right">Nilai</th>
                         <th class="px-6 py-3 font-medium">Status Kelulusan</th>
                         <th class="px-6 py-3 font-medium">Tanggal Pengumpulan</th>
                     </tr>
@@ -153,7 +153,7 @@ const getAssignmentStatusLabel = (status) => {
             </div>
         </div>
 
-        <!-- Phishing History -->
+        <!-- Riwayat Simulasi Phishing -->
         <div class="card overflow-hidden">
             <div class="px-6 py-4 border-b b-line">
                 <div class="font-semibold t-ink">Riwayat Simulasi Phishing</div>
