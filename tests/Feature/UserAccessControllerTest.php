@@ -102,6 +102,32 @@ test('validation: module_id not in package returns 422', function () {
     $response->assertJson(['error' => 'Modul tidak termasuk dalam paket tenant']);
 });
 
+test('mixed entitled and unentitled modules leave access unchanged', function (bool $allowed) {
+    $this->package->update(['includes_all_modules' => false]);
+    $this->package->modules()->attach([$this->module1->id]);
+    $access = UserModuleAccess::create([
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module1->id,
+        'tenant_id' => $this->tenant->id,
+        'is_allowed' => ! $allowed,
+    ]);
+    $original = $access->fresh()->getAttributes();
+
+    $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
+        'module_ids' => [$this->module1->id, $this->module2->id],
+        'is_allowed' => $allowed,
+    ])->assertStatus(422);
+
+    expect($access->fresh()->getAttributes())->toBe($original);
+    $this->assertDatabaseMissing('user_module_access', [
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module2->id,
+    ]);
+    $this->assertDatabaseMissing('audit_logs', [
+        'action' => $allowed ? 'user.module_access_granted' : 'user.module_access_revoked',
+    ]);
+})->with(['grant' => true, 'revoke' => false]);
+
 test('super admin can override user access', function () {
     $superAdmin = User::factory()->create(['role' => 'super_admin', 'tenant_id' => null]);
 
