@@ -39,7 +39,12 @@ class Tenant extends Model
 
     public function currentSubscription(): ?Subscription
     {
+        $now = now();
+
         /** @var Subscription|null */
-        return $this->subscriptions()->where('status', 'active')->latest('started_at')->first();
+        return $this->subscriptions()->where('status', 'active')
+            ->where(fn ($query) => $query->whereNull('started_at')->orWhere('started_at', '<=', $now))
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>', $now))
+            ->latest('started_at')->first();
     }
 }
