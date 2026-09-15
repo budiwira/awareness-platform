@@ -30,6 +30,11 @@ const result = ref(null);
 const error = ref(null);
 
 const currentQuestion = computed(() => questions.value[currentQuestionIndex.value] || null);
+const quizPurpose = computed(() => props.quiz.purpose === 'posttest' ? 'Posttest' : 'Pretest');
+const answeredCount = computed(() => questions.value.filter(q => isAnswered(q.id)).length);
+const progressPercent = computed(() => questions.value.length
+    ? Math.round((answeredCount.value / questions.value.length) * 100)
+    : 0);
 
 const isAnswered = (questionId) => answers.value[questionId] !== undefined;
 
@@ -165,15 +170,24 @@ onUnmounted(() => {
     <Head :title="'Quiz: ' + assignment.module_title" />
 
     <AppLayout :title="'Quiz: ' + assignment.module_title">
-        <div class="mb-6">
-            <Link :href="route('user.training.index')" class="text-sm hover:underline transition-colors" style="color: var(--t-link);">
-                ← Kembali ke Daftar Training
+        <div class="mb-8">
+            <Link :href="route('user.training.index')" class="inline-flex items-center gap-2 text-sm transition-colors" style="color: var(--t-muted);">
+                <span aria-hidden="true">‹</span>
+                Kembali ke Daftar Training
             </Link>
         </div>
 
         <!-- State: Start -->
         <div v-if="state === 'start'" class="card p-8">
-            <h2 class="text-2xl font-display mb-6" style="color: var(--t-ink);">{{ quiz.title }}</h2>
+            <div class="flex items-start justify-between gap-4 mb-8">
+                <div>
+                    <span class="badge" style="background: var(--bg-subtle); color: var(--t-muted);">{{ quizPurpose }}</span>
+                    <h2 class="text-3xl font-display font-bold mt-3" style="color: var(--t-ink);">{{ quiz.title }}</h2>
+                    <p class="mt-2 max-w-2xl" style="color: var(--t-muted);">
+                        Ukur pemahaman Anda sebelum melanjutkan ke tahap berikutnya dalam training.
+                    </p>
+                </div>
+            </div>
 
             <div v-if="alreadyPassed" class="space-y-6">
                 <div class="flex items-start gap-4 p-4 rounded-xl" style="background: var(--success-bg); border: 1px solid var(--success-border);">
@@ -225,10 +239,10 @@ onUnmounted(() => {
                 <div class="p-4 rounded-xl" style="background: var(--bg-subtle); border: 1px solid var(--b-line);">
                     <div class="font-medium mb-2" style="color: var(--t-ink);">Aturan Quiz:</div>
                     <ul class="space-y-1 text-sm" style="color: var(--t-muted);">
-                        <li>• Semua soal harus dijawab</li>
-                        <li v-if="quiz.duration_minutes">• Quiz akan otomatis terkirim saat waktu habis</li>
-                        <li>• Urutan soal dan opsi jawaban diacak untuk setiap peserta</li>
-                        <li>• Quiz hanya dapat dikerjakan sekali setelah lulus</li>
+                        <li>Semua soal harus dijawab</li>
+                        <li v-if="quiz.duration_minutes">Jawaban otomatis terkirim saat waktu habis</li>
+                        <li>Urutan soal dan opsi jawaban diacak untuk setiap peserta</li>
+                        <li>Quiz dapat dikerjakan kembali jika belum lulus</li>
                     </ul>
                 </div>
 
@@ -249,13 +263,18 @@ onUnmounted(() => {
             <div class="card p-6">
                 <div class="flex items-center justify-between gap-6 flex-wrap">
                     <div>
-                        <div class="text-sm mb-1" style="color: var(--t-muted);">Progres</div>
-                        <div class="font-semibold" style="color: var(--t-ink);">{{ currentQuestionIndex + 1 }} dari {{ questions.length }}</div>
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="text-sm" style="color: var(--t-muted);">Progres jawaban</div>
+                            <span class="text-sm font-semibold" style="color: var(--t-ink);">{{ answeredCount }}/{{ questions.length }}</span>
+                        </div>
+                        <div class="w-56 max-w-full h-2 rounded-full overflow-hidden" style="background: var(--bg-subtle);">
+                            <div class="h-full rounded-full transition-all duration-150" style="background: var(--brand);" :style="{ width: `${progressPercent}%` }"></div>
+                        </div>
                     </div>
 
                     <div v-if="deadlineAt">
                         <div class="text-sm mb-1" style="color: var(--t-muted);">Waktu tersisa</div>
-                        <div class="text-2xl font-display font-bold" :style="{ color: timeWarning ? 'var(--danger)' : 'var(--t-ink)' }">
+                        <div class="text-2xl font-display font-bold" :class="{ 'badge-warn px-2 py-1 rounded-lg': timeWarning }" :style="{ color: timeWarning ? 'var(--danger)' : 'var(--t-ink)' }">
                             {{ formattedTime }}
                         </div>
                     </div>
@@ -314,7 +333,7 @@ onUnmounted(() => {
 
                 <!-- Question Navigator -->
                 <div class="border-t pt-6" style="border-color: var(--b-line);">
-                    <div class="text-sm font-medium mb-3" style="color: var(--t-muted);">Navigasi Soal</div>
+                    <div class="text-sm font-medium mb-3" style="color: var(--t-muted);">Pindah ke soal</div>
                     <div class="flex flex-wrap gap-2">
                         <button
                             v-for="(q, qi) in questions"
@@ -341,7 +360,7 @@ onUnmounted(() => {
                     </div>
 
                     <div v-if="!allAnswered" class="mt-4 text-sm" style="color: var(--t-muted);">
-                        {{ questions.filter(q => isAnswered(q.id)).length }} dari {{ questions.length }} soal terjawab
+                        {{ answeredCount }} dari {{ questions.length }} soal terjawab
                     </div>
                 </div>
             </div>
@@ -369,7 +388,7 @@ onUnmounted(() => {
                     {{ result.passed ? 'Selamat!' : 'Belum Lulus' }}
                 </h2>
                 <p class="text-lg" style="color: var(--t-muted);">
-                    {{ result.passed ? 'Anda lulus quiz ini.' : 'Anda belum mencapai nilai kelulusan.' }}
+                    {{ result.passed ? 'Pemahaman Anda sudah memenuhi nilai kelulusan.' : 'Nilai kelulusan belum tercapai. Anda dapat mencoba lagi.' }}
                 </p>
 
                 <div class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl" :style="{ background: result.passed ? 'var(--success-bg)' : 'var(--danger-bg)' }">
