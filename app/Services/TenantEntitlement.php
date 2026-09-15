@@ -92,15 +92,15 @@ class TenantEntitlement
             return $this->memo[$memoKey];
         }
 
-        $cacheKey = "entitlement:module_ids:{$tenant->id}";
+        $subscription = $this->resolveSubscription($tenant);
 
-        $ids = Cache::remember($cacheKey, 300, function () use ($tenant) {
-            $subscription = $this->resolveSubscription($tenant);
+        if (! $subscription || ! $subscription->package) {
+            return $this->memo[$memoKey] = [];
+        }
 
-            if (! $subscription || ! $subscription->package) {
-                return [];
-            }
+        $cacheKey = "entitlement:module_ids:{$tenant->id}:{$subscription->id}:{$subscription->package_id}";
 
+        $ids = Cache::remember($cacheKey, 300, function () use ($subscription) {
             $package = $subscription->package;
 
             if ($package->includes_all_modules) {
@@ -125,15 +125,15 @@ class TenantEntitlement
             return $this->memo[$memoKey];
         }
 
-        $cacheKey = "entitlement:features:{$tenant->id}";
+        $subscription = $this->resolveSubscription($tenant);
 
-        $features = Cache::remember($cacheKey, 300, function () use ($tenant) {
-            $subscription = $this->resolveSubscription($tenant);
+        if (! $subscription || ! $subscription->package) {
+            return $this->memo[$memoKey] = [];
+        }
 
-            if (! $subscription || ! $subscription->package) {
-                return [];
-            }
+        $cacheKey = "entitlement:features:{$tenant->id}:{$subscription->id}:{$subscription->package_id}";
 
+        $features = Cache::remember($cacheKey, 300, function () use ($subscription) {
             return $subscription->package->features ?? [];
         });
 
