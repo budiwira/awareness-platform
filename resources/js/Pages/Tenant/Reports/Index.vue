@@ -70,33 +70,50 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
     <Head title="Laporan" />
 
     <AppLayout title="Laporan & Analitik">
+        <div class="mb-8 max-w-3xl">
+            <p class="text-sm font-medium t-muted mb-2">Ringkasan keamanan dan pembelajaran tenant</p>
+            <h1 class="font-display text-3xl font-bold t-ink mb-2">Laporan &amp; Analitik</h1>
+            <p class="t-muted">Pantau perkembangan pelatihan, hasil kuis, dan respons simulasi phishing untuk menentukan tindak lanjut yang tepat.</p>
+        </div>
+
         <!-- Executive Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Rata-rata Awareness Score</div>
+                <div class="text-xs mb-2 t-muted">Skor Kesadaran Rata-rata</div>
                 <div class="font-display text-4xl font-bold t-ink">{{ summary.avg_awareness_score }}</div>
+                <div class="text-xs mt-2 t-muted">Dari seluruh pengguna</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Completion Rate</div>
+                <div class="text-xs mb-2 t-muted">Tingkat Penyelesaian</div>
                 <div class="font-display text-4xl font-bold t-ink">{{ summary.completion_rate }}%</div>
+                <div class="text-xs mt-2 t-muted">Penugasan pelatihan</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Avg Quiz Score</div>
+                <div class="text-xs mb-2 t-muted">Nilai Kuis Rata-rata</div>
                 <div class="font-display text-4xl font-bold t-ink">{{ summary.avg_quiz_score }}</div>
+                <div class="text-xs mt-2 t-muted">Dari seluruh percobaan</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Phishing Click Rate</div>
+                <div class="text-xs mb-2 t-muted">Rasio Klik Phishing</div>
                 <div class="font-display text-4xl font-bold t-ink">{{ summary.phishing_click_rate }}%</div>
+                <div class="text-xs mt-2 t-muted">Semakin rendah semakin baik</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Users At Risk</div>
+                <div class="text-xs mb-2 t-muted">Pengguna Berisiko</div>
                 <div class="font-display text-4xl font-bold" style="color: var(--danger)">{{ summary.users_at_risk }}</div>
+                <div class="text-xs mt-2 t-muted">Perlu perhatian lanjutan</div>
             </div>
         </div>
 
         <!-- Trend Chart -->
         <div class="card p-6 mb-8">
-            <div class="font-semibold mb-4 t-ink">Tren 30 Hari Terakhir</div>
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <div>
+                    <div class="font-semibold t-ink">Tren 30 Hari Terakhir</div>
+                    <p class="text-sm t-muted mt-1">Perbandingan penyelesaian, nilai kuis, dan klik phishing dari waktu ke waktu.</p>
+                </div>
+                <span class="badge badge-ok">Skala persentase</span>
+            </div>
             <svg :width="chartWidth" :height="chartHeight" class="w-full" style="max-width: 100%; height: auto;">
                 <!-- Grid lines -->
                 <line v-for="i in 5" :key="'grid-' + i" 
@@ -122,15 +139,15 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
             <div class="flex items-center gap-6 mt-4 text-sm">
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-1 rounded" style="background: var(--brand)"></div>
-                    <span class="t-muted">Completion</span>
+                    <span class="t-muted">Penyelesaian</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-1 rounded" style="background: var(--ok)"></div>
-                    <span class="t-muted">Quiz Score</span>
+                    <span class="t-muted">Nilai kuis</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-1 rounded" style="background: var(--danger)"></div>
-                    <span class="t-muted">Phishing Click</span>
+                    <span class="t-muted">Klik phishing</span>
                 </div>
             </div>
         </div>
@@ -159,39 +176,40 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
         <div class="card overflow-hidden">
             <div class="px-6 py-4 flex justify-between items-center border-b" style="border-color: var(--line)">
                 <div>
-                    <div class="font-semibold t-ink">Detail per User</div>
+                    <div class="font-semibold t-ink">Risiko per Pengguna</div>
+                    <div class="text-sm t-muted mt-1">Gunakan filter untuk meninjau kelompok yang membutuhkan perhatian.</div>
                     <div class="flex items-center gap-2 mt-2 flex-wrap">
                         <button 
                             @click="filterTier = 'semua'" 
-                            class="chip"
+                            class="chip focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             :class="filterTier === 'semua' ? 'chip-active' : ''"
                         >
                             Semua
                         </button>
                         <button 
                             @click="filterTier = 'baik'" 
-                            class="chip"
+                            class="chip focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             :class="filterTier === 'baik' ? 'chip-active' : ''"
                         >
                             Baik
                         </button>
                         <button 
                             @click="filterTier = 'cukup'" 
-                            class="chip"
+                            class="chip focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             :class="filterTier === 'cukup' ? 'chip-active' : ''"
                         >
                             Cukup
                         </button>
                         <button 
                             @click="filterTier = 'perlu_perbaikan'" 
-                            class="chip"
+                            class="chip focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             :class="filterTier === 'perlu_perbaikan' ? 'chip-active' : ''"
                         >
                             Perlu Perbaikan
                         </button>
                         <button 
                             @click="filterTier = 'belum_mengerjakan'" 
-                            class="chip"
+                            class="chip focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                             :class="filterTier === 'belum_mengerjakan' ? 'chip-active' : ''"
                         >
                             Belum Mengerjakan
@@ -201,15 +219,15 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                 <a 
                     v-if="can_export" 
                     :href="route('tenant.reports.export')" 
-                    class="btn btn-secondary"
+                    class="btn btn-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                     <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Export CSV
+                    Ekspor CSV
                 </a>
-                <div v-else class="text-sm t-muted">
-                    Export tidak tersedia di Package Anda
+                <div v-else class="text-sm t-muted max-w-xs text-right">
+                    Ekspor belum tersedia pada paket Anda. Hubungi administrator untuk informasi lebih lanjut.
                 </div>
             </div>
             <table v-if="filteredUsers.length > 0" class="w-full text-sm">
@@ -217,11 +235,11 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                     <tr class="text-left border-b t-muted" style="border-color: var(--line)">
                         <th class="px-6 py-3 font-medium">Nama</th>
                         <th class="px-6 py-3 font-medium">Email</th>
-                        <th class="px-6 py-3 font-medium text-right">Awareness Score</th>
-                        <th class="px-6 py-3 font-medium text-right">Completion</th>
-                        <th class="px-6 py-3 font-medium text-right">Phishing Clicked</th>
-                        <th class="px-6 py-3 font-medium">Tier</th>
-                        <th class="px-6 py-3 font-medium">Action</th>
+                        <th class="px-6 py-3 font-medium text-right">Skor Kesadaran</th>
+                        <th class="px-6 py-3 font-medium text-right">Penyelesaian</th>
+                        <th class="px-6 py-3 font-medium text-right">Klik Phishing</th>
+                        <th class="px-6 py-3 font-medium">Tingkat Risiko</th>
+                        <th class="px-6 py-3 font-medium">Tindakan</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -251,7 +269,7 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                         <td class="px-6 py-3">
                             <Link 
                                 :href="route('tenant.reports.users.show', user.id)" 
-                                class="text-sm font-medium transition-colors"
+                                class="text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                                 style="color: var(--brand)"
                                 @mouseenter="$event.target.style.color = 'var(--brand-mid)'"
                                 @mouseleave="$event.target.style.color = 'var(--brand)'"
@@ -262,7 +280,7 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                     </tr>
                 </tbody>
             </table>
-            <EmptyState v-else message="Tidak ada user yang cocok dengan filter." />
+            <EmptyState v-else message="Belum ada pengguna yang sesuai dengan tingkat risiko ini." />
         </div>
     </AppLayout>
 </template>
