@@ -4,6 +4,8 @@ use App\Models\Package;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
+use App\Models\TtxPlaybook;
+use App\Models\TtxRunbook;
 use App\Models\TtxTeam;
 use App\Models\User;
 
@@ -66,3 +68,58 @@ test('regular user cannot access exercise management', function () {
 
     $this->actingAs($user)->get(route('tenant.ttx.exercises.show', $ex))->assertForbidden();
 });
+
+test('exercise references must belong to the admin tenant', function (string $field, string $model, bool $ownTenant) {
+    [$tenant, $admin] = makeTtxFixture();
+    $reference = $model::create([
+        'tenant_id' => $ownTenant ? $tenant->id : Tenant::factory()->create()->id,
+        'title' => 'Reference',
+    ]);
+
+    $response = $this->actingAs($admin)->post(route('tenant.ttx.exercises.store'), [
+        'title' => 'Referenced exercise',
+        $field => $reference->id,
+    ]);
+
+    if ($ownTenant) {
+        $response->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('ttx_exercises', [
+            'tenant_id' => $tenant->id,
+            $field => $reference->id,
+        ]);
+    } else {
+        $response->assertSessionHasErrors($field);
+        $this->assertDatabaseCount('ttx_exercises', 0);
+        $this->assertDatabaseMissing('audit_logs', ['action' => 'ttx.exercise_created']);
+    }
+})->with([
+    'own playbook' => ['playbook_id', TtxPlaybook::class, true],
+    'foreign playbook' => ['playbook_id', TtxPlaybook::class, false],
+    'own runbook' => ['runbook_id', TtxRunbook::class, true],
+    'foreign runbook' => ['runbook_id', TtxRunbook::class, false],
+]);
+
+test('exercise mutations reject foreign tenants and learners without writes', function (string $endpoint, array $payload, bool $foreignTenant) {
+    [$tenant, $admin, $learner] = makeTtxFixture();
+    $exercise = TtxExercise::create([
+        'tenant_id' => $foreignTenant ? Tenant::factory()->create()->id : $tenant->id,
+        'title' => 'Protected exercise',
+        'phase' => 'evaluation',
+    ]);
+    $original = $exercise->fresh()->getAttributes();
+
+    $this->actingAs($foreignTenant ? $admin : $learner)
+        ->post(route($endpoint, $exercise), $payload)
+        ->assertForbidden();
+
+    expect($exercise->fresh()->getAttributes())->toBe($original);
+    $this->assertDatabaseCount('ttx_teams', 0);
+    $this->assertDatabaseCount('ttx_injects', 0);
+    $this->assertDatabaseCount('ttx_scores', 0);
+    $this->assertDatabaseMissing('audit_logs', ['subject_id' => $exercise->id, 'subject_type' => TtxExercise::class]);
+})->with([
+    'team' => ['tenant.ttx.teams.store', ['name' => 'Unauthorized team']],
+    'inject' => ['tenant.ttx.exercises.injects.store', ['title' => 'Unauthorized inject']],
+    'advance' => ['tenant.ttx.exercises.advance', []],
+    'evaluate' => ['tenant.ttx.exercises.evaluate.store', ['aar_notes' => 'Unauthorized evaluation']],
+])->with(['foreign tenant admin' => true, 'learner' => false]);

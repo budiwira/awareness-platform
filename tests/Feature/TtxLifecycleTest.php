@@ -5,6 +5,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
 use App\Models\TtxTeam;
+use App\Models\TtxTeamMember;
 use App\Models\User;
 
 test('full ttx lifecycle: create -> team -> advance -> evaluate -> completed', function () {
@@ -49,4 +50,32 @@ test('full ttx lifecycle: create -> team -> advance -> evaluate -> completed', f
     expect($ex->fresh()->phase)->toBe('completed');
     $this->assertDatabaseHas('ttx_scores', ['user_id' => $member->id, 'score' => 90]);
     $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.evaluated']);
+});
+
+test('evaluation scores only exercise members', function () {
+    [$tenant, $admin, $member] = makeTtxFixture();
+    $nonMember = User::factory()->create(['tenant_id' => $tenant->id]);
+    $outsider = User::factory()->create();
+    $exercise = TtxExercise::create(['tenant_id' => $tenant->id, 'title' => 'Evaluation', 'phase' => 'evaluation']);
+    $otherExercise = TtxExercise::create(['tenant_id' => $tenant->id, 'title' => 'Other exercise']);
+
+    foreach ([[$exercise, $member], [$otherExercise, $nonMember]] as [$targetExercise, $user]) {
+        $team = TtxTeam::create(['tenant_id' => $tenant->id, 'exercise_id' => $targetExercise->id, 'name' => 'Team']);
+        TtxTeamMember::create(['tenant_id' => $tenant->id, 'team_id' => $team->id, 'user_id' => $user->id, 'role_in_team' => 'member']);
+    }
+
+    $this->actingAs($admin)->post(route('tenant.ttx.exercises.evaluate.store', $exercise), [
+        'scores' => [$member->id => 90, $nonMember->id => 80, $outsider->id => 70],
+    ])->assertRedirect(route('tenant.ttx.exercises.show', $exercise));
+
+    expect($exercise->fresh()->phase)->toBe('completed');
+    $this->assertDatabaseHas('ttx_scores', [
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'user_id' => $member->id,
+        'score' => 90,
+    ]);
+    $this->assertDatabaseCount('ttx_scores', 1);
+    $this->assertDatabaseMissing('ttx_scores', ['user_id' => $nonMember->id]);
+    $this->assertDatabaseMissing('ttx_scores', ['user_id' => $outsider->id]);
 });
