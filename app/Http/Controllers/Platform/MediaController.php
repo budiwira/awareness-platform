@@ -39,7 +39,7 @@ class MediaController extends Controller
         if (! Gate::allows('access-platform-dashboard')) {
             Gate::authorize('access-user-dashboard');
             $user = $request->user();
-            abort_unless($user->tenant, 403);
+            abort_unless($user->tenant !== null, 403);
 
             $modules = TrainingModule::whereHas('assignments', function ($query) use ($user) {
                 $query->where('user_id', $user->id)->where('tenant_id', $user->tenant_id);
