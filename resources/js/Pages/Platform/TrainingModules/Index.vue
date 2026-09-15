@@ -51,7 +51,7 @@ const statusBadge = (status) => {
 };
 
 const statusLabel = (status) => {
-    const map = { draft: 'Draft', published: 'Published', archived: 'Archived' };
+    const map = { draft: 'Draft', published: 'Terbit', archived: 'Diarsipkan' };
     return map[status] || status;
 };
 </script>
@@ -62,7 +62,7 @@ const statusLabel = (status) => {
     <AppLayout title="Studio Konten">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
-                Pipeline authoring konten — Draft, Published, Archived.
+                Kelola materi pembelajaran dari draft hingga siap digunakan organisasi.
             </p>
             <Link :href="route('platform.modules.create')" class="btn btn-primary">
                 + Buat Modul
@@ -78,7 +78,7 @@ const statusLabel = (status) => {
                 class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
-                {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
+                {{ key === 'all' ? 'Semua modul' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
             </button>
         </div>
 
@@ -100,7 +100,7 @@ const statusLabel = (status) => {
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                <div class="text-sm">Tidak ada modul dengan status ini.</div>
+                                <div class="text-sm">Belum ada modul dengan status ini.</div>
                             </div>
                         </td>
                     </tr>
@@ -120,9 +120,9 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 text-right t-muted">{{ module.assignments_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
-                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
-                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
-                            <button v-if="module.status === 'archived'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
+                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Terbitkan</button>
+                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline">Arsipkan</button>
+                            <button v-if="module.status === 'archived'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Terbitkan lagi</button>
                             <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline">Hapus</button>
                         </td>
                     </tr>
