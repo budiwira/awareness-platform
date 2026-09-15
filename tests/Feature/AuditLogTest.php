@@ -31,10 +31,12 @@ test('successful login writes an audit log', function () {
     ]);
 });
 
-test('app role cannot update or delete audit logs (db-level immutability)', function () {
+test('app role cannot update or delete audit logs (db-level immutability)', function ($role) {
     AuditLog::create(['action' => 'test.event', 'created_at' => now()]);
 
     $pdo = audit_pdo();
+    $statement = $pdo->prepare("SELECT set_config('app.role', ?, false), set_config('app.tenant_id', ?, false)");
+    $statement->execute([$role, (string) Tenant::factory()->create()->id]);
 
     try {
         $pdo->exec("UPDATE audit_logs SET action = 'tampered'");
@@ -49,7 +51,7 @@ test('app role cannot update or delete audit logs (db-level immutability)', func
     } catch (PDOException $e) {
         expect($e->getCode())->toBe('42501');
     }
-});
+})->with(['user', 'tenant_admin']);
 
 test('audit logs are tenant-scoped via RLS', function () {
     $tenantA = Tenant::on('pgsql_owner')->create(['name' => 'Aud A', 'slug' => 'aud-a-'.uniqid()]);

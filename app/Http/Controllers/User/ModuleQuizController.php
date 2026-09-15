@@ -12,6 +12,7 @@ use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
 use App\Support\Scoring\ScoringCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ModuleQuizController extends Controller
@@ -231,36 +232,44 @@ class ModuleQuizController extends Controller
         $score = $scoring['score'];
         $passed = $scoring['passed'];
 
-        $attempt->update([
-            'status' => $status,
-            'submitted_at' => now(),
-            'answers' => $validated['answers'],
-            'score' => $score,
-            'passed' => $passed,
-        ]);
+        DB::transaction(function () use ($request, $attempt, $quiz, $validated, $score, $passed, $status) {
+            $attempt->update([
+                'status' => $status,
+                'submitted_at' => now(),
+                'answers' => $validated['answers'],
+                'score' => $score,
+                'passed' => $passed,
+            ]);
 
-        // Update assignment jika ada
-        $assignment = $request->user()->moduleAssignments()
-            ->where('training_module_id', $quiz->training_module_id)
-            ->first();
+            // Update assignment jika ada
+            $assignment = $request->user()->moduleAssignments()
+                ->where('training_module_id', $quiz->training_module_id)
+                ->first();
 
-        if ($assignment instanceof ModuleAssignment) {
-            if ($quiz->purpose === 'pretest') {
-                $assignment->pretest_score = $score;
-                $assignment->pretest_completed_at = now();
-            } else {
-                $assignment->score = max((int) ($assignment->score ?? 0), $score);
+            if ($assignment instanceof ModuleAssignment) {
+                if ($quiz->purpose === 'pretest') {
+                    $assignment->pretest_score = $score;
+                    $assignment->pretest_completed_at = now();
+                } else {
+                    $assignment->score = max((int) ($assignment->score ?? 0), $score);
 
-                if ($passed && $assignment->status !== 'completed') {
-                    $assignment->status = 'completed';
-                    $assignment->completed_at = now();
+                    if ($passed && $assignment->status !== 'completed') {
+                        $assignment->status = 'completed';
+                        $assignment->completed_at = now();
+                    }
                 }
+
+                $assignment->save();
             }
 
-            $assignment->save();
-        }
-
-        Audit::log('quiz.submitted', $attempt, ['score' => $score, 'passed' => $passed, 'status' => $status]);
+            Audit::log('quiz.submitted', $attempt, [
+                'score' => $score, 'passed' => $passed, 'status' => $status,
+                'quiz_id' => $quiz->id,
+                'purpose' => $quiz->purpose,
+                'module_id' => $quiz->training_module_id,
+                'assignment_id' => $assignment?->getKey(),
+            ]);
+        });
 
         return response()->json([
             'attempt_id' => $attempt->id,
