@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import RichContent from '@/Components/RichContent.vue';
 
 const props = defineProps({
     assignment: Object,
@@ -99,7 +100,7 @@ const markComplete = () => {
                         <p class="text-xs t-muted">Baca materi berikut sebelum melanjutkan ke tahap berikutnya.</p>
                     </div>
                 </div>
-                <div class="prose max-w-none" v-html="module.content_html"></div>
+                <RichContent :html="module.content_html" />
 
                 <div class="border-t b-line pt-6 flex flex-col gap-3">
                     <template v-if="posttestQuiz && lifecycle.can_start_posttest">

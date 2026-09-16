@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use DOMDocument;
+use DOMElement;
+use DOMNode;
 use HTMLPurifier;
 use HTMLPurifier_Config;
 
@@ -33,6 +36,67 @@ class RichContentSanitizer
         $config->set('AutoFormat.AutoParagraph', true);
         $config->set('AutoFormat.RemoveEmpty', true);
 
-        return (new HTMLPurifier($config))->purify($html);
+        $sanitized = (new HTMLPurifier($config))->purify($html);
+
+        return self::normalizeEmptyParagraphs($sanitized);
+    }
+
+    private static function normalizeEmptyParagraphs(string $html): string
+    {
+        if ($html === '') {
+            return '';
+        }
+
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $document->loadHTML(
+            '<?xml encoding="UTF-8"><div id="rich-content-root">'.$html.'</div>',
+            LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        $root = $document->getElementById('rich-content-root');
+        if (! $root instanceof DOMElement) {
+            return $html;
+        }
+
+        $previousWasEmptyParagraph = false;
+        foreach (iterator_to_array($root->childNodes) as $node) {
+            if ($node->nodeType === XML_TEXT_NODE && trim($node->textContent) === '') {
+                continue;
+            }
+
+            $isEmptyParagraph = self::isEmptyParagraph($node);
+            if ($isEmptyParagraph && $previousWasEmptyParagraph) {
+                $root->removeChild($node);
+
+                continue;
+            }
+
+            $previousWasEmptyParagraph = $isEmptyParagraph;
+        }
+
+        $normalized = '';
+        foreach ($root->childNodes as $node) {
+            $normalized .= $document->saveHTML($node);
+        }
+
+        return $normalized;
+    }
+
+    private static function isEmptyParagraph(DOMNode $node): bool
+    {
+        if (! $node instanceof DOMElement || strtolower($node->tagName) !== 'p') {
+            return false;
+        }
+
+        foreach ($node->childNodes as $child) {
+            if ($child instanceof DOMElement && strtolower($child->tagName) !== 'br') {
+                return false;
+            }
+
+            if ($child->nodeType === XML_TEXT_NODE && trim($child->textContent) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
