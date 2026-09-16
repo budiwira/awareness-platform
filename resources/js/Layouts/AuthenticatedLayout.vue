@@ -1,5 +1,5 @@
 <script setup>
-import ToastRegion from "../Components/ToastRegion.vue";
+import ToastRegion from '@/Components/ToastRegion.vue';
 import { ref } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
@@ -69,8 +69,7 @@ const showingNavigationDropdown = ref(false);
                                                 </svg>
                                             </button>
                                         </span>
-                                      <ToastRegion />
-</template>
+                                    </template>
 
                                     <template #content>
                                         <DropdownLink
@@ -85,8 +84,7 @@ const showingNavigationDropdown = ref(false);
                                         >
                                             Log Out
                                         </DropdownLink>
-                                      <ToastRegion />
-</template>
+                                    </template>
                                 </Dropdown>
                             </div>
                         </div>
@@ -198,5 +196,5 @@ const showingNavigationDropdown = ref(false);
             </main>
         </div>
     </div>
-  <ToastRegion />
+    <ToastRegion />
 </template>

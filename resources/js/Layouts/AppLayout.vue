@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
-import Toast from '@/Components/Toast.vue';
+import ToastRegion from '@/Components/ToastRegion.vue';
 
 defineProps({ title: { type: String, default: 'Dashboard' } });
 
@@ -275,6 +275,6 @@ const logout = () => router.post(route('logout'));
             </main>
         </div>
 
-        <Toast />
+        <ToastRegion />
     </div>
 </template>

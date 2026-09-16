@@ -1,16 +1,21 @@
-/* Design Tokens — fondasi konsisten untuk seluruh komponen */
+/* Design Tokens â€” fondasi konsisten untuk seluruh komponen */
 :root {
-  /* Warna (skema dark-friendly, kontras AA) */
-  --color-bg:        #0f1115;
-  --color-surface:   #171a21;
-  --color-border:    #262b36;
-  --color-text:      #e6e8ec;
-  --color-muted:     #8b93a7;
-  --color-primary:   #4f8cff;
-  --color-primary-h: #6ba0ff;
-  --color-success:   #2ecc71;
-  --color-danger:    #ff5d5d;
-  --color-warning:   #ffb84d;
+  /* Alias kompatibilitas. Palette kanonis dimiliki app.css. */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--line);
+  --color-text: var(--ink);
+  --color-muted: var(--muted);
+  --color-primary: var(--brand);
+  --color-primary-h: var(--brand-strong);
+  --color-primary-soft: var(--brand-soft);
+  --color-success: var(--ok);
+  --color-success-bg: var(--ok-bg);
+  --color-warning: var(--warn);
+  --color-warning-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
 
   /* Tipografi (perluas font-display yang ada) */
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
@@ -38,11 +43,10 @@
   --z-base: 1; --z-sticky: 100; --z-modal: 500; --z-toast: 600;
 }
 
-/* Base resets (opsional — nonaktifkan bila konflik dengan class lama) */
-body { background: var(--color-bg); color: var(--color-text); font-family: var(--font-sans); }
+/* Base reset yang tidak mengambil alih theme ownership dari app.css. */
 *, *::before, *::after { box-sizing: border-box; }
 
-/* Focus visible — aksesibilitas keyboard */
+/* Focus visible â€” aksesibilitas keyboard */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;

@@ -8,12 +8,12 @@
       :placeholder="placeholder"
       :disabled="disabled"
       :aria-invalid="!!error"
-      :aria-describedby="error ? id+'-err' : undefined"
+      :aria-describedby="describedBy"
       class="base-input"
       @input="$emit('update:modelValue', $event.target.value)"
     />
     <p v-if="error" :id="id+'-err'" class="base-input-error" role="alert">{{ error }}</p>
-    <p v-else-if="hint" class="base-input-hint">{{ hint }}</p>
+    <p v-if="hint" :id="id+'-hint'" class="base-input-hint">{{ hint }}</p>
   </div>
 </template>
 
@@ -30,20 +30,27 @@ const props = defineProps({
   disabled: Boolean,
 });
 defineEmits(['update:modelValue']);
+
+const describedBy = computed(() => [
+  props.error ? `${props.id}-err` : null,
+  props.hint ? `${props.id}-hint` : null,
+].filter(Boolean).join(' ') || undefined);
 </script>
 
 <style scoped>
 .base-input-wrap { display: flex; flex-direction: column; gap: var(--sp-1); }
-.base-input-label { font-size: .875rem; color: var(--color-muted); }
+.base-input-label { font-size: .875rem; color: var(--muted); }
 .base-input {
   padding: var(--sp-2) var(--sp-3);
-  background: var(--color-surface); color: var(--color-text);
-  border: 1px solid var(--color-border); border-radius: var(--r-md);
+  background: var(--input-bg); color: var(--ink);
+  border: 1px solid var(--input-border); border-radius: var(--r-card);
   min-height: 44px;
-  transition: border-color var(--dur) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
 }
-.base-input:focus { border-color: var(--color-primary); outline: none; }
-.base-input[aria-invalid="true"] { border-color: var(--color-danger); }
-.base-input-error { margin: 0; font-size: .8rem; color: var(--color-danger); }
-.base-input-hint { margin: 0; font-size: .8rem; color: var(--color-muted); }
+.base-input::placeholder { color: var(--muted); }
+.base-input:focus { border-color: var(--brand); box-shadow: var(--glow); outline: none; }
+.base-input:disabled { cursor: not-allowed; opacity: .6; }
+.base-input[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger-bg); }
+.base-input-error { margin: 0; font-size: .8rem; color: var(--danger); }
+.base-input-hint { margin: 0; font-size: .8rem; color: var(--muted); }
 </style>
