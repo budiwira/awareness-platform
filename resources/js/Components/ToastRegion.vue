@@ -8,8 +8,12 @@
           :class="['toast', 'toast--'+t.kind]"
           role="status"
         >
-          <span>{{ t.message }}</span>
-          <button class="toast-close" aria-label="Tutup" @click="remove(t.id)">×</button>
+          <span class="toast-message">{{ t.message }}</span>
+          <button type="button" class="toast-close" aria-label="Tutup notifikasi" @click="remove(t.id)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </TransitionGroup>
     </div>
@@ -29,14 +33,22 @@ import { toasts, remove } from '../Composables/useToast';
 .toast {
   display: flex; align-items: center; gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
-  background: var(--color-surface); color: var(--color-text);
-  border: 1px solid var(--color-border); border-radius: var(--r-md);
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--r-lg);
   box-shadow: var(--shadow-md);
 }
-.toast--success { border-left: 3px solid var(--color-success); }
-.toast--error   { border-left: 3px solid var(--color-danger); }
-.toast--info    { border-left: 3px solid var(--color-primary); }
-.toast-close { background: transparent; border: 0; color: var(--color-muted); cursor: pointer; font-size: 1.25rem; padding: 0 var(--sp-1); }
+.toast--success { background: var(--ok-bg); border-color: var(--ok); }
+.toast--error   { background: var(--danger-bg); border-color: var(--danger); }
+.toast--info    { background: var(--brand-soft); border-color: var(--brand); }
+.toast-message { flex: 1; }
+.toast-close { display: inline-flex; width: 44px; height: 44px; flex: 0 0 44px; align-items: center; justify-content: center; border: 0; border-radius: var(--r-md); background: transparent; color: var(--ink); cursor: pointer; }
+.toast-close:hover { background: var(--surface-2); }
+.toast-close:active { transform: scale(.96); }
+.toast-close svg { width: 18px; height: 18px; }
 .toast-enter-active, .toast-leave-active { transition: all var(--dur) var(--ease); }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translateX(20px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter-active, .toast-leave-active { transition: none; }
+}
 </style>
