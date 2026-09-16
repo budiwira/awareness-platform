@@ -12,7 +12,7 @@ class PlatformReportController extends Controller
         private PlatformAnalyticsService $analyticsService
     ) {}
 
-    public function index(Request $request)
+    public function dashboard(Request $request)
     {
         $summary = $this->analyticsService->getPlatformSummary();
         $topTenants = $this->analyticsService->getTopTenantsByRisk();
@@ -24,6 +24,14 @@ class PlatformReportController extends Controller
             'top_tenants_by_risk' => $topTenants,
             'plan_distribution' => $planDistribution,
             'phishing_adoption' => $phishingAdoption,
+        ]);
+    }
+
+    public function reports(Request $request)
+    {
+        return Inertia::render('Platform/Reports/Index', [
+            'rows' => $this->analyticsService->getTenantReportRows(),
+            'platform_avg' => $this->analyticsService->getPlatformAwarenessAverage(),
         ]);
     }
 }

@@ -21,7 +21,7 @@ test('platform dashboard shows aggregate summary', function () {
     User::factory()->count(3)->create(['tenant_id' => $tenant1->id]);
     User::factory()->count(2)->create(['tenant_id' => $tenant2->id]);
 
-    $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
+    $response = $this->actingAs($superAdmin)->get(route('platform.dashboard'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -43,7 +43,7 @@ test('platform dashboard shows top tenants by risk', function () {
     $user1 = User::factory()->create(['tenant_id' => $tenant1->id]);
     $user2 = User::factory()->create(['tenant_id' => $tenant2->id]);
 
-    $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
+    $response = $this->actingAs($superAdmin)->get(route('platform.dashboard'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -92,7 +92,7 @@ test('platform dashboard shows Package distribution', function () {
         'started_at' => now(),
     ]);
 
-    $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
+    $response = $this->actingAs($superAdmin)->get(route('platform.dashboard'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -134,7 +134,7 @@ test('platform dashboard shows phishing adoption metrics', function () {
         'created_by' => $admin->id,
     ]);
 
-    $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
+    $response = $this->actingAs($superAdmin)->get(route('platform.dashboard'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -157,7 +157,7 @@ test('platform analytics query is optimized', function () {
 
     DB::enableQueryLog();
 
-    $response = $this->actingAs($superAdmin)->get(route('platform.reports'));
+    $response = $this->actingAs($superAdmin)->get(route('platform.dashboard'));
 
     $queryCount = count(DB::getQueryLog());
 
@@ -171,7 +171,7 @@ test('regular tenant admin cannot access platform analytics', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
-    $response = $this->actingAs($admin)->get(route('platform.reports'));
+    $response = $this->actingAs($admin)->get(route('platform.dashboard'));
 
     $response->assertStatus(403);
 });
