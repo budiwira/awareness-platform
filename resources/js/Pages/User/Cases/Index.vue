@@ -1,73 +1,46 @@
 <script setup>
+import { ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BaseBadge from '@/Components/BaseBadge.vue';
+import BaseButton from '@/Components/BaseButton.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 
 defineProps({ cases: Array });
+const processing = ref(null);
 
-const start = (id) => router.post(route('user.cases.start', id));
+const start = (id) => {
+    if (processing.value) return;
+    processing.value = id;
+    router.post(route('user.cases.start', id), {}, { onFinish: () => (processing.value = null) });
+};
 
-const difficultyBadge = (d) => ({
-    beginner: 'badge-ok',
-    intermediate: 'bg-yellow-100 text-yellow-700',
-    advanced: 'bg-red-100 text-red-700',
-}[d] ?? 'bg-surface2 t-ink');
+const difficultyBadge = (difficulty) => ({ beginner: 'success', intermediate: 'warning', advanced: 'danger' }[difficulty] ?? 'neutral');
 </script>
 
 <template>
     <Head title="Case Studies" />
-
     <AppLayout title="Case Studies">
-        <p class="text-sm t-muted mb-6">
-            Latihan tabletop: baca skenario insiden dan ambil keputusan terbaik di tiap titik.
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="c in cases" :key="c.id" class="card p-6 flex flex-col">
-                <div class="flex items-center justify-between mb-2">
+        <p class="mb-6 text-sm t-muted">Latihan pengambilan keputusan: baca skenario insiden dan pilih respons terbaik di setiap situasi.</p>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <article v-for="c in cases" :key="c.id" class="card flex flex-col p-5 sm:p-6">
+                <div class="mb-2 flex items-start justify-between gap-3">
                     <h3 class="font-semibold t-ink">{{ c.title }}</h3>
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
-                        {{ c.difficulty }}
-                    </span>
+                    <BaseBadge :variant="difficultyBadge(c.difficulty)">{{ c.difficulty }}</BaseBadge>
                 </div>
-                <p class="text-sm t-muted mb-4 flex-1">{{ c.description }}</p>
-                <div class="text-xs t-muted mb-4">{{ c.scenes_count }} scene · {{ c.duration_minutes }} menit</div>
-
-                <div class="flex items-center justify-between">
-                    <span
-                        v-if="c.participation"
-                        class="text-xs font-medium"
-                        :class="c.participation.status === 'completed' ? 'badge-ok' : 'text-blue-600'"
-                    >
-                        {{ c.participation.status === 'completed' ? 'Selesai · Skor ' + c.participation.score : 'Sedang dikerjakan' }}
-                    </span>
+                <p class="mb-4 flex-1 text-sm t-muted">{{ c.description }}</p>
+                <div class="mb-4 text-xs t-muted">{{ c.scenes_count }} scene · {{ c.duration_minutes }} menit</div>
+                <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <BaseBadge v-if="c.participation" :variant="c.participation.status === 'completed' ? 'success' : 'info'">
+                        {{ c.participation.status === 'completed' ? `Selesai · Skor ${c.participation.score}` : 'Sedang dikerjakan' }}
+                    </BaseBadge>
                     <span v-else class="text-xs t-muted">Belum dimulai</span>
-
-                    <button
-                        v-if="!c.participation"
-                        @click="start(c.id)"
-                        class="btn btn-primary"
-                    >
-                        Mulai
-                    </button>
-                    <button
-                        v-else-if="c.participation.status !== 'completed'"
-                        @click="$inertia.visit(route('user.cases.run', c.participation.id))"
-                        class="btn btn-primary"
-                    >
-                        Lanjutkan
-                    </button>
-                    <button
-                        v-else
-                        @click="$inertia.visit(route('user.cases.result', c.participation.id))"
-                        class="btn btn-secondary"
-                    >
-                        Lihat Hasil
-                    </button>
+                    <BaseButton v-if="!c.participation" size="sm" :loading="processing === c.id" :disabled="processing !== null && processing !== c.id" @click="start(c.id)">{{ processing === c.id ? 'Memproses...' : 'Mulai' }}</BaseButton>
+                    <BaseButton v-else-if="c.participation.status !== 'completed'" size="sm" @click="$inertia.visit(route('user.cases.run', c.participation.id))">Lanjutkan</BaseButton>
+                    <BaseButton v-else size="sm" variant="secondary" @click="$inertia.visit(route('user.cases.result', c.participation.id))">Lihat Hasil</BaseButton>
                 </div>
-            </div>
-            <div v-if="cases.length === 0" class="col-span-2 card p-8 text-center t-muted text-sm">
-                Belum ada case study aktif.
-            </div>
+            </article>
+            <div v-if="cases.length === 0" class="card md:col-span-2"><EmptyState title="Belum ada case study" message="Case study aktif akan muncul di halaman ini." /></div>
         </div>
     </AppLayout>
 </template>

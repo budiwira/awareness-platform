@@ -1,7 +1,11 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BaseButton from '@/Components/BaseButton.vue';
+import BaseInput from '@/Components/BaseInput.vue';
+import BaseTextarea from '@/Components/BaseTextarea.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 
 const props = defineProps({
   users: Array,
@@ -34,74 +38,30 @@ const submit = () => {
   <Head title="Buat Kampanye Phishing" />
   
   <AppLayout title="Buat Kampanye Phishing">
-    <form @submit.prevent="submit" class="space-y-6 max-w-3xl">
+    <form @submit.prevent="submit" class="max-w-3xl space-y-6 fade-in">
       <div class="card p-6 space-y-5">
-        <div>
-          <label class="label">Judul Kampanye</label>
-          <input 
-            v-model="form.title" 
-            type="text" 
-            class="input" 
-            placeholder="Contoh: Test Kewaspadaan Phishing Q1 2026"
-            required
-          />
-          <div v-if="form.errors.title" class="mt-1 text-sm text-red-600">{{ form.errors.title }}</div>
-        </div>
-
-        <div>
-          <label class="label">Nama Pengirim</label>
-          <input 
-            v-model="form.sender_name" 
-            type="text" 
-            class="input" 
-            placeholder="Contoh: IT Support"
-            required
-          />
-          <div v-if="form.errors.sender_name" class="mt-1 text-sm text-red-600">{{ form.errors.sender_name }}</div>
-        </div>
-
-        <div>
-          <label class="label">Subjek Email</label>
-          <input 
-            v-model="form.subject" 
-            type="text" 
-            class="input" 
-            placeholder="Contoh: URGENT: Verifikasi Akun Anda"
-            required
-          />
-          <div v-if="form.errors.subject" class="mt-1 text-sm text-red-600">{{ form.errors.subject }}</div>
-        </div>
-
-        <div>
-          <label class="label">Isi Email</label>
-          <textarea 
-            v-model="form.body_template" 
-            class="input min-h-[180px]" 
-            placeholder="Contoh:&#10;&#10;Halo,&#10;&#10;Akun Anda akan dinonaktifkan dalam 24 jam. Klik tautan berikut untuk verifikasi:&#10;{{link}}&#10;&#10;Terima kasih,&#10;Tim IT"
-            required
-          ></textarea>
-          <div class="mt-2 text-sm t-muted">
-            Gunakan <code class="px-1.5 py-0.5 rounded bg-surface-elevated font-mono text-xs">{{link}}</code> sebagai placeholder untuk tautan phishing
-          </div>
-          <div v-if="form.errors.body_template" class="mt-1 text-sm text-red-600">{{ form.errors.body_template }}</div>
-        </div>
+        <BaseInput v-model="form.title" label="Judul Kampanye" placeholder="Contoh: Test Kewaspadaan Phishing Q1 2026" required :error="form.errors.title" :disabled="form.processing" />
+        <BaseInput v-model="form.sender_name" label="Nama Pengirim" placeholder="Contoh: IT Support" required :error="form.errors.sender_name" :disabled="form.processing" />
+        <BaseInput v-model="form.subject" label="Subjek Email" placeholder="Contoh: URGENT: Verifikasi Akun Anda" required :error="form.errors.subject" :disabled="form.processing" />
+        <BaseTextarea v-model="form.body_template" label="Isi Email" :rows="8" placeholder="Tulis isi simulasi dan sertakan {{link}}" hint="Gunakan {{link}} sebagai placeholder untuk tautan phishing." required :error="form.errors.body_template" :disabled="form.processing" />
       </div>
 
       <div class="card p-6 space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <label class="label mb-0">Target Simulasi</label>
           <label class="flex items-center gap-2 text-sm cursor-pointer">
             <input 
               v-model="selectAll" 
               type="checkbox" 
               @change="toggleSelectAll"
-              class="w-4 h-4 rounded border-gray-300"
+              class="h-5 w-5 rounded accent-[var(--brand)]"
+              :disabled="form.processing"
             />
             <span class="t-muted">Pilih semua ({{ users.length }})</span>
           </label>
         </div>
 
-        <div class="max-h-80 overflow-y-auto border border-divider rounded-lg">
+        <div v-if="users.length" class="max-h-80 overflow-y-auto border border-divider rounded-lg">
           <label 
             v-for="u in users" 
             :key="u.id"
@@ -111,7 +71,8 @@ const submit = () => {
               v-model="form.target_user_ids" 
               :value="u.id" 
               type="checkbox"
-              class="w-4 h-4 rounded border-gray-300"
+              class="h-5 w-5 rounded accent-[var(--brand)]"
+              :disabled="form.processing"
             />
             <div class="flex-1">
               <div class="font-medium t-ink">{{ u.name }}</div>
@@ -119,28 +80,17 @@ const submit = () => {
             </div>
           </label>
         </div>
+        <EmptyState v-else title="Belum ada target" message="Belum ada learner aktif yang dapat dipilih untuk simulasi ini." />
 
-        <div v-if="form.errors.target_user_ids" class="text-sm text-red-600">{{ form.errors.target_user_ids }}</div>
+        <div v-if="form.errors.target_user_ids" class="text-sm" style="color: var(--danger)" role="alert">{{ form.errors.target_user_ids }}</div>
         <div v-if="form.target_user_ids.length === 0" class="text-sm t-muted">
           Pilih minimal 1 target
         </div>
       </div>
 
-      <div class="flex items-center gap-3">
-        <button 
-          type="submit" 
-          class="btn btn-primary"
-          :disabled="form.processing || form.target_user_ids.length === 0"
-        >
-          <span v-if="form.processing">Menyimpan...</span>
-          <span v-else>Simpan sebagai Draft</span>
-        </button>
-        <a 
-          :href="route('tenant.phishing.index')" 
-          class="btn btn-ghost"
-        >
-          Batal
-        </a>
+      <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+        <BaseButton type="submit" :loading="form.processing" :disabled="form.target_user_ids.length === 0">{{ form.processing ? 'Menyimpan...' : 'Simpan sebagai Draft' }}</BaseButton>
+        <Link :href="route('tenant.phishing.index')" class="btn btn-ghost" :aria-disabled="form.processing" @click="form.processing && $event.preventDefault()">Batal</Link>
       </div>
     </form>
   </AppLayout>
