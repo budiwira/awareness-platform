@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import ToastRegion from '@/Components/ToastRegion.vue';
 
@@ -9,19 +9,39 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const unread = computed(() => page.props.unread ?? 0);
 const showMobileNav = ref(false);
+const mobileNavTrigger = ref(null);
+const mobileNavClose = ref(null);
 
-const theme = ref('dark');
+const theme = ref(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
 const toggleTheme = () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = theme.value;
-    localStorage.setItem('theme', theme.value);
+    try {
+        localStorage.setItem('theme', theme.value);
+    } catch (_) {
+        // Theme still applies for this session when storage is unavailable.
+    }
 };
 
 onMounted(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    theme.value = saved;
-    document.documentElement.dataset.theme = saved;
+    theme.value = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+});
+
+watch(showMobileNav, async (isOpen) => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    await nextTick();
+    (isOpen ? mobileNavClose.value : mobileNavTrigger.value)?.focus();
+});
+
+const closeMobileNavOnEscape = (event) => {
+    if (event.key === 'Escape' && showMobileNav.value) showMobileNav.value = false;
+};
+
+onMounted(() => document.addEventListener('keydown', closeMobileNavOnEscape));
+onUnmounted(() => {
+    document.removeEventListener('keydown', closeMobileNavOnEscape);
+    document.body.style.overflow = '';
 });
 
 const initials = computed(() =>
@@ -120,9 +140,9 @@ const logout = () => router.post(route('logout'));
 <template>
     <div class="min-h-screen flex bg-app">
         <!-- Sidebar desktop -->
-        <aside class="hidden lg:flex lg:flex-col w-64 shrink-0" style="background: var(--sidebar)">
+        <aside class="sticky top-0 hidden h-screen w-64 shrink-0 lg:flex lg:flex-col" style="background: var(--sidebar)">
             <div class="flex items-center gap-3 px-6 h-16 border-b b-line">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold" style="background: rgba(124,58,237,.2); color: var(--brand-strong)">SA</div>
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold" style="background: var(--brand-soft); color: var(--brand-strong)">SA</div>
                 <div>
                     <div class="font-display font-semibold leading-tight t-ink">Awareness</div>
                     <div class="text-[11px] t-muted">Security Platform</div>
@@ -139,9 +159,9 @@ const logout = () => router.post(route('logout'));
                             v-for="item in group.items"
                             :key="item.route"
                             :href="route(item.route)"
-                            class="relative flex items-center gap-2 px-3 py-2 rounded-full text-sm transition-all"
+                            class="relative flex min-h-11 items-center gap-2 px-3 py-2 rounded-full text-sm transition-all focus-visible:outline-none focus-visible:ring-2"
                             :class="isActive(item) ? 'font-medium' : ''"
-                            :style="isActive(item) ? 'background: rgba(124,58,237,.15); color: var(--ink); box-shadow: var(--glow)' : 'color: var(--muted)'"
+                            :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink); box-shadow: var(--glow)' : 'color: var(--muted)'"
                             @mouseenter="!isActive(item) && ($event.currentTarget.style.background = 'var(--surface)', $event.currentTarget.style.color = 'var(--ink)')"
                             @mouseleave="!isActive(item) && ($event.currentTarget.style.background = '', $event.currentTarget.style.color = '')"
                         >
@@ -161,11 +181,11 @@ const logout = () => router.post(route('logout'));
 
         <!-- Mobile slide-over -->
         <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
-            <div class="absolute inset-0 bg-black/50" @click="showMobileNav = false"></div>
-            <aside id="mobile-navigation" class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
+            <div class="absolute inset-0" style="background: var(--backdrop)" @click="showMobileNav = false"></div>
+            <aside id="mobile-navigation" class="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col shadow-xl" style="background: var(--sidebar)" role="dialog" aria-modal="true" aria-label="Navigasi utama">
                 <div class="flex items-center justify-between px-6 h-16 border-b b-line">
                     <div class="font-display font-semibold t-ink">Awareness</div>
-                    <button type="button" class="rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
+                    <button ref="mobileNavClose" type="button" class="flex h-11 w-11 items-center justify-center rounded-lg t-muted transition-colors hover:bg-surface2 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -181,9 +201,9 @@ const logout = () => router.post(route('logout'));
                                 v-for="item in group.items"
                                 :key="item.route"
                                 :href="route(item.route)"
-                                class="flex items-center gap-2 px-3 py-2 rounded-full text-sm"
+                                class="flex min-h-11 items-center gap-2 px-3 py-2 rounded-full text-sm transition-colors focus-visible:outline-none focus-visible:ring-2"
                                 :class="isActive(item) ? 'font-medium' : ''"
-                                :style="isActive(item) ? 'background: rgba(124,58,237,.15); color: var(--ink)' : 'color: var(--muted)'"
+                                :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink)' : 'color: var(--muted)'"
                                 @click="showMobileNav = false"
                             >
                                 <span class="flex-1">{{ item.label }}</span>
@@ -199,24 +219,22 @@ const logout = () => router.post(route('logout'));
 
         <!-- Konten -->
         <div class="flex-1 flex flex-col min-w-0">
-            <header class="h-16 flex items-center justify-between px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
-                <div class="flex items-center gap-3">
-                    <button type="button" class="lg:hidden rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
+            <header class="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 px-3 backdrop-blur sm:px-6" style="background: var(--header)">
+                <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                    <button ref="mobileNavTrigger" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg t-muted transition-colors hover:bg-surface2 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 lg:hidden" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <h1 class="font-display text-lg font-bold t-ink">{{ title }}</h1>
+                    <h1 class="truncate font-display text-base font-bold t-ink sm:text-lg">{{ title }}</h1>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex shrink-0 items-center gap-1 sm:gap-2">
                     <button
                         @click="toggleTheme"
-                        class="transition-colors t-muted"
+                        class="flex h-11 w-11 items-center justify-center rounded-lg transition-colors t-muted hover:bg-surface2 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2"
                         :aria-label="'Ganti tema'"
                         title="Ganti tema"
-                        @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
-                        @mouseleave="$event.currentTarget.style.color = ''"
                     >
                         <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -226,7 +244,7 @@ const logout = () => router.post(route('logout'));
                         </svg>
                     </button>
 
-                    <Link :href="route('notifications.index')" class="relative t-muted transition-colors" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                    <Link :href="route('notifications.index')" class="relative flex h-11 w-11 items-center justify-center rounded-lg t-muted transition-colors hover:bg-surface2 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2" aria-label="Buka notifikasi">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
@@ -241,7 +259,7 @@ const logout = () => router.post(route('logout'));
                         {{ user.tenant_name }}
                     </span>
 
-                    <div class="flex items-center gap-3">
+                    <div class="hidden items-center gap-3 sm:flex">
                         <div 
                             v-if="user?.avatar_path"
                             class="w-8 h-8 rounded-full ring-2 overflow-hidden bg-cover bg-center"
@@ -260,7 +278,7 @@ const logout = () => router.post(route('logout'));
                         </div>
                     </div>
 
-                    <button class="transition-colors t-muted" title="Keluar" @click="logout" @mouseenter="$event.currentTarget.style.color = 'var(--danger)'" @mouseleave="$event.currentTarget.style.color = ''">
+                    <button class="flex h-11 w-11 items-center justify-center rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2" style="--tw-ring-color: var(--danger)" title="Keluar" aria-label="Keluar" @click="logout" @mouseenter="$event.currentTarget.style.color = 'var(--danger)'" @mouseleave="$event.currentTarget.style.color = ''">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
@@ -270,7 +288,7 @@ const logout = () => router.post(route('logout'));
                 <div class="beam absolute bottom-0 left-0 right-0"></div>
             </header>
 
-            <main class="flex-1 p-6 lg:p-8">
+            <main class="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
                 <slot />
             </main>
         </div>

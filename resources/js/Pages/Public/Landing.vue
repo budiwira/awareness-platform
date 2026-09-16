@@ -1,21 +1,19 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
-const theme = ref('dark');
+const theme = ref(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
 const toggleTheme = () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = theme.value;
-    localStorage.setItem('theme', theme.value);
+    try {
+        localStorage.setItem('theme', theme.value);
+    } catch (_) {
+        // Theme still applies for this session when storage is unavailable.
+    }
 };
-
-onMounted(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    theme.value = saved;
-    document.documentElement.dataset.theme = saved;
-});
 
 const isAuthenticated = computed(() => !!page.props.auth.user);
 const ctaText = computed(() => isAuthenticated.value ? 'Masuk Dashboard' : 'Masuk ke Platform');
@@ -60,7 +58,7 @@ const scrollTo = (id) => {
                     <div class="flex items-center gap-3">
                         <button
                             @click="toggleTheme"
-                            class="transition-colors t-muted"
+                            class="flex h-11 w-11 items-center justify-center rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2"
                             :aria-label="'Ganti tema'"
                             title="Ganti tema"
                             @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"

@@ -82,7 +82,9 @@
     --hero-overlay-2: rgba(255,255,255,.08);
 }
 
-body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); background: var(--bg); transition: background-color .2s, color .2s; }
+html { background: var(--bg); color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+body { min-width: 320px; font-family: 'Inter', system-ui, sans-serif; color: var(--ink); background: var(--bg); transition: background-color .2s, color .2s; }
 
 .font-display { font-family: 'Inter', sans-serif; font-weight: 700; letter-spacing: -0.02em; }
 
@@ -104,8 +106,10 @@ body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); backgroun
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-card); }
 
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 600; font-size: .875rem; border-radius: 9999px; padding: .55rem 1.1rem; transition: all .15s ease; cursor: pointer; border: 1px solid transparent; }
+.btn { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: .5rem; font-weight: 600; font-size: .875rem; border-radius: 9999px; padding: .55rem 1.1rem; transition: all .15s ease; cursor: pointer; border: 1px solid transparent; }
 .btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.btn:disabled, .btn[aria-disabled="true"] { cursor: not-allowed; opacity: .55; pointer-events: none; }
 .btn-primary { background: var(--brand); color: var(--white); }
 .btn-primary:hover { background: var(--brand-strong); box-shadow: var(--glow); }
 .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
@@ -118,6 +122,7 @@ body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); backgroun
 .input { width: 100%; border: 1px solid var(--input-border); border-radius: var(--r-card); padding: .55rem .8rem; font-size: .875rem; background: var(--input-bg); color: var(--ink); transition: border-color .15s, box-shadow .15s; }
 .input::placeholder { color: var(--muted); }
 .input:focus { outline: none; border-color: var(--brand); box-shadow: var(--glow); }
+.input:disabled { cursor: not-allowed; opacity: .6; }
 
 .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .15rem .6rem; font-size: .7rem; font-weight: 600; }
 
@@ -125,6 +130,10 @@ body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); backgroun
 .chip:hover { background: var(--surface-2); border-color: var(--brand); color: var(--ink); }
 .chip-active { background: var(--brand); color: var(--white); border-color: var(--brand); }
 .chip-active:hover { background: var(--brand-strong); }
+
+/* Responsive safety for legacy tables; BaseTableContainer remains preferred. */
+.card.overflow-hidden:has(> table) { overflow-x: auto; }
+.card.overflow-hidden > table { min-width: 44rem; }
 
 /* === Motion & States (modern / dinamis / profesional) === */
 .card{transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease}
