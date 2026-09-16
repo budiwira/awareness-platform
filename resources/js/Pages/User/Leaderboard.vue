@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import EmptyState from '@/Components/EmptyState.vue';
 
 const props = defineProps({
   leaderboard: Array,
@@ -60,8 +61,8 @@ const getTierLabel = (score) => {
           <div
             v-for="(entry, index) in leaderboard"
             :key="entry.id"
-            class="p-4 flex items-center gap-4 transition-colors duration-150"
-            :class="entry.id === currentUserData?.id ? 'bg-brand/5' : 'hover:bg-surface-2'"
+            class="p-4 flex items-center gap-4 transition-colors duration-150 hover:bg-surface2"
+            :style="entry.id === currentUserData?.id ? 'background: var(--brand-soft)' : undefined"
           >
             <!-- Rank -->
             <div 
@@ -105,11 +106,7 @@ const getTierLabel = (score) => {
         </div>
 
         <!-- Empty State -->
-        <div v-if="leaderboard.length === 0" class="p-12 text-center">
-          <div class="text-6xl mb-4">🏆</div>
-          <h3 class="text-lg font-semibold t-ink mb-2">Belum Ada Data</h3>
-          <p class="t-muted">Leaderboard akan tampil setelah user menyelesaikan aktivitas.</p>
-        </div>
+        <EmptyState v-if="leaderboard.length === 0" title="Belum ada data" message="Leaderboard akan tampil setelah user menyelesaikan aktivitas." />
       </div>
 
       <!-- Info -->

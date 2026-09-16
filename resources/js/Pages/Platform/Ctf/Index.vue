@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import EmptyState from '@/Components/EmptyState.vue';
+import { BaseAlert, BaseBadge, BaseTableContainer } from '@/Components';
 
 defineProps({ challenges: Array });
 
@@ -66,19 +68,19 @@ const archive = (id) => {
     }
 };
 
-const difficultyBadge = (d) => ({
-    beginner: 'badge-ok',
-    intermediate: 'bg-yellow-100 text-yellow-700',
-    advanced: 'bg-red-100 text-red-700',
-}[d] ?? 'bg-surface2 t-ink');
+const difficultyVariant = (d) => ({
+    beginner: 'success',
+    intermediate: 'warning',
+    advanced: 'danger',
+}[d] ?? 'neutral');
 
-const statusBadge = (status) => {
+const statusVariant = (status) => {
     const map = {
-        draft: 'bg-surface2 t-ink',
-        published: 'badge-ok',
-        archived: 'badge-warn',
+        draft: 'neutral',
+        published: 'success',
+        archived: 'warning',
     };
-    return map[status] || 'bg-surface2 t-ink';
+    return map[status] || 'neutral';
 };
 
 const statusLabel = (status) => {
@@ -91,7 +93,7 @@ const statusLabel = (status) => {
     <Head title="CTF Challenges" />
 
     <AppLayout title="CTF Challenge Builder">
-        <div v-if="errors.action" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{{ errors.action }}</div>
+        <BaseAlert v-if="errors.action" variant="danger" class="mb-4">{{ errors.action }}</BaseAlert>
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
                 Buat challenge gamifikasi. Flag diverifikasi server-side dan tidak pernah dikirim ke browser.
@@ -109,7 +111,7 @@ const statusLabel = (status) => {
                 <div class="md:col-span-2">
                     <label class="text-sm t-muted">Judul</label>
                     <input v-model="form.title" type="text" required class="input mt-1 w-full" />
-                    <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
+                    <p v-if="errors.title" class="text-xs mt-1" style="color: var(--danger)" role="alert">{{ errors.title }}</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm t-muted">Deskripsi Tantangan</label>
@@ -140,7 +142,7 @@ const statusLabel = (status) => {
                 <div>
                     <label class="text-sm t-muted">Flag (rahasia)</label>
                     <input v-model="form.flag" type="text" required placeholder="FLAG{contoh_flag}" class="input mt-1 w-full font-mono" />
-                    <p v-if="errors.flag" class="text-xs text-red-600 mt-1">{{ errors.flag }}</p>
+                    <p v-if="errors.flag" class="text-xs mt-1" style="color: var(--danger)" role="alert">{{ errors.flag }}</p>
                 </div>
                 <div class="md:col-span-2">
                     <label class="text-sm t-muted">Hint (opsional)</label>
@@ -165,7 +167,7 @@ const statusLabel = (status) => {
             </button>
         </div>
 
-        <div class="card overflow-hidden">
+        <BaseTableContainer>
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left t-muted border-b b-line">
@@ -180,27 +182,20 @@ const statusLabel = (status) => {
                 </thead>
                 <tbody>
                     <tr v-if="filteredChallenges.length === 0">
-                        <td colspan="7" class="px-6 py-12 text-center t-muted">
-                            <div class="flex flex-col items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <div class="text-sm">Tidak ada challenge dengan status ini.</div>
-                            </div>
-                        </td>
+                        <td colspan="7"><EmptyState message="Tidak ada challenge dengan status ini." /></td>
                     </tr>
                     <tr v-for="c in filteredChallenges" :key="c.id" class="border-b b-line hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3 font-medium t-ink">{{ c.title }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.category }}</td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
+                            <BaseBadge :variant="difficultyVariant(c.difficulty)">
                                 {{ c.difficulty }}
-                            </span>
+                            </BaseBadge>
                         </td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(c.status)">
+                            <BaseBadge :variant="statusVariant(c.status)">
                                 {{ statusLabel(c.status) }}
-                            </span>
+                            </BaseBadge>
                         </td>
                         <td class="px-6 py-3 t-muted">{{ c.points }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.solves_count }}</td>
@@ -212,6 +207,6 @@ const statusLabel = (status) => {
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </BaseTableContainer>
     </AppLayout>
 </template>
