@@ -1,6 +1,8 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import EmptyState from '@/Components/EmptyState.vue';
+import { BaseBadge } from '@/Components';
 
 defineProps({ assignments: Array });
 
@@ -10,11 +12,11 @@ const statusLabel = (status) => ({
     completed: 'Selesai',
 }[status] || 'Ditugaskan');
 
-const statusClass = (status) => ({
-    assigned: 'badge-warn',
-    in_progress: 'bg-app t-ink border b-line',
-    completed: 'badge-ok',
-}[status] || 'badge-warn');
+const statusVariant = (status) => ({
+    assigned: 'warning',
+    in_progress: 'info',
+    completed: 'success',
+}[status] || 'warning');
 
 const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status === 'in_progress' ? 'Lanjutkan' : 'Mulai modul');
 </script>
@@ -39,9 +41,9 @@ const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status ===
                             {{ assignment.module.description }}
                         </p>
                     </div>
-                    <span class="shrink-0 rounded-full px-3 py-1 text-xs font-medium" :class="statusClass(assignment.status)">
+                    <BaseBadge class="shrink-0" :variant="statusVariant(assignment.status)">
                         {{ statusLabel(assignment.status) }}
-                    </span>
+                    </BaseBadge>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm t-muted">
@@ -68,14 +70,6 @@ const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status ===
             </article>
         </div>
 
-        <div v-else class="card p-10 text-center fade-in">
-            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-app t-muted">
-                <svg class="h-6 w-6" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M4 5.5A2.5 2.5 0 016.5 3H20v16H6.5A2.5 2.5 0 014 16.5v-11zM4 16.5A2.5 2.5 0 016.5 14H20" />
-                </svg>
-            </div>
-            <h2 class="font-display text-lg font-semibold t-ink">Belum ada modul training</h2>
-            <p class="mx-auto mt-2 max-w-md text-sm t-muted">Modul yang ditugaskan kepada Anda akan muncul di sini.</p>
-        </div>
+        <div v-else class="card fade-in"><EmptyState title="Belum ada modul training" message="Modul yang ditugaskan kepada Anda akan muncul di sini." /></div>
     </AppLayout>
 </template>

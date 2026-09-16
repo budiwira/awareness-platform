@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EmptyState from '@/Components/EmptyState.vue';
+import { BaseBadge, BaseTableContainer } from '@/Components';
 
 const props = defineProps({ 
     summary: Object,
@@ -29,12 +30,12 @@ const filteredUsers = computed(() => {
     return props.users.filter(u => u.tier === filterTier.value);
 });
 
-const badgeStyle = (tier) => {
-    if (tier === 'baik') return { background: 'var(--ok-bg)', color: 'var(--ok)' };
-    if (tier === 'cukup') return { background: 'var(--warn-bg)', color: 'var(--warn)' };
-    if (tier === 'perlu_perbaikan') return { background: 'var(--danger-bg)', color: 'var(--danger)' };
-    return { background: 'var(--surface-2)', color: 'var(--muted)' };
-};
+const tierVariant = (tier) => ({
+    baik: 'success',
+    cukup: 'warning',
+    perlu_perbaikan: 'danger',
+    belum_mengerjakan: 'neutral',
+}[tier] ?? 'neutral');
 
 const progressBarColor = (score) => {
     if (score >= 80) return 'var(--ok)';
@@ -230,7 +231,8 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                     Ekspor belum tersedia pada paket Anda. Hubungi administrator untuk informasi lebih lanjut.
                 </div>
             </div>
-            <table v-if="filteredUsers.length > 0" class="w-full text-sm">
+            <BaseTableContainer v-if="filteredUsers.length > 0">
+            <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left border-b t-muted" style="border-color: var(--line)">
                         <th class="px-6 py-3 font-medium">Nama</th>
@@ -262,9 +264,9 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                         <td class="px-6 py-3 text-right font-semibold t-ink">{{ user.completion_rate }}%</td>
                         <td class="px-6 py-3 text-right font-semibold t-ink">{{ user.phishing_clicked }}</td>
                         <td class="px-6 py-3">
-                            <span class="badge" :style="badgeStyle(user.tier)">
+                            <BaseBadge :variant="tierVariant(user.tier)">
                                 {{ getTierLabel(user.tier) }}
-                            </span>
+                            </BaseBadge>
                         </td>
                         <td class="px-6 py-3">
                             <Link 
@@ -280,6 +282,7 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                     </tr>
                 </tbody>
             </table>
+            </BaseTableContainer>
             <EmptyState v-else message="Belum ada pengguna yang sesuai dengan tingkat risiko ini." />
         </div>
     </AppLayout>
