@@ -27,7 +27,7 @@ test('Audit: invalid submit creates no result or success event', function () {
     $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
 });
 
-test('Audit: admin score and progress changes are traceable without unrelated data', function () {
+test('Audit: admin progress changes are traceable without changing assessment score', function () {
     [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
     $admin = User::factory()->create(['tenant_id' => $user->tenant_id, 'role' => UserRole::TenantAdmin]);
     $this->actingAs($admin)->patch(route('tenant.assignments.update', $assignment), [
@@ -40,9 +40,10 @@ test('Audit: admin score and progress changes are traceable without unrelated da
         ->and($event->subject_id)->toBe((string) $assignment->id)
         ->and($event->properties)->toEqual([
             'module_id' => $module->id, 'user_id' => $user->id,
-            'before' => ['status' => 'assigned', 'score' => 0],
-            'after' => ['status' => 'in_progress', 'score' => 42],
-        ]);
+            'before' => ['status' => 'assigned'],
+            'after' => ['status' => 'in_progress'],
+        ])
+        ->and($assignment->fresh()->score)->toBe(0);
 });
 
 test('Audit: audit failure rolls back manual completion', function () {

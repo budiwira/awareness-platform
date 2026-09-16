@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
 use App\Models\TrainingModule;
@@ -12,7 +13,9 @@ use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Throwable;
 
 class ModuleAssignmentController extends Controller
 {
@@ -25,17 +28,37 @@ class ModuleAssignmentController extends Controller
         $entitlement = app(TenantEntitlement::class);
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
-        $assignments = ModuleAssignment::with(['user:id,name,email', 'module:id,title,duration_minutes'])
+        $assignments = ModuleAssignment::with([
+            'user' => fn ($query) => $query->withTrashed()->select(['id', 'name', 'email']),
+            'module:id,title,duration_minutes',
+        ])
             ->where('tenant_id', $tenantId)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $users = User::where('tenant_id', $tenantId)->orderBy('name')->get(['id', 'name', 'email']);
         $modules = TrainingModule::whereIn('id', $entitledModuleIds)
             ->where('is_active', true)
             ->where('status', 'published')
             ->orderBy('title')
             ->get(['id', 'title', 'duration_minutes']);
+        $assignableModuleIds = $modules->pluck('id');
+        $users = User::query()
+            ->where('tenant_id', $tenantId)
+            ->where('role', UserRole::User->value)
+            ->where('is_active', true)
+            ->with(['moduleAssignments:id,user_id,training_module_id'])
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(function (User $user) use ($assignableModuleIds) {
+                $assignedModuleIds = $user->moduleAssignments->pluck('training_module_id');
+                $user->setAttribute(
+                    'assignable_module_ids',
+                    $assignableModuleIds->diff($assignedModuleIds)->values()->all()
+                );
+                $user->unsetRelation('moduleAssignments');
+
+                return $user;
+            });
 
         return Inertia::render('Tenant/Assignments/Index', [
             'assignments' => $assignments,
@@ -61,6 +84,12 @@ class ModuleAssignmentController extends Controller
             abort(403, 'User tidak ditemukan di tenant Anda.');
         }
 
+        if (! $targetUser->isUser() || ! $targetUser->is_active) {
+            return redirect()->back()->withErrors([
+                'user_id' => 'Anggota harus merupakan learner aktif di organisasi Anda.',
+            ]);
+        }
+
         // Validasi entitlement: modul harus ter-entitle
         $tenant = $request->user()->tenant;
         $entitlement = app(TenantEntitlement::class);
@@ -69,12 +98,26 @@ class ModuleAssignmentController extends Controller
             return redirect()->back()->withErrors(['training_module_id' => 'Modul ini tidak termasuk dalam Package organisasi Anda.']);
         }
 
+        $module = TrainingModule::query()
+            ->whereKey($validated['training_module_id'])
+            ->where('is_active', true)
+            ->where('status', 'published')
+            ->first();
+
+        if (! $module) {
+            return redirect()->back()->withErrors([
+                'training_module_id' => 'Modul harus aktif dan sudah dipublikasikan.',
+            ]);
+        }
+
         $exists = ModuleAssignment::where('user_id', $targetUser->id)
             ->where('training_module_id', $validated['training_module_id'])
             ->exists();
 
         if ($exists) {
-            return redirect()->back()->withErrors(['user_id' => 'User ini sudah ditugaskan modul tersebut.']);
+            return redirect()->back()->withErrors([
+                'training_module_id' => 'Modul ini sudah ditugaskan kepada anggota tersebut.',
+            ]);
         }
 
         ModuleAssignment::create([
@@ -89,9 +132,15 @@ class ModuleAssignmentController extends Controller
             'module_id' => $validated['training_module_id'],
         ]);
 
-        // NOTIFIKASI: beri tahu user bahwa ia ditugaskan modul baru
-        $module = TrainingModule::find($validated['training_module_id']);
-        $targetUser->notify(new TrainingAssigned($module));
+        try {
+            $targetUser->notify(new TrainingAssigned($module));
+        } catch (Throwable $exception) {
+            Log::warning('Notifikasi penugasan training gagal dikirim.', [
+                'assignment_user_id' => $targetUser->id,
+                'training_module_id' => $module->id,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
 
         return redirect()->route('tenant.assignments.index')->with('success', 'Modul berhasil ditugaskan.');
     }
@@ -102,11 +151,10 @@ class ModuleAssignmentController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', 'in:assigned,in_progress,completed'],
-            'score' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
         DB::transaction(function () use ($assignment, $validated) {
-            $assignment->update($validated);
+            $assignment->update(['status' => $validated['status']]);
 
             if ($validated['status'] === 'completed') {
                 $assignment->completed_at = now();
