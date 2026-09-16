@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property int $duration_minutes
  * @property bool $is_active
  * @property string|null $status
+ * @property int|null $pretest_quiz_id
+ * @property int|null $posttest_quiz_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, ModuleAssignment> $assignments

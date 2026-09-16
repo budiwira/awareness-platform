@@ -11,6 +11,7 @@ test('super admin can create quiz for a module', function () {
     $this->actingAs($super)
         ->post(route('platform.quizzes.store'), [
             'training_module_id' => $module->id,
+            'purpose' => 'posttest',
             'title' => 'Quiz Phishing',
             'passing_score' => 70,
         ])

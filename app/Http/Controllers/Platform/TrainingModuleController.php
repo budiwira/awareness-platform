@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\TrainingModule;
+use App\Services\AssessmentLifecycle;
 use App\Support\Audit\Audit;
 use App\Support\RichContentSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class TrainingModuleController extends Controller
@@ -130,6 +132,16 @@ class TrainingModuleController extends Controller
         $validated['content_html'] = $cleanHtml;
         $validated['content'] = trim(strip_tags($cleanHtml));
 
+        if ($validated['status'] === 'published') {
+            $module->fill([
+                'pretest_quiz_id' => $validated['pretest_quiz_id'] ?? $module->pretest_quiz_id,
+                'posttest_quiz_id' => $validated['posttest_quiz_id'] ?? $module->posttest_quiz_id,
+            ]);
+            $module->unsetRelation('pretestQuiz');
+            $module->unsetRelation('posttestQuiz');
+            $this->assertPublishable($module);
+        }
+
         $module->update($validated);
         Audit::log('module.updated', $module, ['title' => $module->title, 'status' => $module->status]);
 
@@ -139,6 +151,8 @@ class TrainingModuleController extends Controller
     public function publish(TrainingModule $module)
     {
         Gate::authorize('update', $module);
+
+        $this->assertPublishable($module);
 
         $module->update(['status' => 'published']);
         Audit::log('module.published', $module, ['title' => $module->title]);
@@ -164,5 +178,14 @@ class TrainingModuleController extends Controller
         Audit::log('module.deleted', null, ['title' => $module->title]);
 
         return redirect()->route('platform.modules.index');
+    }
+
+    private function assertPublishable(TrainingModule $module): void
+    {
+        $errors = app(AssessmentLifecycle::class)->bindingErrors($module);
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 }

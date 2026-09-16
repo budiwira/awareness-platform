@@ -502,3 +502,158 @@ test('invariant F3: authorized learner can resume and submit the same running at
     ])->assertOk()->assertJsonPath('score', 100)->assertJsonPath('status', 'submitted');
     expect($assignment->fresh()->pretest_score)->toBe(100)->and($assignment->fresh()->score)->toBe(0);
 });
+
+test('invariant F3: completed assignment cannot start a new assessment', function () {
+    [$user, , $pretest, , $assignment] = buildAssignmentWithQuizzes();
+    $assignment->update(['status' => 'completed', 'completed_at' => now()]);
+
+    $this->actingAs($user)
+        ->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'pretest']))
+        ->assertUnprocessable();
+
+    expect(QuizAttempt::where('quiz_id', $pretest->id)->exists())->toBeFalse();
+});
+
+test('invariant F3: submitted pretest cannot be repeated or overwrite baseline', function () {
+    [$user, , $pretest, , $assignment] = buildAssignmentWithQuizzes();
+    QuizAttempt::create([
+        'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'submitted', 'started_at' => now()->subMinute(), 'submitted_at' => now(),
+        'score' => 25, 'passed' => false,
+    ]);
+    $assignment->update(['pretest_score' => 25, 'pretest_completed_at' => now()]);
+
+    $this->actingAs($user)
+        ->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'pretest']))
+        ->assertUnprocessable();
+
+    expect($assignment->fresh()->pretest_score)->toBe(25)
+        ->and(QuizAttempt::where('quiz_id', $pretest->id)->count())->toBe(1);
+});
+
+test('invariant F3: posttest attempt limit is enforced server side', function () {
+    [$user, , $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    QuizAttempt::create([
+        'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'submitted', 'started_at' => now()->subDay(), 'submitted_at' => now()->subDay(),
+        'score' => 0, 'passed' => false,
+    ]);
+    foreach (range(1, 3) as $attemptNumber) {
+        QuizAttempt::create([
+            'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'status' => 'submitted', 'started_at' => now()->subHours(8 - $attemptNumber),
+            'submitted_at' => now()->subHours(7 - $attemptNumber), 'score' => 0, 'passed' => false,
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'posttest']))
+        ->assertUnprocessable();
+
+    expect(QuizAttempt::where('quiz_id', $posttest->id)->count())->toBe(3);
+});
+
+test('invariant F3: posttest cooldown is enforced server side', function () {
+    [$user, , $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
+    QuizAttempt::create([
+        'quiz_id' => $pretest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'submitted', 'started_at' => now()->subDay(), 'submitted_at' => now()->subDay(),
+        'score' => 0, 'passed' => false,
+    ]);
+    QuizAttempt::create([
+        'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'submitted', 'started_at' => now()->subMinutes(10), 'submitted_at' => now(),
+        'score' => 0, 'passed' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('user.training.quiz.start', ['assignment' => $assignment->id, 'purpose' => 'posttest']))
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Attempt posttest berikutnya tersedia setelah masa tunggu 2 jam.');
+});
+
+test('invariant F3: duplicate submit cannot change an assessment result twice', function () {
+    [$user, , , $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $questionId = $posttest->questions->first()->id;
+    $attempt = QuizAttempt::create([
+        'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'in_progress', 'started_at' => now(), 'question_order' => [$questionId],
+        'option_orders' => [$questionId => [0, 1]],
+    ]);
+
+    $this->actingAs($user)->postJson(route('user.training.quiz.submit', $attempt), [
+        'answers' => [$questionId => 1],
+    ])->assertOk();
+    $this->postJson(route('user.training.quiz.submit', $attempt), [
+        'answers' => [$questionId => 0],
+    ])->assertUnprocessable();
+
+    expect($attempt->fresh()->score)->toBe(0)
+        ->and($assignment->fresh()->score)->toBe(0)
+        ->and(AuditLog::where('action', 'quiz.submitted')->count())->toBe(1);
+});
+
+test('invariant F3: best posttest score is retained', function () {
+    [$user, , , $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $assignment->update(['score' => 80]);
+    $questionId = $posttest->questions->first()->id;
+    $attempt = QuizAttempt::create([
+        'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'in_progress', 'started_at' => now(), 'question_order' => [$questionId],
+        'option_orders' => [$questionId => [0, 1]],
+    ]);
+
+    $this->actingAs($user)->postJson(route('user.training.quiz.submit', $attempt), [
+        'answers' => [$questionId => 1],
+    ])->assertOk();
+
+    expect($assignment->fresh()->score)->toBe(80);
+});
+
+test('invariant F3: third failed posttest completes flow without losing best score', function () {
+    [$user, , , $posttest, $assignment] = buildAssignmentWithQuizzes();
+    $assignment->update(['score' => 50]);
+    foreach (range(1, 2) as $attemptNumber) {
+        QuizAttempt::create([
+            'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+            'status' => 'submitted', 'started_at' => now()->subHours(6 - $attemptNumber),
+            'submitted_at' => now()->subHours(5 - $attemptNumber), 'score' => 0, 'passed' => false,
+        ]);
+    }
+    $questionId = $posttest->questions->first()->id;
+    $third = QuizAttempt::create([
+        'quiz_id' => $posttest->id, 'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
+        'status' => 'in_progress', 'started_at' => now(), 'question_order' => [$questionId],
+        'option_orders' => [$questionId => [0, 1]],
+    ]);
+
+    $this->actingAs($user)->postJson(route('user.training.quiz.submit', $third), [
+        'answers' => [$questionId => 1],
+    ])->assertOk()->assertJsonPath('passed', false);
+
+    expect($assignment->fresh()->status)->toBe('completed')
+        ->and($assignment->fresh()->score)->toBe(50)
+        ->and($assignment->fresh()->completed_at)->not->toBeNull();
+});
+
+test('invariant F3: invalid historical bindings expose no learner assessment action', function () {
+    [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
+    $otherModule = TrainingModule::create([
+        'title' => 'Other', 'content' => 'x', 'duration_minutes' => 10, 'status' => 'published', 'is_active' => true,
+    ]);
+    $wrongQuiz = Quiz::create([
+        'training_module_id' => $otherModule->id, 'title' => 'Wrong',
+        'passing_score' => 50, 'purpose' => 'posttest',
+    ]);
+    $module->update(['pretest_quiz_id' => $wrongQuiz->id, 'posttest_quiz_id' => $wrongQuiz->id]);
+
+    $this->actingAs($user)->get(route('user.training.show', $assignment))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('lifecycle.stage', 'configuration_unavailable')
+            ->where('lifecycle.can_start_pretest', false)
+            ->where('lifecycle.can_start_posttest', false)
+            ->where('pretestQuiz', null)
+            ->where('posttestQuiz', null)
+        );
+});

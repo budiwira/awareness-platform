@@ -95,3 +95,22 @@ test('tenant admin cannot use module wizard or change quiz links across tenants'
     $this->postJson(route('platform.modules.store'), [])->assertForbidden();
     $this->patchJson(route('platform.modules.update', $module), [])->assertForbidden();
 });
+
+test('module with invalid historical quiz bindings cannot be published', function () {
+    $super = User::factory()->superAdmin()->create();
+    $module = TrainingModule::create([
+        'title' => 'Invalid binding', 'content' => 'Materi', 'duration_minutes' => 10, 'status' => 'draft',
+    ]);
+    $other = TrainingModule::create(['title' => 'Other', 'content' => 'Materi', 'duration_minutes' => 10]);
+    $wrongPretest = Quiz::create([
+        'training_module_id' => $other->id, 'title' => 'Wrong pretest',
+        'purpose' => 'posttest', 'passing_score' => 50,
+    ]);
+    $module->update(['pretest_quiz_id' => $wrongPretest->id]);
+
+    $this->actingAs($super)->post(route('platform.modules.publish', $module))
+        ->assertSessionHasErrors('pretest_quiz_id');
+
+    expect($module->fresh()->status)->toBe('draft')
+        ->and($module->fresh()->pretest_quiz_id)->toBe($wrongPretest->id);
+});

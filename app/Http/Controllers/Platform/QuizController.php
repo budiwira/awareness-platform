@@ -34,6 +34,7 @@ class QuizController extends Controller
 
         $validated = $request->validate([
             'training_module_id' => ['required', 'exists:training_modules,id'],
+            'purpose' => ['required', 'in:pretest,posttest,practice'],
             'title' => ['required', 'string', 'max:255'],
             'passing_score' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
