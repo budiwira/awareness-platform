@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseButton, BaseSelect, BaseTextarea } from '@/Components';
 
 const props = defineProps({
   packages: Array,
@@ -13,13 +14,12 @@ const props = defineProps({
 });
 
 const errors = computed(() => usePage().props.errors ?? {});
-const flash = computed(() => usePage().props.flash ?? {});
-
 const showRequestForm = ref(false);
 const requestForm = ref({ package_id: '', note: '' });
 const submitting = ref(false);
 
 const submitRequest = () => {
+    if (submitting.value) return;
     submitting.value = true;
     router.post(route('tenant.billing.request'), requestForm.value, {
         preserveScroll: true,
@@ -56,15 +56,6 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
     <Head title="Billing" />
 
     <AppLayout title="Billing & Langganan">
-        <!-- Flash message -->
-        <div v-if="flash.success" class="mb-6 text-sm chip-brand chip-brand  rounded-xl px-4 py-3 fade-in">
-            {{ flash.success }}
-        </div>
-
-        <p v-if="errors.package_id" class="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            {{ errors.package_id }}
-        </p>
-
         <!-- Kartu Package aktif (READ-ONLY) -->
         <div class="card p-6 mb-6 flex items-center justify-between">
             <div>
@@ -100,40 +91,25 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
             <h2 class="text-lg font-display font-semibold t-ink mb-4">Ajukan Perubahan Package</h2>
             
             <div v-if="!showRequestForm">
-                <button @click="showRequestForm = true" class="btn btn-primary">
-                    Ajukan Permintaan
-                </button>
+                <BaseButton @click="showRequestForm = true">Ajukan Permintaan</BaseButton>
             </div>
 
             <form v-else @submit.prevent="submitRequest" class="space-y-4 fade-in">
-                <div>
-                    <label class="block text-sm font-medium t-ink mb-2">Pilih Package</label>
-                    <select v-model="requestForm.package_id" required
-                        class="w-full rounded-lg b-line focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150">
+                <BaseSelect v-model="requestForm.package_id" label="Pilih Package" required :error="errors.package_id" :disabled="submitting">
                         <option value="">-- Pilih Package --</option>
                         <option v-for="Package in packages" :key="Package.id" :value="Package.id">
                             {{ Package.name }} ({{ formatPrice(Package.price_monthly) }})
                         </option>
-                    </select>
-                    <p v-if="errors.package_id" class="mt-1 text-xs text-red-600">{{ errors.package_id }}</p>
-                </div>
+                </BaseSelect>
 
                 <div>
-                    <label class="block text-sm font-medium t-ink mb-2">Catatan (opsional)</label>
-                    <textarea v-model="requestForm.note" rows="3" maxlength="500"
-                        class="w-full rounded-lg b-line focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150"
-                        placeholder="Jelaskan alasan perubahan Package..."></textarea>
-                    <p v-if="errors.note" class="mt-1 text-xs text-red-600">{{ errors.note }}</p>
+                    <BaseTextarea v-model="requestForm.note" label="Catatan (opsional)" :rows="3" :maxlength="500" :error="errors.note" :disabled="submitting" placeholder="Jelaskan alasan perubahan Package..." />
                     <div class="text-xs t-muted mt-1">{{ requestForm.note.length }} / 500 karakter</div>
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="submit" :disabled="submitting" class="btn btn-primary">
-                        {{ submitting ? 'Mengirim...' : 'Kirim Permintaan' }}
-                    </button>
-                    <button type="button" :disabled="submitting" @click="showRequestForm = false" class="btn btn-secondary">
-                        Batal
-                    </button>
+                    <BaseButton type="submit" :loading="submitting">{{ submitting ? 'Mengirim...' : 'Kirim Permintaan' }}</BaseButton>
+                    <BaseButton variant="secondary" :disabled="submitting" @click="showRequestForm = false">Batal</BaseButton>
                 </div>
             </form>
         </div>
