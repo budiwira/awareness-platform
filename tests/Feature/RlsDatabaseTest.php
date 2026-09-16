@@ -97,3 +97,46 @@ test('RLS: super admin context melihat seluruh tenants', function () {
         rls_cleanup($fixtures);
     }
 });
+
+test('RLS: auth lookup hanya melihat kandidat email dan bersifat transaction-local', function () {
+    $fixtures = rls_create_fixtures();
+
+    try {
+        [, , $alice, $bob] = $fixtures;
+        $pdo = rls_pdo();
+        $pdo->beginTransaction();
+        $statement = $pdo->prepare("SELECT set_config('app.auth_email', ?, true)");
+        $statement->execute([$alice->email]);
+
+        $visibleEmails = $pdo->query('SELECT email FROM users')->fetchAll(PDO::FETCH_COLUMN);
+        expect($visibleEmails)->toBe([$alice->email])->not->toContain($bob->email);
+
+        $update = $pdo->prepare("UPDATE users SET name = 'Auth Lookup Update' WHERE id = ?");
+        $update->execute([$alice->id]);
+        expect($update->rowCount())->toBe(0);
+
+        $delete = $pdo->prepare('DELETE FROM users WHERE id = ?');
+        $delete->execute([$alice->id]);
+        expect($delete->rowCount())->toBe(0);
+
+        $pdo->commit();
+
+        expect($pdo->query("SELECT current_setting('app.auth_email', true)")->fetchColumn())->toBe('');
+        expect($pdo->query('SELECT email FROM users')->fetchAll(PDO::FETCH_COLUMN))->toBe([]);
+    } finally {
+        rls_cleanup($fixtures);
+    }
+});
+
+test('RLS: legacy allow_user_lookup tidak membuka users', function () {
+    $fixtures = rls_create_fixtures();
+
+    try {
+        $pdo = rls_pdo();
+        $pdo->exec("SELECT set_config('app.allow_user_lookup', 'on', false)");
+
+        expect($pdo->query('SELECT email FROM users')->fetchAll(PDO::FETCH_COLUMN))->toBe([]);
+    } finally {
+        rls_cleanup($fixtures);
+    }
+});
