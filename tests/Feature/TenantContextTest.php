@@ -5,6 +5,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenant\CurrentTenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,24 @@ test('tenant context ignores tenant_id injected in request', function () {
     expectTenantContextCleared();
 });
 
+test('session-derived bootstrap cannot expose another tenant', function () {
+    $sessionUser = User::factory()->create();
+    $otherTenantUser = User::factory()->create();
+    $sessionKey = Auth::guard('web')->getName();
+
+    $this->withSession([$sessionKey => $sessionUser->id])
+        ->get('/_test/tenant-context?user_id='.$otherTenantUser->id.'&tenant_id='.$otherTenantUser->tenant_id)
+        ->assertOk()
+        ->assertExactJson([
+            'tenant_id' => $sessionUser->tenant_id,
+            'user_id' => (string) $sessionUser->id,
+            'role' => 'user',
+            'current_tenant' => $sessionUser->tenant_id,
+        ]);
+
+    expectTenantContextCleared();
+});
+
 test('super admin has no tenant context', function () {
     $super = User::factory()->superAdmin()->create();
     app(CurrentTenant::class)->set(Tenant::factory()->create()->id);
@@ -76,6 +95,7 @@ test('TenantContext clears stale database and memory context for guest requests'
 test('TenantContext is cleared when downstream middleware throws', function () {
     $user = User::factory()->create();
     $request = Request::create('/_test/exception');
+    $request->setLaravelSession(app('session')->driver());
     $request->setUserResolver(fn () => $user);
     $failure = new RuntimeException('Downstream failure');
 
