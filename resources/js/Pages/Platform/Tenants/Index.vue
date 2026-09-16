@@ -120,9 +120,9 @@ const statusBadge = (status) =>
         </div>
 
         <!-- Modal pengaturan paket -->
-        <div v-if="showSetPlan" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in">
-            <div class="card p-6 max-w-md w-full mx-4">
-                <h3 class="text-lg font-semibold mb-1">Atur paket organisasi</h3>
+        <div v-if="showSetPlan" class="fixed inset-0 z-50 flex items-center justify-center p-4 fade-in" style="background: var(--backdrop)" role="dialog" aria-modal="true" aria-labelledby="set-plan-title">
+            <div class="card max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto p-5 sm:p-6">
+                <h3 id="set-plan-title" class="text-lg font-semibold mb-1">Atur paket organisasi</h3>
                 <p class="text-sm t-muted mb-4">{{ selectedTenant?.name }}</p>
                 <form @submit.prevent="submitSetPlan" class="space-y-4">
                     <div>
@@ -134,7 +134,7 @@ const statusBadge = (status) =>
                             </option>
                         </select>
                     </div>
-                    <div class="flex gap-3 justify-end">
+                    <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         <button type="button" @click="showSetPlan = false" class="btn bg-surface2 hover:bg-surface2 t-ink">
                             Batal
                         </button>

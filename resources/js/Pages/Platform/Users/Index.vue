@@ -127,14 +127,14 @@ const roleBadge = (role) => {
         </div>
 
         <!-- Delete Modal -->
-        <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 fade-in">
-            <div class="card p-6 max-w-md w-full mx-4">
-                <h3 class="text-lg font-semibold mb-2">Konfirmasi Hapus User</h3>
+        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 fade-in" style="background: var(--backdrop)" role="dialog" aria-modal="true" aria-labelledby="delete-user-title">
+            <div class="card max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto p-5 sm:p-6">
+                <h3 id="delete-user-title" class="text-lg font-semibold mb-2">Konfirmasi Hapus User</h3>
                 <p class="text-sm t-muted mb-4">
                     Anda yakin ingin menghapus user <strong>{{ userToDelete?.name }}</strong> ({{ userToDelete?.email }})?
                     User ini tidak akan bisa login lagi.
                 </p>
-                <div class="flex gap-3 justify-end">
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <button @click="showDeleteModal = false" class="btn bg-surface2 hover:bg-surface2 t-ink">
                         Batal
                     </button>

@@ -6,6 +6,17 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <script>
+            (() => {
+                try {
+                    const savedTheme = localStorage.getItem('theme');
+                    document.documentElement.dataset.theme = savedTheme === 'light' ? 'light' : 'dark';
+                } catch (_) {
+                    document.documentElement.dataset.theme = 'dark';
+                }
+            })();
+        </script>
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

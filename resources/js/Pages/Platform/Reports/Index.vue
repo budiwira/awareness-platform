@@ -9,11 +9,11 @@ defineProps({ rows: Array, platform_avg: Number });
     <Head title="Platform Reports" />
 
     <AppLayout title="Laporan Lintas Tenant">
-        <div class="flex items-center justify-between mb-6">
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm t-muted">Kesehatan awareness seluruh organisasi di platform.</p>
-            <div class="card px-5 py-3 border-2 border-indigo-200">
-                <span class="text-xs text-indigo-600 uppercase tracking-wide">Awareness Platform</span>
-                <span class="ml-3 text-2xl font-bold text-indigo-700">{{ platform_avg }}</span>
+            <div class="card w-full px-5 py-3 sm:w-auto" style="border-color: var(--brand)">
+                <span class="text-xs uppercase tracking-wide" style="color: var(--brand-strong)">Awareness Platform</span>
+                <span class="ml-3 text-2xl font-bold" style="color: var(--brand)">{{ platform_avg }}</span>
             </div>
         </div>
 
@@ -36,7 +36,7 @@ defineProps({ rows: Array, platform_avg: Number });
                         <td class="px-6 py-3 t-muted">{{ row.completion_rate }}%</td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
-                                  :class="row.avg_awareness >= 70 ? 'badge-ok' : 'bg-red-100 text-red-700'">
+                                  :class="row.avg_awareness >= 70 ? 'badge-ok' : 'badge-danger'">
                                 {{ row.avg_awareness }}
                             </span>
                         </td>

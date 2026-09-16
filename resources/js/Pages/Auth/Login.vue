@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -18,19 +18,17 @@ const form = useForm({
 });
 
 const showPassword = ref(false);
-const theme = ref('dark');
+const theme = ref(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
 const toggleTheme = () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = theme.value;
-    localStorage.setItem('theme', theme.value);
+    try {
+        localStorage.setItem('theme', theme.value);
+    } catch (_) {
+        // Theme still applies for this session when storage is unavailable.
+    }
 };
-
-onMounted(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    theme.value = saved;
-    document.documentElement.dataset.theme = saved;
-});
 
 const submit = () => {
     form.post(route('login'), {
@@ -84,10 +82,10 @@ const submit = () => {
         </div>
 
         <!-- Panel form -->
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+        <div class="relative flex w-full items-center justify-center p-4 pt-20 sm:p-8 lg:w-1/2 lg:pt-8">
             <button
                 @click="toggleTheme"
-                class="absolute top-6 right-6 transition-colors t-muted"
+                class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 sm:right-6 sm:top-6"
                 :aria-label="'Ganti tema'"
                 title="Ganti tema"
                 @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
@@ -173,4 +171,4 @@ const submit = () => {
             </div>
         </div>
     </div>
-</template> 
+</template>
