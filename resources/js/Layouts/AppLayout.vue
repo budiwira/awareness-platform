@@ -49,7 +49,6 @@ const menus = computed(() => {
             ]},
             { section: 'Konten', items: [
                 { label: 'Studio Konten', route: 'platform.modules.index' },
-                { label: 'Quizzes', route: 'platform.quizzes.index' },
                 { label: 'Case Studies', route: 'platform.cases.index' },
                 { label: 'CTF', route: 'platform.ctf.index' },
             ]},
@@ -68,8 +67,8 @@ const menus = computed(() => {
                 { label: 'Reports', route: 'tenant.reports' },
             ]},
             { section: 'Simulasi', items: [
-                { label: 'Tabletop (TTX)', route: 'tenant.ttx.index', locked: !entitlements?.features?.includes('ttx') },
-                { label: 'Simulasi TTX', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
+                { label: 'Tabletop', route: 'tenant.ttx.index', locked: !entitlements?.features?.includes('ttx') },
+                { label: 'Simulasi Tabletop', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
                 { label: 'Simulasi Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
             ]},
         ];
@@ -160,10 +159,14 @@ const logout = () => router.post(route('logout'));
         <!-- Mobile slide-over -->
         <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
             <div class="absolute inset-0 bg-black/50" @click="showMobileNav = false"></div>
-            <aside class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
+            <aside id="mobile-navigation" class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
                 <div class="flex items-center justify-between px-6 h-16 border-b b-line">
                     <div class="font-display font-semibold t-ink">Awareness</div>
-                    <button class="t-muted" @click="showMobileNav = false">âœ•</button>
+                    <button type="button" class="rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
+                        <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
                 <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-6">
                     <div v-for="group in menus" :key="group.section">
@@ -195,7 +198,11 @@ const logout = () => router.post(route('logout'));
         <div class="flex-1 flex flex-col min-w-0">
             <header class="h-16 flex items-center justify-between px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
                 <div class="flex items-center gap-3">
-                    <button class="lg:hidden t-muted" @click="showMobileNav = true">â˜°</button>
+                    <button type="button" class="lg:hidden rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
+                        <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <h1 class="font-display text-lg font-bold t-ink">{{ title }}</h1>
                 </div>
 

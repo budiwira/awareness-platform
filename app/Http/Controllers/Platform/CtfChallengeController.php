@@ -54,7 +54,7 @@ class CtfChallengeController extends Controller
         $challenge = CtfChallenge::create($validated);
         Audit::log('ctf.created', $challenge, ['title' => $challenge->title]);
 
-        return redirect()->route('platform.ctf.index');
+        return redirect()->route('platform.ctf.index')->with('success', 'Challenge berhasil dibuat.');
     }
 
     public function publish(CtfChallenge $challenge)
@@ -71,7 +71,7 @@ class CtfChallengeController extends Controller
 
         Audit::log('ctf.published', $challenge, ['title' => $challenge->title]);
 
-        return back();
+        return back()->with('success', 'Challenge berhasil diterbitkan.');
     }
 
     public function archive(CtfChallenge $challenge)
@@ -88,6 +88,6 @@ class CtfChallengeController extends Controller
 
         Audit::log('ctf.archived', $challenge, ['title' => $challenge->title]);
 
-        return back();
+        return back()->with('success', 'Challenge berhasil diarsipkan.');
     }
 }

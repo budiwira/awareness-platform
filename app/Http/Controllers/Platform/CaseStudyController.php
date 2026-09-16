@@ -50,7 +50,7 @@ class CaseStudyController extends Controller
         $case = CaseStudy::create($validated);
         Audit::log('case.created', $case, ['title' => $case->title]);
 
-        return redirect()->route('platform.cases.show', $case);
+        return redirect()->route('platform.cases.show', $case)->with('success', 'Case study berhasil dibuat.');
     }
 
     public function show(CaseStudy $caseStudy)
@@ -76,7 +76,7 @@ class CaseStudyController extends Controller
 
         Audit::log('case.published', $caseStudy, ['title' => $caseStudy->title]);
 
-        return back();
+        return back()->with('success', 'Case study berhasil diterbitkan.');
     }
 
     public function archive(CaseStudy $caseStudy)
@@ -93,7 +93,7 @@ class CaseStudyController extends Controller
 
         Audit::log('case.archived', $caseStudy, ['title' => $caseStudy->title]);
 
-        return back();
+        return back()->with('success', 'Case study berhasil diarsipkan.');
     }
 
     public function storeScene(Request $request, CaseStudy $caseStudy)

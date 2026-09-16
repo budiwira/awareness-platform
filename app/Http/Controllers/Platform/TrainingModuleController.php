@@ -110,7 +110,7 @@ class TrainingModuleController extends Controller
 
         Audit::log('module.created', $module, ['title' => $module->title, 'status' => $module->status]);
 
-        return redirect()->route('platform.modules.show', $module);
+        return redirect()->route('platform.modules.show', $module)->with('success', 'Modul berhasil dibuat.');
     }
 
     public function update(Request $request, TrainingModule $module)
@@ -145,7 +145,7 @@ class TrainingModuleController extends Controller
         $module->update($validated);
         Audit::log('module.updated', $module, ['title' => $module->title, 'status' => $module->status]);
 
-        return redirect()->route('platform.modules.show', $module);
+        return redirect()->route('platform.modules.show', $module)->with('success', 'Modul berhasil diperbarui.');
     }
 
     public function publish(TrainingModule $module)
@@ -157,7 +157,7 @@ class TrainingModuleController extends Controller
         $module->update(['status' => 'published']);
         Audit::log('module.published', $module, ['title' => $module->title]);
 
-        return back();
+        return back()->with('success', 'Modul berhasil diterbitkan.');
     }
 
     public function archive(TrainingModule $module)
@@ -167,7 +167,7 @@ class TrainingModuleController extends Controller
         $module->update(['status' => 'archived']);
         Audit::log('module.archived', $module, ['title' => $module->title]);
 
-        return back();
+        return back()->with('success', 'Modul berhasil diarsipkan.');
     }
 
     public function destroy(TrainingModule $module)
@@ -177,7 +177,7 @@ class TrainingModuleController extends Controller
         $module->delete();
         Audit::log('module.deleted', null, ['title' => $module->title]);
 
-        return redirect()->route('platform.modules.index');
+        return redirect()->route('platform.modules.index')->with('success', 'Modul berhasil dihapus.');
     }
 
     private function assertPublishable(TrainingModule $module): void

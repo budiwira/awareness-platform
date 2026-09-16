@@ -11,6 +11,7 @@ const props = defineProps({
 const selectedUserId = ref(props.users[0]?.user_id ?? null);
 const saving = ref(false);
 const savedMessage = ref('');
+const messageType = ref('success');
 
 const selectedUser = computed(() =>
     props.users.find(u => u.user_id === selectedUserId.value)
@@ -38,14 +39,15 @@ const postJson = async (url, data) => {
 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.message || ('HTTP ' + res.status));
+        const validationMessage = Object.values(body.errors ?? {}).flat()[0];
+        throw new Error(body.message || body.error || validationMessage || ('HTTP ' + res.status));
     }
 
+    return body;
 };
 
 const saveChanges = async () => {
-    if (!selectedUser.value) return;
+    if (!selectedUser.value || saving.value) return;
     saving.value = true;
     savedMessage.value = '';
 
@@ -72,8 +74,10 @@ const saveChanges = async () => {
             await postJson(url, { user_id: selectedUser.value.user_id, feature_keys: deniedFeatureKeys, is_allowed: false });
         }
 
+        messageType.value = 'success';
         savedMessage.value = 'Perubahan akses berhasil disimpan.';
     } catch (e) {
+        messageType.value = 'error';
         savedMessage.value = 'Gagal menyimpan: ' + e.message;
     } finally {
         saving.value = false;
@@ -97,8 +101,11 @@ const featureLabel = (key) => {
 
     <AppLayout :title="`Kelola Akses User: ${tenant.name}`">
         <div class="mb-6">
-            <Link :href="route('platform.tenants.index')" class="text-indigo-600 hover:underline text-sm">
-                ? Kembali ke daftar tenant
+            <Link :href="route('platform.tenants.index')" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Kembali ke daftar tenant
             </Link>
         </div>
 
@@ -132,7 +139,10 @@ const featureLabel = (key) => {
                     >
                         <div class="font-medium t-ink">{{ mod.title }}</div>
                         <button
+                            type="button"
                             @click="toggleModule(mod)"
+                            :disabled="saving"
+                            :aria-label="`${mod.is_allowed ? 'Nonaktifkan' : 'Aktifkan'} akses ${mod.title}`"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                             :class="mod.is_allowed ? 'bg-green-600 dark:bg-green-500' : 'bg-gray-300 dark:bg-gray-700'"
                         >
@@ -164,7 +174,10 @@ const featureLabel = (key) => {
                     >
                         <div class="font-medium t-ink">{{ featureLabel(feat.key) }}</div>
                         <button
+                            type="button"
                             @click="toggleFeature(feat)"
+                            :disabled="saving"
+                            :aria-label="`${feat.is_allowed ? 'Nonaktifkan' : 'Aktifkan'} akses ${featureLabel(feat.key)}`"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                             :class="feat.is_allowed ? 'bg-green-600 dark:bg-green-500' : 'bg-gray-300 dark:bg-gray-700'"
                         >
@@ -184,6 +197,6 @@ const featureLabel = (key) => {
             </button>
         </div>
 
-        <p v-if="savedMessage" class="text-sm text-green-600 dark:text-green-400 mt-4">{{ savedMessage }}</p>
+        <p v-if="savedMessage" class="mt-4 text-sm" :class="messageType === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'" role="status">{{ savedMessage }}</p>
     </AppLayout>
 </template>
