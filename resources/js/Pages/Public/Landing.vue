@@ -504,7 +504,7 @@ const scrollTo = (id) => {
         <footer class="py-8 px-6 lg:px-8 b-line border-t">
             <div class="max-w-7xl mx-auto text-center">
                 <p class="text-sm t-muted">
-                    Security Awareness Platform â€” Bangun budaya keamanan siber yang terukur
+                    Security Awareness Platform — Bangun budaya keamanan siber yang terukur
                 </p>
             </div>
         </footer>

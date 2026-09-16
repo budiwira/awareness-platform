@@ -6,8 +6,10 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 defineProps({ modules: Array });
 
 const errors = computed(() => usePage().props.errors ?? {});
+const mutationError = computed(() => errors.value.action ?? errors.value.pretest_quiz_id ?? errors.value.posttest_quiz_id ?? null);
 
 const statusFilter = ref('all');
+const processing = ref(null);
 
 const filteredModules = computed(() => {
     const data = usePage().props.modules;
@@ -26,18 +28,30 @@ const statusCounts = computed(() => {
 });
 
 const publish = (id) => {
-    router.post(route('platform.modules.publish', id));
+    if (processing.value) return;
+    processing.value = `publish:${id}`;
+    router.post(route('platform.modules.publish', id), {}, {
+        onFinish: () => processing.value = null,
+    });
 };
 
 const archive = (id) => {
     if (confirm('Arsipkan modul ini? Modul tidak akan terlihat di tenant.')) {
-        router.post(route('platform.modules.archive', id));
+        if (processing.value) return;
+        processing.value = `archive:${id}`;
+        router.post(route('platform.modules.archive', id), {}, {
+            onFinish: () => processing.value = null,
+        });
     }
 };
 
 const destroy = (id) => {
     if (confirm('Hapus permanen modul ini?')) {
-        router.delete(route('platform.modules.destroy', id));
+        if (processing.value) return;
+        processing.value = `destroy:${id}`;
+        router.delete(route('platform.modules.destroy', id), {
+            onFinish: () => processing.value = null,
+        });
     }
 };
 
@@ -60,6 +74,7 @@ const statusLabel = (status) => {
     <Head title="Studio Konten" />
 
     <AppLayout title="Studio Konten">
+        <div v-if="mutationError" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{{ mutationError }}</div>
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
                 Kelola materi pembelajaran dari draft hingga siap digunakan organisasi.
@@ -120,10 +135,10 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 text-right t-muted">{{ module.assignments_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
                             <Link :href="route('platform.modules.edit', module.id)" class="text-indigo-600 text-sm font-medium hover:underline">Edit</Link>
-                            <button v-if="module.status === 'draft'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Terbitkan</button>
-                            <button v-if="module.status === 'published'" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline">Arsipkan</button>
-                            <button v-if="module.status === 'archived'" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline">Terbitkan lagi</button>
-                            <button @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline">Hapus</button>
+                            <button v-if="module.status === 'draft'" :disabled="processing !== null" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${module.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
+                            <button v-if="module.status === 'published'" :disabled="processing !== null" @click="archive(module.id)" class="badge-warn text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `archive:${module.id}` ? 'Memproses...' : 'Arsipkan' }}</button>
+                            <button v-if="module.status === 'archived'" :disabled="processing !== null" @click="publish(module.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${module.id}` ? 'Memproses...' : 'Terbitkan lagi' }}</button>
+                            <button :disabled="processing !== null" @click="destroy(module.id)" class="text-red-600 text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `destroy:${module.id}` ? 'Menghapus...' : 'Hapus' }}</button>
                         </td>
                     </tr>
                 </tbody>

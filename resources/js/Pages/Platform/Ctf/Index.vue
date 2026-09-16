@@ -8,6 +8,8 @@ defineProps({ challenges: Array });
 const errors = computed(() => usePage().props.errors ?? {});
 
 const statusFilter = ref('all');
+const processing = ref(null);
+const submitting = ref(false);
 
 const filteredChallenges = computed(() => {
     const data = usePage().props.challenges;
@@ -38,18 +40,29 @@ const form = ref({
 });
 
 const submit = () => {
+    if (submitting.value) return;
+    submitting.value = true;
     router.post(route('platform.ctf.store'), form.value, {
         onSuccess: () => (showForm.value = false),
+        onFinish: () => submitting.value = false,
     });
 };
 
 const publish = (id) => {
-    router.post(route('platform.ctf.publish', id));
+    if (processing.value) return;
+    processing.value = `publish:${id}`;
+    router.post(route('platform.ctf.publish', id), {}, {
+        onFinish: () => processing.value = null,
+    });
 };
 
 const archive = (id) => {
     if (confirm('Arsipkan challenge ini?')) {
-        router.post(route('platform.ctf.archive', id));
+        if (processing.value) return;
+        processing.value = `archive:${id}`;
+        router.post(route('platform.ctf.archive', id), {}, {
+            onFinish: () => processing.value = null,
+        });
     }
 };
 
@@ -78,6 +91,7 @@ const statusLabel = (status) => {
     <Head title="CTF Challenges" />
 
     <AppLayout title="CTF Challenge Builder">
+        <div v-if="errors.action" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{{ errors.action }}</div>
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
                 Buat challenge gamifikasi. Flag diverifikasi server-side dan tidak pernah dikirim ke browser.
@@ -133,7 +147,7 @@ const statusLabel = (status) => {
                     <input v-model="form.hint" type="text" class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
-                    <button class="btn btn-primary">Simpan</button>
+                    <button :disabled="submitting" class="btn btn-primary">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</button>
                 </div>
             </form>
         </div>
@@ -191,9 +205,9 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 t-muted">{{ c.points }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.solves_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
-                            <button v-if="c.status === 'draft'" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
-                            <button v-if="c.status === 'published'" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline">Archive</button>
-                            <button v-if="c.status === 'archived'" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline">Publish</button>
+                            <button v-if="c.status === 'draft'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
+                            <button v-if="c.status === 'published'" :disabled="processing !== null" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `archive:${c.id}` ? 'Memproses...' : 'Arsipkan' }}</button>
+                            <button v-if="c.status === 'archived'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
                         </td>
                     </tr>
                 </tbody>

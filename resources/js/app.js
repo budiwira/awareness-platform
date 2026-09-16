@@ -8,7 +8,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Wire Laravel flash messages ? toast system
+// Hubungkan flash Laravel ke sistem toast global.
 router.on("navigate", (event) => {
   const page = event.detail.page;
   if (page.props.flash) {

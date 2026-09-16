@@ -22,10 +22,13 @@ const submitting = ref(false);
 const submitRequest = () => {
     submitting.value = true;
     router.post(route('tenant.billing.request'), requestForm.value, {
-        onFinish: () => {
-            submitting.value = false;
+        preserveScroll: true,
+        onSuccess: () => {
             showRequestForm.value = false;
             requestForm.value = { package_id: '', note: '' };
+        },
+        onFinish: () => {
+            submitting.value = false;
         },
     });
 };
@@ -68,7 +71,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                 <div class="text-sm t-muted">Package aktif saat ini</div>
                 <div class="text-xl font-display font-bold t-ink mt-1">{{ current_plan?.name ?? 'Free' }}</div>
                 <div class="text-xs t-muted mt-1">
-                    {{ user_count }} / {{ current_plan?.max_users }} users terpakai Â· {{ entitlements?.module_info }}
+                    {{ user_count }} / {{ current_plan?.max_users }} users terpakai · {{ entitlements?.module_info }}
                 </div>
                 <div v-if="entitlements?.features?.length" class="flex flex-wrap gap-1 mt-2">
                     <span v-for="f in entitlements.features" :key="f" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium chip-brand chip-brand ">{{ f }}</span>
@@ -88,7 +91,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <span class="text-xs font-medium" :class="entitlements?.features?.includes(f) ? 't-ink' : 't-muted'">{{ f }}</span>
-                <span v-if="!entitlements?.features?.includes(f)" class="text-xs badge-warn mt-1">Terkunci â€” Ajukan Upgrade</span>
+                <span v-if="!entitlements?.features?.includes(f)" class="text-xs badge-warn mt-1">Terkunci — Ajukan Upgrade</span>
             </div>
         </div>
 
@@ -112,6 +115,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             {{ Package.name }} ({{ formatPrice(Package.price_monthly) }})
                         </option>
                     </select>
+                    <p v-if="errors.package_id" class="mt-1 text-xs text-red-600">{{ errors.package_id }}</p>
                 </div>
 
                 <div>
@@ -119,6 +123,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     <textarea v-model="requestForm.note" rows="3" maxlength="500"
                         class="w-full rounded-lg b-line focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-150"
                         placeholder="Jelaskan alasan perubahan Package..."></textarea>
+                    <p v-if="errors.note" class="mt-1 text-xs text-red-600">{{ errors.note }}</p>
                     <div class="text-xs t-muted mt-1">{{ requestForm.note.length }} / 500 karakter</div>
                 </div>
 
@@ -126,7 +131,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                     <button type="submit" :disabled="submitting" class="btn btn-primary">
                         {{ submitting ? 'Mengirim...' : 'Kirim Permintaan' }}
                     </button>
-                    <button type="button" @click="showRequestForm = false" class="btn btn-secondary">
+                    <button type="button" :disabled="submitting" @click="showRequestForm = false" class="btn btn-secondary">
                         Batal
                     </button>
                 </div>
@@ -163,7 +168,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             <td class="py-3 px-4 font-medium t-ink">{{ req.Package?.name }}</td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.note" class="max-w-xs truncate block">{{ req.note }}</span>
-                                <span v-else class="t-muted">â€”</span>
+                                <span v-else class="t-muted">—</span>
                             </td>
                             <td class="py-3 px-4 t-muted">{{ req.requested_by?.name }}</td>
                             <td class="py-3 px-4">
@@ -173,7 +178,7 @@ const formatDate = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeri
                             </td>
                             <td class="py-3 px-4 t-muted">
                                 <span v-if="req.resolved_by">{{ req.resolved_by.name }}</span>
-                                <span v-else class="t-muted">â€”</span>
+                                <span v-else class="t-muted">—</span>
                             </td>
                         </tr>
                     </tbody>

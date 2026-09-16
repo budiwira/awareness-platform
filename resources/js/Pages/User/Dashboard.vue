@@ -72,23 +72,29 @@ const barColor = (v) => (v >= 70 ? 'var(--ok)' : v >= 40 ? 'var(--warn)' : 'var(
             <Link :href="route('user.cases.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Case Study</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <svg class="h-4 w-4 chip-brand transition-transform group-hover:translate-x-1" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
+                    </svg>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Latihan keputusan berbasis skenario.</p>
             </Link>
             <Link :href="route('user.ctf.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Capture The Flag</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <svg class="h-4 w-4 chip-brand transition-transform group-hover:translate-x-1" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
+                    </svg>
                 </div>
                 <p class="text-sm mt-1" style="color: var(--muted)">Pecahkan tantangan, kumpulkan poin.</p>
             </Link>
             <Link :href="route('notifications.index')" class="card p-6 hover:shadow-md transition group">
                 <div class="flex items-center justify-between">
                     <div class="font-display font-semibold t-ink">Notifikasi</div>
-                    <span class="chip-brand group-hover:translate-x-1 transition">→</span>
+                    <svg class="h-4 w-4 chip-brand transition-transform group-hover:translate-x-1" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
+                    </svg>
                 </div>
-                <p class="text-sm mt-1" style="color: var(--muted)">Penugasan baru dan undangan TTX.</p>
+                <p class="text-sm mt-1" style="color: var(--muted)">Penugasan baru dan undangan Tabletop.</p>
             </Link>
         </div>
     </AppLayout>

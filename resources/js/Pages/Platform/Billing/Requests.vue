@@ -9,6 +9,7 @@ const errors = computed(() => usePage().props.errors ?? {});
 const processing = ref(null);
 
 const approve = (requestId) => {
+    if (processing.value !== null) return;
     if (!confirm('Approve permintaan Package ini?')) return;
     processing.value = requestId;
     router.post(route('platform.billing.approve'), { request_id: requestId }, {
@@ -17,6 +18,7 @@ const approve = (requestId) => {
 };
 
 const reject = (requestId) => {
+    if (processing.value !== null) return;
     if (!confirm('Reject permintaan Package ini?')) return;
     processing.value = requestId;
     router.post(route('platform.billing.reject'), { request_id: requestId }, {
@@ -86,17 +88,17 @@ const statusBadge = (status) => {
                             <div v-if="req.status === 'pending'" class="flex gap-2">
                                 <button
                                     @click="approve(req.id)"
-                                    :disabled="processing === req.id"
+                                    :disabled="processing !== null"
                                     class="btn btn-primary text-xs py-1 px-3"
                                 >
-                                    Approve
+                                    {{ processing === req.id ? 'Memproses...' : 'Approve' }}
                                 </button>
                                 <button
                                     @click="reject(req.id)"
-                                    :disabled="processing === req.id"
+                                    :disabled="processing !== null"
                                     class="btn btn-danger text-xs py-1 px-3"
                                 >
-                                    Reject
+                                    {{ processing === req.id ? 'Memproses...' : 'Reject' }}
                                 </button>
                             </div>
                             <div v-else class="text-xs t-muted">

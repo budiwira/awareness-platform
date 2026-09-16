@@ -21,15 +21,18 @@ const submit = () => {
 
     <AppLayout :title="'Evaluasi & AAR'">
         <div class="mb-6">
-            <Link :href="route('tenant.ttx.exercises.show', exercise.id)" class="text-sm text-indigo-600 hover:underline">
-                â† Kembali ke Exercise
+            <Link :href="route('tenant.ttx.exercises.show', exercise.id)" class="inline-flex items-center gap-1 text-sm text-indigo-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">
+                <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                Kembali ke simulasi
             </Link>
         </div>
 
         <form @submit.prevent="submit" class="max-w-3xl space-y-6">
             <!-- SKOR PER PESERTA -->
             <div class="card p-6">
-                <h3 class="font-semibold t-ink mb-4">Skor Peserta (0â€“100)</h3>
+                <h3 class="font-semibold t-ink mb-4">Skor Peserta (0–100)</h3>
                 <div class="space-y-3">
                     <div v-for="m in members" :key="m.id" class="flex items-center justify-between gap-4">
                         <div>
@@ -37,7 +40,7 @@ const submit = () => {
                             <div class="text-xs t-muted">{{ m.email }}</div>
                         </div>
                         <input v-model.number="form.scores[m.id]" type="number" min="0" max="100"
-                            class="input w-24" placeholder="â€”" />
+                            class="input w-24" placeholder="—" />
                     </div>
                     <p v-if="members.length === 0" class="text-sm t-muted">Belum ada anggota tim.</p>
                 </div>

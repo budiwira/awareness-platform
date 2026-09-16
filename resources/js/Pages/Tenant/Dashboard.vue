@@ -31,7 +31,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                 <div class="text-sm mb-1 t-on-hero-muted">Organisasi</div>
                 <h2 class="font-display text-2xl font-bold t-on-hero">{{ tenantName }}</h2>
                 <p class="text-sm mt-2 max-w-xl t-on-hero-muted">
-                    Pantau kesiapan keamanan anggota: tugaskan training, jalankan simulasi TTX,
+                    Pantau kesiapan keamanan anggota: tugaskan training, jalankan simulasi Tabletop,
                     dan ukur hasilnya lewat laporan awareness.
                 </p>
             </div>
@@ -182,7 +182,7 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
             <Link :href="route('tenant.ttx.exercises.index')">
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
-                        <div class="font-display font-semibold t-ink">Simulasi TTX</div>
+                        <div class="font-display font-semibold t-ink">Simulasi Tabletop</div>
                         <span class="text-xs font-medium t-muted">Buka</span>
                     </div>
                     <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
