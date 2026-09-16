@@ -32,6 +32,23 @@ test('super admin can create a training module', function () {
     $this->assertDatabaseHas('audit_logs', ['action' => 'module.created']);
 });
 
+test('platform module preview receives sanitized rich content', function () {
+    $super = User::factory()->superAdmin()->create();
+    $module = TrainingModule::create([
+        'title' => 'Rich preview', 'content' => 'Plain derivative',
+        'content_html' => '<h2>Rich heading</h2><script>alert(1)</script>',
+        'duration_minutes' => 10,
+    ]);
+
+    $this->actingAs($super)->get(route('platform.modules.show', $module))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Platform/TrainingModules/Show')
+            ->where('module.content_html', '<h2>Rich heading</h2>')
+            ->where('module.content', 'Rich heading')
+        );
+});
+
 test('tenant admin cannot access platform modules', function () {
     $admin = User::factory()->tenantAdmin()->create();
 

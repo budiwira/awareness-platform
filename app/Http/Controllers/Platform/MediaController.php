@@ -27,7 +27,7 @@ class MediaController extends Controller
 
         Storage::disk('private')->putFileAs('module-media', $file, $filename);
 
-        $url = route('platform.media.serve', $filename);
+        $url = route('platform.media.serve', $filename, false);
 
         return response()->json(['url' => $url]);
     }
@@ -94,7 +94,7 @@ class MediaController extends Controller
 
         Storage::disk('private')->putFileAs('module-media', $file, $filename);
 
-        $url = route('platform.media.serve', $filename);
+        $url = route('platform.media.serve', $filename, false);
 
         return response()->json(['url' => $url]);
     }

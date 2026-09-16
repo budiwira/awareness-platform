@@ -13,6 +13,22 @@ test('event handler on* dilucuti', function () {
     expect($out)->not->toContain('onerror');
 });
 
+test('external image HTTPS dipertahankan untuk kompatibilitas', function () {
+    $out = RichContentSanitizer::clean('<img src="https://cdn.example.com/lesson.png" alt="Materi">');
+
+    expect($out)->toContain('https://cdn.example.com/lesson.png')
+        ->toContain('alt="Materi"');
+});
+
+test('image URI executable dilucuti', function (string $uri) {
+    $out = RichContentSanitizer::clean('<img src="'.$uri.'" alt="Tidak aman">');
+
+    expect($out)->not->toContain($uri);
+})->with([
+    'javascript:alert(1)',
+    'data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==',
+]);
+
 test('javascript uri dilucuti', function () {
     $out = RichContentSanitizer::clean('<a href="javascript:alert(1)">klik</a>');
     expect($out)->not->toContain('javascript:');
@@ -68,3 +84,22 @@ test('iframe hanya menerima URL embed HTTPS yang diizinkan', function ($url) {
     'https://www.youtube.com/embed/abc123/extra',
     'javascript:alert(1)',
 ]);
+
+test('paragraf kosong Quill berurutan dinormalisasi tanpa menghapus konten bermakna', function () {
+    $out = RichContentSanitizer::clean('<p>Awal</p><p><br></p><p><br></p><p>Berikutnya</p>');
+
+    expect($out)->toContain('<p>Awal</p>')
+        ->toContain('<p>Berikutnya</p>')
+        ->and(substr_count($out, '<p><br'))
+        ->toBeLessThanOrEqual(1);
+});
+
+test('normalisasi paragraf kosong tidak merusak image atau iframe', function () {
+    $out = RichContentSanitizer::clean(
+        '<p><br></p><p><br></p><img src="/platform/media/lesson.png" alt="Materi">'.
+        '<iframe src="https://www.youtube.com/embed/abc123"></iframe>'
+    );
+
+    expect($out)->toContain('/platform/media/lesson.png')
+        ->toContain('https://www.youtube.com/embed/abc123');
+});

@@ -46,6 +46,9 @@ test('invariant: upload gambar di private disk, bukan public', function () {
         ->assertOk()
         ->assertJsonStructure(['url']);
 
+    expect($response->json('url'))->toStartWith('/platform/media/')
+        ->not->toContain('://');
+
     Storage::disk('private')->assertExists('module-media/'.basename(parse_url($response->json('url'), PHP_URL_PATH)));
     Storage::disk('public')->assertMissing('module-media/'.basename(parse_url($response->json('url'), PHP_URL_PATH)));
 });
@@ -155,6 +158,30 @@ test('invariant: content_html disanitize, content = strip_tags', function () {
 
     expect($module->content_html)->not->toContain('<script>')
         ->and($module->content)->toBe('Halo');
+});
+
+test('invariant: store dan update menormalisasi paragraf kosong Quill', function () {
+    $admin = User::factory()->create(['role' => UserRole::SuperAdmin, 'tenant_id' => null]);
+    $payload = [
+        'title' => 'Normalized', 'description' => null,
+        'content_html' => '<p>Isi</p><p><br></p><p><br></p>',
+        'duration_minutes' => 10, 'status' => 'draft',
+    ];
+
+    $this->actingAs($admin)->post(route('platform.modules.store'), $payload)->assertRedirect();
+    $module = TrainingModule::where('title', 'Normalized')->sole();
+    expect(substr_count($module->content_html, '<p><br'))
+        ->toBeLessThanOrEqual(1);
+
+    $this->patch(route('platform.modules.update', $module), [
+        ...$payload,
+        'content_html' => '<p><br></p><p><br></p><p>Isi baru</p>',
+        'is_active' => true,
+    ])->assertRedirect();
+
+    expect($module->fresh()->content_html)->toContain('<p>Isi baru</p>')
+        ->and(substr_count($module->fresh()->content_html, '<p><br'))
+        ->toBeLessThanOrEqual(1);
 });
 
 test('invariant: unauthorized user tidak bisa upload media', function () {

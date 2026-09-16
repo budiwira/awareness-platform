@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import RichContent from '@/Components/RichContent.vue';
 
 const props = defineProps({ module: Object, stats: Object });
 
@@ -86,9 +87,14 @@ const completionRate = computed(() => {
         <div class="card p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-display text-lg font-bold t-ink">Materi</h3>
-                <span class="text-sm t-muted">⏱ {{ module.duration_minutes }} menit</span>
+                <span class="inline-flex items-center gap-1.5 text-sm t-muted">
+                    <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ module.duration_minutes }} menit
+                </span>
             </div>
-            <div class="prose prose-sm max-w-none t-ink" v-html="module.content"></div>
+            <RichContent :html="module.content_html" />
         </div>
 
         <!-- Kuis -->

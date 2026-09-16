@@ -28,6 +28,9 @@ test('invariant: upload module-agnostic ke private disk', function () {
         ->assertOk()
         ->assertJsonStructure(['url']);
 
+    expect($response->json('url'))->toStartWith('/platform/media/')
+        ->not->toContain('://');
+
     Storage::disk('private')->assertExists('module-media/'.basename(parse_url($response->json('url'), PHP_URL_PATH)));
 });
 

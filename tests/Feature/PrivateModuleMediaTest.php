@@ -45,6 +45,20 @@ test('assigned learner can read private module images without caching', function
     expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
 })->with([false, true]);
 
+test('learner page receives sanitized rich content without breaking private image reference', function () {
+    $this->module->update([
+        'content_html' => '<p>Materi aman</p><img src="/platform/media/lesson.png" onerror="alert(1)">',
+    ]);
+
+    $this->actingAs($this->learner)->get(route('user.training.show', $this->assignment))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('module.content_html', fn (string $html) => str_contains($html, '/platform/media/lesson.png')
+                && str_contains($html, 'Materi aman')
+                && ! str_contains($html, 'onerror'))
+        );
+});
+
 test('private module images reject unauthorized access', function (string $scenario) {
     switch ($scenario) {
         case 'other learner':
