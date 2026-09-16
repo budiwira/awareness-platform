@@ -8,15 +8,15 @@ test('tenant admin can import users via CSV', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
-    $csvContent = "name,email,role\nBudi,budi@test.local,user\nSiti,siti@test.local,tenant_admin\n";
+    $csvContent = "name,email,role\nBudi,budi@test.local,user\nSiti,siti@test.local,user\n";
     $file = UploadedFile::fake()->createWithContent('users.csv', $csvContent);
 
     $this->actingAs($admin)
         ->post(route('tenant.users.import'), ['file' => $file])
         ->assertRedirect(route('tenant.users.index'));
 
-    $this->assertDatabaseHas('users', ['email' => 'budi@test.local', 'tenant_id' => $tenant->id]);
-    $this->assertDatabaseHas('users', ['email' => 'siti@test.local', 'tenant_id' => $tenant->id]);
+    $this->assertDatabaseHas('users', ['email' => 'budi@test.local', 'tenant_id' => $tenant->id, 'role' => 'user']);
+    $this->assertDatabaseHas('users', ['email' => 'siti@test.local', 'tenant_id' => $tenant->id, 'role' => 'user']);
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.bulk_imported']);
 });
 
@@ -37,11 +37,11 @@ test('CSV injection is sanitized', function () {
     expect($user->name)->toStartWith("'");
 });
 
-test('invalid role in CSV rejects entire import', function () {
+test('privileged role in CSV rejects entire import', function (string $role) {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
 
-    $csvContent = "name,email,role\nBudi,budi@test.local,super_admin\n";
+    $csvContent = "name,email,role\nBudi,budi@test.local,{$role}\n";
     $file = UploadedFile::fake()->createWithContent('bad.csv', $csvContent);
 
     $this->actingAs($admin)
@@ -49,4 +49,23 @@ test('invalid role in CSV rejects entire import', function () {
         ->assertSessionHasErrors('file');
 
     $this->assertDatabaseMissing('users', ['email' => 'budi@test.local']);
+})->with(['tenant_admin', 'super_admin']);
+
+test('CSV without legacy role column imports learners', function () {
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $file = UploadedFile::fake()->createWithContent(
+        'learners.csv', "name,email\nLearner Baru,learner@test.local\n"
+    );
+
+    $this->actingAs($admin)
+        ->post(route('tenant.users.import'), ['file' => $file])
+        ->assertRedirect(route('tenant.users.index'))
+        ->assertSessionHas('success');
+
+    $this->assertDatabaseHas('users', [
+        'email' => 'learner@test.local',
+        'tenant_id' => $tenant->id,
+        'role' => 'user',
+    ]);
 });
