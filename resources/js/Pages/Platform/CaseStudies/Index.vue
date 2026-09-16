@@ -2,7 +2,8 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { BaseButton, BaseInput, BaseSelect, BaseTextarea } from '@/Components';
+import { BaseAlert, BaseBadge, BaseButton, BaseInput, BaseSelect, BaseTableContainer, BaseTextarea } from '@/Components';
+import EmptyState from '@/Components/EmptyState.vue';
 
 defineProps({ cases: Array });
 
@@ -59,18 +60,18 @@ const archive = (id) => {
 };
 
 const difficultyBadge = (d) => ({
-    beginner: 'badge-ok',
-    intermediate: 'badge-warn',
-    advanced: 'badge-danger',
-}[d] ?? 'bg-surface2 t-ink');
+    beginner: 'success',
+    intermediate: 'warning',
+    advanced: 'danger',
+}[d] ?? 'neutral');
 
 const statusBadge = (status) => {
     const map = {
-        draft: 'bg-surface2 t-ink',
-        published: 'badge-ok',
-        archived: 'badge-warn',
+        draft: 'neutral',
+        published: 'success',
+        archived: 'warning',
     };
-    return map[status] || 'bg-surface2 t-ink';
+    return map[status] || 'neutral';
 };
 
 const statusLabel = (status) => {
@@ -83,8 +84,8 @@ const statusLabel = (status) => {
     <Head title="Case Studies" />
 
     <AppLayout title="Case Study Builder">
-        <div v-if="errors.action" class="mb-4 rounded-xl border p-4 text-sm" style="border-color: var(--danger); background: var(--danger-bg); color: var(--danger)" role="alert">{{ errors.action }}</div>
-        <div class="flex items-center justify-between mb-6">
+        <BaseAlert v-if="errors.action" variant="danger" class="mb-4">{{ errors.action }}</BaseAlert>
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm t-muted">
                 Buat latihan pengambilan keputusan berbasis skenario insiden.
             </p>
@@ -125,7 +126,7 @@ const statusLabel = (status) => {
             </button>
         </div>
 
-        <div class="card overflow-hidden">
+        <BaseTableContainer>
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left t-muted border-b b-line">
@@ -139,30 +140,23 @@ const statusLabel = (status) => {
                 </thead>
                 <tbody>
                     <tr v-if="filteredCases.length === 0">
-                        <td colspan="6" class="px-6 py-12 text-center t-muted">
-                            <div class="flex flex-col items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <div class="text-sm">Tidak ada case study dengan status ini.</div>
-                            </div>
-                        </td>
+                        <td colspan="6"><EmptyState message="Tidak ada case study dengan status ini." /></td>
                     </tr>
                     <tr v-for="c in filteredCases" :key="c.id" class="border-b b-line hover:bg-app/50 transition-colors">
                         <td class="px-6 py-3">
-                            <Link :href="route('platform.cases.show', c.id)" class="text-indigo-600 font-medium hover:underline">
+                            <Link :href="route('platform.cases.show', c.id)" class="font-medium transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2" style="color: var(--brand)">
                                 {{ c.title }}
                             </Link>
                         </td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="difficultyBadge(c.difficulty)">
+                            <BaseBadge :variant="difficultyBadge(c.difficulty)">
                                 {{ c.difficulty }}
-                            </span>
+                            </BaseBadge>
                         </td>
                         <td class="px-6 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-medium" :class="statusBadge(c.status)">
+                            <BaseBadge :variant="statusBadge(c.status)">
                                 {{ statusLabel(c.status) }}
-                            </span>
+                            </BaseBadge>
                         </td>
                         <td class="px-6 py-3 t-muted">{{ c.scenes_count }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.duration_minutes }} menit</td>
@@ -174,6 +168,6 @@ const statusLabel = (status) => {
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </BaseTableContainer>
     </AppLayout>
 </template>

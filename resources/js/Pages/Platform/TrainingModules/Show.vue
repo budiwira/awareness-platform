@@ -1,28 +1,35 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import RichContent from '@/Components/RichContent.vue';
+import BaseAlert from '@/Components/BaseAlert.vue';
+import BaseBadge from '@/Components/BaseBadge.vue';
+import BaseButton from '@/Components/BaseButton.vue';
 
 const props = defineProps({ module: Object, stats: Object });
+const processing = ref(null);
 
 const publish = () => {
-    router.post(route('platform.modules.publish', props.module.id));
+    if (processing.value) return;
+    processing.value = 'publish';
+    router.post(route('platform.modules.publish', props.module.id), {}, { onFinish: () => (processing.value = null) });
 };
 
 const archive = () => {
     if (confirm('Arsipkan modul ini? Modul tidak akan terlihat di tenant.')) {
-        router.post(route('platform.modules.archive', props.module.id));
+        processing.value = 'archive';
+        router.post(route('platform.modules.archive', props.module.id), {}, { onFinish: () => (processing.value = null) });
     }
 };
 
 const statusBadge = computed(() => {
     const map = {
-        draft: 'bg-surface2 t-ink',
-        published: 'badge-ok',
-        archived: 'badge-warn',
+        draft: 'neutral',
+        published: 'success',
+        archived: 'warning',
     };
-    return map[props.module.status] || 'bg-surface2 t-ink';
+    return map[props.module.status] || 'neutral';
 });
 
 const statusLabel = computed(() => {
@@ -41,26 +48,22 @@ const completionRate = computed(() => {
 
     <AppLayout :title="module.title">
         <!-- Header -->
-        <div class="flex items-start justify-between mb-6">
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <div>
                 <div class="flex items-center gap-3 mb-2">
                     <h2 class="font-display text-2xl font-bold t-ink">{{ module.title }}</h2>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium" :class="statusBadge">
+                    <BaseBadge :variant="statusBadge">
                         {{ statusLabel }}
-                    </span>
+                    </BaseBadge>
                 </div>
                 <p class="text-sm t-muted">{{ module.description }}</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <Link :href="route('platform.modules.edit', module.id)" class="btn btn-secondary">
                     Edit
                 </Link>
-                <button v-if="module.status === 'draft'" @click="publish" class="btn btn-primary">
-                    Publish
-                </button>
-                <button v-if="module.status === 'published'" @click="archive" class="btn" style="background: var(--warn); color: white;">
-                    Archive
-                </button>
+                <BaseButton v-if="module.status === 'draft'" :loading="processing === 'publish'" @click="publish">{{ processing === 'publish' ? 'Memproses...' : 'Publish' }}</BaseButton>
+                <BaseButton v-if="module.status === 'published'" variant="danger" :loading="processing === 'archive'" @click="archive">{{ processing === 'archive' ? 'Memproses...' : 'Archive' }}</BaseButton>
             </div>
         </div>
 
@@ -78,7 +81,7 @@ const completionRate = computed(() => {
             </div>
             <div class="card p-6">
                 <div class="text-sm t-muted mb-1">Rata-rata Skor</div>
-                <div class="text-3xl font-display font-bold text-indigo-600">{{ stats.avg_score }}</div>
+                <div class="text-3xl font-display font-bold" style="color: var(--brand)">{{ stats.avg_score }}</div>
                 <div class="text-xs t-muted mt-1">dari kuis</div>
             </div>
         </div>
@@ -115,12 +118,12 @@ const completionRate = computed(() => {
                     <strong>{{ module.quiz.questions?.length || 0 }}</strong> pertanyaan tersedia
                 </div>
             </div>
-            <div v-else class="badge-warn  rounded-lg p-4 text-sm badge-warn">
+            <BaseAlert v-else variant="warning">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Modul ini belum memiliki kuis. Buat kuis di halaman <strong>Quizzes</strong> dan pilih modul ini.
-            </div>
+            </BaseAlert>
         </div>
     </AppLayout>
 </template>
