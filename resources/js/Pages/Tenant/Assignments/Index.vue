@@ -2,11 +2,13 @@
 import { computed, ref, watch } from 'vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseButton, BaseSelect } from '@/Components';
 
 const props = defineProps({ assignments: Array, users: Array, modules: Array });
 
 const showForm = ref(false);
 const form = useForm({ user_id: '', training_module_id: '' });
+const updatingId = ref(null);
 
 const selectedUser = computed(() => props.users.find((user) => user.id === Number(form.user_id)));
 const assignableModules = computed(() => {
@@ -41,6 +43,7 @@ const formatDate = (dateString) => {
 };
 
 const submit = () => {
+    if (form.processing) return;
     form.post(route('tenant.assignments.store'), {
         onSuccess: () => {
             form.reset();
@@ -50,8 +53,12 @@ const submit = () => {
 };
 
 const updateStatus = (assignment, status) => {
+    if (updatingId.value !== null) return;
+    updatingId.value = assignment.id;
     router.patch(route('tenant.assignments.update', assignment.id), {
         status: status,
+    }, {
+        onFinish: () => (updatingId.value = null),
     });
 };
 
@@ -79,13 +86,12 @@ const statusLabel = (status) => ({
                     <option value="terbaru">Terbaru</option>
                     <option value="nama_az">Nama A-Z</option>
                 </select>
-                <button
+                <BaseButton
                     @click="showForm = !showForm"
-                    class="btn btn-primary"
-                    :disabled="!hasEligibleLearners"
+                    :disabled="!hasEligibleLearners || form.processing"
                 >
                     Tugaskan modul
-                </button>
+                </BaseButton>
             </div>
         </div>
 
@@ -100,30 +106,18 @@ const statusLabel = (status) => ({
                     <div class="font-semibold t-ink">Buat penugasan baru</div>
                     <p class="text-sm t-muted mt-1">Pilih anggota dan modul yang akan masuk ke daftar training mereka.</p>
                 </div>
-                <button type="button" @click="showForm = false" class="text-sm t-muted hover:text-[var(--ink)] transition-colors">
-                    Tutup
-                </button>
+                <BaseButton variant="ghost" size="sm" :disabled="form.processing" @click="showForm = false">Tutup</BaseButton>
             </div>
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div>
-                    <label class="text-sm t-muted">Anggota</label>
-                    <select v-model="form.user_id" required class="input mt-1 w-full" :aria-invalid="Boolean(form.errors.user_id)">
+                <BaseSelect v-model="form.user_id" label="Anggota" required :error="form.errors.user_id" :disabled="form.processing">
                         <option value="" disabled>Pilih anggota</option>
                         <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} — {{ user.email }}</option>
-                    </select>
-                    <p v-if="form.errors.user_id" class="text-xs text-red-600 mt-1" role="alert">{{ form.errors.user_id }}</p>
-                </div>
-                <div>
-                    <label class="text-sm t-muted">Modul training</label>
-                    <select v-model="form.training_module_id" required class="input mt-1 w-full" :disabled="!selectedUser || hasNoAssignableModules" :aria-invalid="Boolean(form.errors.training_module_id)">
+                </BaseSelect>
+                <BaseSelect v-model="form.training_module_id" label="Modul training" required :error="form.errors.training_module_id" :disabled="form.processing || !selectedUser || hasNoAssignableModules">
                         <option value="" disabled>{{ selectedUser ? 'Pilih modul' : 'Pilih anggota terlebih dahulu' }}</option>
                         <option v-for="mod in assignableModules" :key="mod.id" :value="mod.id">{{ mod.title }} ({{ mod.duration_minutes }} menit)</option>
-                    </select>
-                    <p v-if="form.errors.training_module_id" class="text-xs text-red-600 mt-1" role="alert">{{ form.errors.training_module_id }}</p>
-                </div>
-                <button class="btn btn-primary" :disabled="form.processing || !form.training_module_id || hasNoAssignableModules">
-                    {{ form.processing ? 'Memproses...' : 'Buat penugasan' }}
-                </button>
+                </BaseSelect>
+                <BaseButton type="submit" :loading="form.processing" :disabled="!form.training_module_id || hasNoAssignableModules">{{ form.processing ? 'Memproses...' : 'Buat penugasan' }}</BaseButton>
             </form>
             <div v-if="hasNoAssignableModules" class="mt-4 rounded-xl border b-line p-4 text-sm t-muted" role="status">
                 <div class="font-semibold t-ink">Tidak ada modul yang dapat ditugaskan</div>
@@ -153,26 +147,29 @@ const statusLabel = (status) => ({
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" 
                                   :class="{
-                                      'bg-yellow-100 text-yellow-700': assignment.status === 'assigned',
-                                      'bg-blue-100 text-blue-700': assignment.status === 'in_progress',
+                                      'badge-warn': assignment.status === 'assigned',
+                                      'chip-brand': assignment.status === 'in_progress',
                                       'badge-ok': assignment.status === 'completed'
                                   }">
                                 {{ statusLabel(assignment.status) }}
                             </span>
                         </td>
                         <td class="px-6 py-3 text-right space-x-2">
-                            <button v-if="assignment.status !== 'completed'" 
-                                    @click="updateStatus(assignment, 'completed')" 
-                                    class="text-xs font-medium t-muted hover:text-[var(--danger)] transition-colors">
-                                Koreksi: tandai selesai
-                            </button>
+                            <BaseButton v-if="assignment.status !== 'completed'"
+                                    size="sm"
+                                    variant="secondary"
+                                    :loading="updatingId === assignment.id"
+                                    :disabled="updatingId !== null && updatingId !== assignment.id"
+                                    @click="updateStatus(assignment, 'completed')">
+                                {{ updatingId === assignment.id ? 'Memproses...' : 'Koreksi: tandai selesai' }}
+                            </BaseButton>
                         </td>
                     </tr>
                     <tr v-if="sortedAssignments.length === 0">
                         <td colspan="5" class="px-6 py-12 text-center">
                             <div class="font-semibold t-ink">Belum ada penugasan</div>
                             <p class="text-sm t-muted mt-1">Buat penugasan pertama untuk mulai mengatur training anggota.</p>
-                            <button @click="showForm = true" class="btn btn-primary mt-4" :disabled="!hasEligibleLearners">Buat penugasan</button>
+                            <BaseButton class="mt-4" :disabled="!hasEligibleLearners" @click="showForm = true">Buat penugasan</BaseButton>
                         </td>
                     </tr>
                 </tbody>

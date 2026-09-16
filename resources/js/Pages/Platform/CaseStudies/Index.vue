@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseButton, BaseInput, BaseSelect, BaseTextarea } from '@/Components';
 
 defineProps({ cases: Array });
 
@@ -59,8 +60,8 @@ const archive = (id) => {
 
 const difficultyBadge = (d) => ({
     beginner: 'badge-ok',
-    intermediate: 'bg-yellow-100 text-yellow-700',
-    advanced: 'bg-red-100 text-red-700',
+    intermediate: 'badge-warn',
+    advanced: 'badge-danger',
 }[d] ?? 'bg-surface2 t-ink');
 
 const statusBadge = (status) => {
@@ -82,44 +83,31 @@ const statusLabel = (status) => {
     <Head title="Case Studies" />
 
     <AppLayout title="Case Study Builder">
-        <div v-if="errors.action" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{{ errors.action }}</div>
+        <div v-if="errors.action" class="mb-4 rounded-xl border p-4 text-sm" style="border-color: var(--danger); background: var(--danger-bg); color: var(--danger)" role="alert">{{ errors.action }}</div>
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">
-                Buat latihan tabletop berbasis skenario insiden untuk mengasah pengambilan keputusan.
+                Buat latihan pengambilan keputusan berbasis skenario insiden.
             </p>
-            <button
+            <BaseButton
                 @click="showForm = !showForm"
-                class="btn btn-primary"
+                :disabled="submitting"
             >
                 + Buat Case Study
-            </button>
+            </BaseButton>
         </div>
 
         <div v-if="showForm" class="card p-6 mb-6">
             <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="md:col-span-2">
-                    <label class="text-sm t-muted">Judul</label>
-                    <input v-model="form.title" type="text" required class="input mt-1 w-full" />
-                    <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="text-sm t-muted">Ringkasan Skenario</label>
-                    <textarea v-model="form.description" rows="2" class="input mt-1 w-full"></textarea>
-                </div>
-                <div>
-                    <label class="text-sm t-muted">Tingkat Kesulitan</label>
-                    <select v-model="form.difficulty" class="input mt-1 w-full">
+                <BaseInput v-model="form.title" class="md:col-span-2" label="Judul" required :error="errors.title" :disabled="submitting" />
+                <BaseTextarea v-model="form.description" class="md:col-span-2" label="Ringkasan Skenario" :rows="2" :error="errors.description" :disabled="submitting" />
+                <BaseSelect v-model="form.difficulty" label="Tingkat Kesulitan" :error="errors.difficulty" :disabled="submitting">
                         <option value="beginner">Beginner</option>
                         <option value="intermediate">Intermediate</option>
                         <option value="advanced">Advanced</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm t-muted">Durasi (menit)</label>
-                    <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
-                </div>
+                </BaseSelect>
+                <BaseInput v-model.number="form.duration_minutes" label="Durasi (menit)" type="number" required :error="errors.duration_minutes" :disabled="submitting" />
                 <div class="md:col-span-2 flex justify-end">
-                    <button :disabled="submitting" class="btn btn-primary">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</button>
+                    <BaseButton type="submit" :loading="submitting">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</BaseButton>
                 </div>
             </form>
         </div>
@@ -179,9 +167,9 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 t-muted">{{ c.scenes_count }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.duration_minutes }} menit</td>
                         <td class="px-6 py-3 text-right space-x-3">
-                            <button v-if="c.status === 'draft'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
-                            <button v-if="c.status === 'published'" :disabled="processing !== null" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `archive:${c.id}` ? 'Memproses...' : 'Arsipkan' }}</button>
-                            <button v-if="c.status === 'archived'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
+                            <BaseButton v-if="c.status === 'draft'" size="sm" variant="secondary" :loading="processing === `publish:${c.id}`" :disabled="processing !== null && processing !== `publish:${c.id}`" @click="publish(c.id)">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</BaseButton>
+                            <BaseButton v-if="c.status === 'published'" size="sm" variant="danger" :loading="processing === `archive:${c.id}`" :disabled="processing !== null && processing !== `archive:${c.id}`" @click="archive(c.id)">{{ processing === `archive:${c.id}` ? 'Memproses...' : 'Arsipkan' }}</BaseButton>
+                            <BaseButton v-if="c.status === 'archived'" size="sm" variant="secondary" :loading="processing === `publish:${c.id}`" :disabled="processing !== null && processing !== `publish:${c.id}`" @click="publish(c.id)">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</BaseButton>
                         </td>
                     </tr>
                 </tbody>

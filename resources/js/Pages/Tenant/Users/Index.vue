@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseButton, BaseInput, BaseSelect } from '@/Components';
 
 defineProps({ users: Array });
 
@@ -10,6 +11,7 @@ const showCreate = ref(false);
 const createForm = useForm({ name: '', email: '' });
 
 const submitCreate = () => {
+    if (createForm.processing) return;
     createForm.post(route('tenant.users.store'), {
         onSuccess: () => {
             createForm.reset();
@@ -23,6 +25,7 @@ const showImport = ref(false);
 const importForm = useForm({ file: null });
 
 const submitImport = () => {
+    if (importForm.processing) return;
     importForm.post(route('tenant.users.import'), {
         forceFormData: true,
         onSuccess: () => {
@@ -45,6 +48,7 @@ const startEdit = (user) => {
 };
 
 const submitEdit = (user) => {
+    if (editForm.processing) return;
     editForm.patch(route('tenant.users.update', user.id), {
         onSuccess: () => (editingId.value = null),
     });
@@ -62,18 +66,18 @@ const submitEdit = (user) => {
                 <p class="text-sm t-muted mt-2">Kelola profil dan status learner. Penugasan modul dikelola melalui halaman Penugasan.</p>
             </div>
             <div class="flex gap-2">
-                <button
+                <BaseButton
                     @click="showImport = !showImport"
-                    class="btn btn-primary"
+                    :disabled="importForm.processing"
                 >
                     Import CSV
-                </button>
-                <button
+                </BaseButton>
+                <BaseButton
                     @click="showCreate = !showCreate"
-                    class="btn btn-primary"
+                    :disabled="createForm.processing"
                 >
                     Tambah learner
-                </button>
+                </BaseButton>
             </div>
         </div>
 
@@ -82,19 +86,21 @@ const submitEdit = (user) => {
             <div class="font-semibold t-ink mb-4">Import learner melalui CSV</div>
             <form @submit.prevent="submitImport" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="text-sm t-muted">File CSV (format: name,email atau name,email,role)</label>
+                    <label for="learner-import-file" class="text-sm t-muted">File CSV (format: name,email atau name,email,role)</label>
                     <input
+                        id="learner-import-file"
                         @change="importForm.file = $event.target.files[0]"
                         type="file"
                         accept=".csv,.txt"
                         required
                         class="input mt-1 w-full"
+                        :disabled="importForm.processing"
+                        :aria-invalid="Boolean(importForm.errors.file)"
+                        :aria-describedby="importForm.errors.file ? 'learner-import-file-error' : undefined"
                     />
-                    <p v-if="importForm.errors.file" class="text-xs text-red-600 mt-1" role="alert">{{ importForm.errors.file }}</p>
+                    <p v-if="importForm.errors.file" id="learner-import-file-error" class="text-xs mt-1" style="color: var(--danger)" role="alert">{{ importForm.errors.file }}</p>
                 </div>
-                <button class="btn btn-primary" :disabled="importForm.processing || !importForm.file">
-                    {{ importForm.processing ? 'Mengimpor...' : 'Unggah dan import' }}
-                </button>
+                <BaseButton type="submit" :loading="importForm.processing" :disabled="!importForm.file">{{ importForm.processing ? 'Mengimpor...' : 'Unggah dan import' }}</BaseButton>
             </form>
             <p class="text-xs t-muted mt-3">
                 Maksimal 500 baris. Kolom role lama tetap diterima hanya jika nilainya "user". Satu baris tidak valid membatalkan seluruh import.
@@ -105,20 +111,10 @@ const submitEdit = (user) => {
         <div v-if="showCreate" class="card p-6 mb-6 fade-in">
             <div class="font-semibold t-ink mb-4">Learner baru</div>
             <form @submit.prevent="submitCreate" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="text-sm t-muted">Nama</label>
-                    <input v-model="createForm.name" type="text" required class="input mt-1 w-full" />
-                    <p v-if="createForm.errors.name" class="text-xs text-red-600 mt-1" role="alert">{{ createForm.errors.name }}</p>
-                </div>
-                <div>
-                    <label class="text-sm t-muted">Email</label>
-                    <input v-model="createForm.email" type="email" required class="input mt-1 w-full" />
-                    <p v-if="createForm.errors.email" class="text-xs text-red-600 mt-1" role="alert">{{ createForm.errors.email }}</p>
-                </div>
+                <BaseInput v-model="createForm.name" label="Nama" required :error="createForm.errors.name" :disabled="createForm.processing" />
+                <BaseInput v-model="createForm.email" label="Email" type="email" required :error="createForm.errors.email" :disabled="createForm.processing" />
                 <div class="md:col-span-2 flex justify-end">
-                    <button class="btn btn-primary" :disabled="createForm.processing">
-                        {{ createForm.processing ? 'Menyimpan...' : 'Simpan learner' }}
-                    </button>
+                    <BaseButton type="submit" :loading="createForm.processing">{{ createForm.processing ? 'Menyimpan...' : 'Simpan learner' }}</BaseButton>
                 </div>
             </form>
             <p class="text-xs t-muted mt-3">
@@ -140,24 +136,19 @@ const submitEdit = (user) => {
                 <tbody>
                     <tr v-for="user in users" :key="user.id" class="border-b b-line">
                         <template v-if="editingId === user.id">
-                            <td class="px-6 py-3"><input v-model="editForm.name" class="input w-full" /></td>
-                            <td class="px-6 py-3"><input v-model="editForm.email" type="email" class="input w-full" /></td>
+                            <td class="px-6 py-3"><BaseInput v-model="editForm.name" label="Nama" :error="editForm.errors.name" :disabled="editForm.processing" /></td>
+                            <td class="px-6 py-3"><BaseInput v-model="editForm.email" label="Email" type="email" :error="editForm.errors.email" :disabled="editForm.processing" /></td>
                             <td class="px-6 py-3">
-                                <select v-model="editForm.is_active" class="input w-full">
+                                <BaseSelect v-model="editForm.is_active" label="Status" :error="editForm.errors.is_active" :disabled="editForm.processing">
                                     <option :value="true">Aktif</option>
                                     <option :value="false">Nonaktif</option>
-                                </select>
+                                </BaseSelect>
                             </td>
                             <td class="px-6 py-3 text-right">
                                 <div class="flex justify-end items-center gap-4">
-                                    <button @click="submitEdit(user)" class="text-indigo-600 text-sm font-medium" :disabled="editForm.processing">
-                                        {{ editForm.processing ? 'Menyimpan...' : 'Simpan' }}
-                                    </button>
-                                    <button @click="editingId = null" class="t-muted text-sm" :disabled="editForm.processing">Batal</button>
+                                    <BaseButton size="sm" :loading="editForm.processing" @click="submitEdit(user)">{{ editForm.processing ? 'Menyimpan...' : 'Simpan' }}</BaseButton>
+                                    <BaseButton size="sm" variant="ghost" :disabled="editForm.processing" @click="editingId = null">Batal</BaseButton>
                                 </div>
-                                <p v-if="editForm.errors.name || editForm.errors.email || editForm.errors.is_active" class="text-xs text-red-600 mt-2" role="alert">
-                                    {{ editForm.errors.name || editForm.errors.email || editForm.errors.is_active }}
-                                </p>
                             </td>
                         </template>
                         <template v-else>
@@ -166,13 +157,13 @@ const submitEdit = (user) => {
                             <td class="px-6 py-3">
                                 <span
                                     class="px-2 py-0.5 rounded-full text-xs font-medium"
-                                    :class="user.is_active ? 'badge-ok' : 'bg-red-100 text-red-700'"
+                                    :class="user.is_active ? 'badge-ok' : 'badge-danger'"
                                 >
                                     {{ user.is_active ? 'Aktif' : 'Nonaktif' }}
                                 </span>
                             </td>
                             <td class="px-6 py-3 text-right">
-                                <button @click="startEdit(user)" class="text-indigo-600 text-sm font-medium">Edit</button>
+                                <BaseButton size="sm" variant="ghost" @click="startEdit(user)">Edit</BaseButton>
                             </td>
                         </template>
                     </tr>
@@ -180,7 +171,7 @@ const submitEdit = (user) => {
                         <td colspan="4" class="px-6 py-12 text-center">
                             <div class="font-semibold t-ink">Belum ada learner</div>
                             <p class="text-sm t-muted mt-1">Tambahkan learner pertama atau import daftar learner melalui CSV.</p>
-                            <button @click="showCreate = true" class="btn btn-primary mt-4">Tambah learner</button>
+                            <BaseButton class="mt-4" @click="showCreate = true">Tambah learner</BaseButton>
                         </td>
                     </tr>
                 </tbody>

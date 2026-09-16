@@ -6,11 +6,12 @@
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"
+      :required="required"
       :disabled="disabled"
       :aria-invalid="!!error"
       :aria-describedby="describedBy"
       class="base-input"
-      @input="$emit('update:modelValue', $event.target.value)"
+      @input="onInput"
     />
     <p v-if="error" :id="id+'-err'" class="base-input-error" role="alert">{{ error }}</p>
     <p v-if="hint" :id="id+'-hint'" class="base-input-hint">{{ hint }}</p>
@@ -20,7 +21,7 @@
 <script setup>
 import { computed } from 'vue';
 const props = defineProps({
-  modelValue: String,
+  modelValue: [String, Number],
   label: String,
   type: { type: String, default: 'text' },
   placeholder: String,
@@ -28,8 +29,15 @@ const props = defineProps({
   error: String,
   id: { type: String, default: () => 'inp-' + Math.random().toString(36).slice(2, 8) },
   disabled: Boolean,
+  required: Boolean,
+  modelModifiers: { type: Object, default: () => ({}) },
 });
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
+
+const onInput = (event) => {
+  const value = props.modelModifiers.number ? Number(event.target.value) : event.target.value;
+  emit('update:modelValue', value);
+};
 
 const describedBy = computed(() => [
   props.error ? `${props.id}-err` : null,

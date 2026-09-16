@@ -4,6 +4,7 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
 import QuillEditor from '@/Components/QuillEditor.vue';
+import { BaseButton, BaseInput, BaseSelect, BaseTextarea } from '@/Components';
 
 const props = defineProps({
     module: Object,
@@ -14,6 +15,7 @@ const errors = computed(() => usePage().props.errors ?? {});
 const isEdit = computed(() => props.module !== null);
 
 const step = ref(1);
+const submitting = ref(false);
 const form = ref({
     title: props.module?.title ?? '',
     description: props.module?.description ?? '',
@@ -51,10 +53,13 @@ const prev = () => {
 };
 
 const submit = () => {
+    if (submitting.value) return;
+    submitting.value = true;
+    const options = { onFinish: () => (submitting.value = false) };
     if (isEdit.value) {
-        router.patch(route('platform.modules.update', props.module.id), form.value);
+        router.patch(route('platform.modules.update', props.module.id), form.value, options);
     } else {
-        router.post(route('platform.modules.store'), form.value);
+        router.post(route('platform.modules.store'), form.value, options);
     }
 };
 
@@ -100,19 +105,9 @@ const uploadHandler = async (file) => {
 
         <div class="card p-8 max-w-4xl mx-auto">
             <div v-if="step === 1" class="space-y-4 fade-in">
-                <div>
-                    <label class="text-sm font-medium t-ink">Judul Modul</label>
-                    <input v-model="form.title" type="text" required class="input mt-1 w-full" placeholder="Contoh: Phishing Awareness Fundamentals" />
-                    <p v-if="errors.title" class="text-xs text-red-600 mt-1">{{ errors.title }}</p>
-                </div>
-                <div>
-                    <label class="text-sm font-medium t-ink">Durasi (menit)</label>
-                    <input v-model.number="form.duration_minutes" type="number" min="1" required class="input mt-1 w-full" />
-                </div>
-                <div>
-                    <label class="text-sm font-medium t-ink">Deskripsi Singkat</label>
-                    <textarea v-model="form.description" rows="3" class="input mt-1 w-full" placeholder="Ringkasan untuk katalog..."></textarea>
-                </div>
+                <BaseInput v-model="form.title" label="Judul Modul" required placeholder="Contoh: Phishing Awareness Fundamentals" :error="errors.title" />
+                <BaseInput v-model.number="form.duration_minutes" label="Durasi (menit)" type="number" required :error="errors.duration_minutes" />
+                <BaseTextarea v-model="form.description" label="Deskripsi Singkat" :rows="3" placeholder="Ringkasan untuk katalog..." :error="errors.description" />
             </div>
 
             <div v-if="step === 2" class="space-y-4 fade-in">
@@ -120,33 +115,23 @@ const uploadHandler = async (file) => {
                     Tulis materi dengan rich text editor. Toolbar: format teks, list, gambar (upload ke storage private), video (embed YouTube/Vimeo).
                 </p>
                 <QuillEditor v-model="form.content_html" :upload-handler="uploadHandler" placeholder="Tulis materi modul di sini..." />
-                <p v-if="errors.content_html" class="text-xs text-red-600 mt-1">{{ errors.content_html }}</p>
+                <p v-if="errors.content_html" class="text-xs mt-1" style="color: var(--danger)" role="alert">{{ errors.content_html }}</p>
             </div>
 
             <div v-if="step === 3" class="space-y-4 fade-in">
                 <p v-if="quizzes.length === 0" class="text-sm t-muted">Kuis pretest/posttest ditetapkan setelah modul dibuat, lewat halaman Edit modul ini (kuis wajib terikat pada modul).</p>
-                <div>
-                    <label class="text-sm font-medium t-ink">Pretest (opsional)</label>
-                    <select v-model="form.pretest_quiz_id" :disabled="!isEdit" class="input mt-1 w-full">
+                <BaseSelect v-model="form.pretest_quiz_id" label="Pretest (opsional)" hint="Baseline pengetahuan sebelum materi. Tidak menghitung score akhir." :error="errors.pretest_quiz_id" :disabled="!isEdit">
                         <option :value="null">Tanpa pretest</option>
                         <option v-for="quiz in quizzes.filter(q => q.purpose === 'pretest')" :key="'pre-' + quiz.id" :value="quiz.id">
                             {{ quiz.title }} (passing {{ quiz.passing_score }}%)
                         </option>
-                    </select>
-                    <p class="text-xs t-muted mt-1">Baseline pengetahuan sebelum materi. Tidak menghitung score akhir.</p>
-                    <p v-if="errors.pretest_quiz_id" class="text-xs text-red-600 mt-1">{{ errors.pretest_quiz_id }}</p>
-                </div>
-                <div>
-                    <label class="text-sm font-medium t-ink">Posttest</label>
-                    <select v-model="form.posttest_quiz_id" :disabled="!isEdit" class="input mt-1 w-full">
+                </BaseSelect>
+                <BaseSelect v-model="form.posttest_quiz_id" label="Posttest" hint="Sumber score akhir modul dan learning gain." :error="errors.posttest_quiz_id" :disabled="!isEdit">
                         <option :value="null">Tanpa posttest</option>
                         <option v-for="quiz in quizzes.filter(q => q.purpose === 'posttest')" :key="'post-' + quiz.id" :value="quiz.id">
                             {{ quiz.title }} (passing {{ quiz.passing_score }}%)
                         </option>
-                    </select>
-                    <p class="text-xs t-muted mt-1">Sumber score akhir modul dan learning gain.</p>
-                    <p v-if="errors.posttest_quiz_id" class="text-xs text-red-600 mt-1">{{ errors.posttest_quiz_id }}</p>
-                </div>
+                </BaseSelect>
                 <div class="rounded-lg p-4 text-sm bg-surface2 t-muted">
                     Belum punya quiz? Buat di halaman <a :href="route('platform.quizzes.index')" class="font-semibold underline">Quizzes</a>, lalu kembali ke wizard ini.
                 </div>
@@ -185,10 +170,10 @@ const uploadHandler = async (file) => {
             </div>
 
             <div class="flex justify-between mt-8 pt-6 border-t b-line">
-                <button v-if="step > 1" class="btn btn-secondary" @click="prev">Sebelumnya</button>
+                <BaseButton v-if="step > 1" variant="secondary" :disabled="submitting" @click="prev">Sebelumnya</BaseButton>
                 <span v-else></span>
-                <button v-if="step < 4" class="btn btn-primary" :disabled="!canNext" @click="next">Selanjutnya</button>
-                <button v-else class="btn btn-primary" @click="submit">{{ isEdit ? 'Update Modul' : 'Simpan Modul' }}</button>
+                <BaseButton v-if="step < 4" :disabled="!canNext || submitting" @click="next">Selanjutnya</BaseButton>
+                <BaseButton v-else :loading="submitting" @click="submit">{{ submitting ? 'Menyimpan...' : (isEdit ? 'Update Modul' : 'Simpan Modul') }}</BaseButton>
             </div>
         </div>
     </AppLayout>
