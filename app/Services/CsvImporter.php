@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Support\Audit\Audit;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -12,8 +13,6 @@ use Illuminate\Validation\ValidationException;
 
 class CsvImporter
 {
-    private array $allowedRoles = ['user', 'tenant_admin'];
-
     private int $maxRows = 500;
 
     public function importUsers(UploadedFile $file, string $tenantId, int $actorId): array
@@ -23,12 +22,13 @@ class CsvImporter
             throw new \RuntimeException('Gagal membuka file CSV.');
         }
 
-        // Skip header
         $header = fgetcsv($handle);
-        if (! $header || strtolower(trim($header[0] ?? '')) !== 'name') {
+        $normalizedHeader = array_map(fn ($column) => strtolower(trim((string) $column)), $header ?: []);
+        if (($normalizedHeader[0] ?? null) !== 'name' || ($normalizedHeader[1] ?? null) !== 'email') {
             fclose($handle);
-            throw ValidationException::withMessages(['file' => 'Format CSV tidak valid. Kolom pertama harus "name".']);
+            throw ValidationException::withMessages(['file' => 'Format CSV tidak valid. Gunakan kolom "name,email" dan opsional "role".']);
         }
+        $roleIndex = array_search('role', $normalizedHeader, true);
 
         $rows = [];
         $rowCount = 0;
@@ -40,26 +40,26 @@ class CsvImporter
                 throw ValidationException::withMessages(['file' => "Maksimal {$this->maxRows} baris data."]);
             }
 
-            if (count($data) < 3) {
+            if (count($data) < 2) {
                 continue;
             }
 
             $name = trim($data[0]);
             $email = trim($data[1]);
-            $role = trim($data[2]);
 
             // Sanitasi CSV Injection (Excel Formula Injection)
             $name = $this->sanitizeCsvInjection($name);
 
-            if (! in_array($role, $this->allowedRoles)) {
+            if ($roleIndex !== false && trim($data[$roleIndex] ?? '') !== UserRole::User->value) {
+                $role = trim($data[$roleIndex] ?? '');
                 fclose($handle);
-                throw ValidationException::withMessages(['file' => "Role '{$role}' tidak valid pada baris ke-{$rowCount}. Hanya 'user' atau 'tenant_admin' yang diperbolehkan."]);
+                throw ValidationException::withMessages(['file' => "Role '{$role}' tidak diizinkan pada baris ke-{$rowCount}. Import Tenant Admin hanya menerima role 'user'."]);
             }
 
             $rows[] = [
                 'name' => $name,
                 'email' => $email,
-                'role' => $role,
+                'role' => UserRole::User->value,
                 'tenant_id' => $tenantId, // Dipaksa dari server
                 'password' => bcrypt(Str::random(32)),
                 'is_active' => true,

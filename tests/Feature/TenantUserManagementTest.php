@@ -18,14 +18,14 @@ test('tenant admin lists only own tenant users', function () {
     $response->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Tenant/Users/Index')
-            ->has('users', 2)
+            ->has('users', 1)
         );
 
     $html = $response->getContent();
     expect($html)->toContain('Member A')->not->toContain('Member B');
 });
 
-test('tenant admin creates user into own tenant; injected tenant_id ignored', function () {
+test('tenant admin creates learner in own tenant and ignores injected tenant and role', function () {
     $tenantA = Tenant::factory()->create();
     $tenantB = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenantA->id]);
@@ -33,26 +33,34 @@ test('tenant admin creates user into own tenant; injected tenant_id ignored', fu
     $this->actingAs($admin)->post(route('tenant.users.store'), [
         'name' => 'New Member',
         'email' => 'new@member.local',
-        'role' => 'user',
+        'role' => 'tenant_admin',
         'tenant_id' => $tenantB->id, // percobaan injeksi — harus diabaikan
-    ])->assertRedirect(route('tenant.users.index'));
+    ])->assertRedirect(route('tenant.users.index'))
+        ->assertSessionHas('success');
 
     $this->assertDatabaseHas('users', [
         'email' => 'new@member.local',
         'tenant_id' => $tenantA->id,
+        'role' => 'user',
     ]);
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.created']);
 });
 
-test('tenant admin cannot create super admin', function () {
+test('tenant admin request cannot create privileged user', function () {
     $admin = User::factory()->tenantAdmin()->create();
 
     $this->actingAs($admin)->post(route('tenant.users.store'), [
         'name' => 'Evil',
         'email' => 'evil@local',
         'role' => 'super_admin',
-    ])->assertSessionHasErrors('role');
+    ])->assertRedirect(route('tenant.users.index'));
+
+    $this->assertDatabaseHas('users', [
+        'email' => 'evil@local',
+        'role' => 'user',
+        'tenant_id' => $admin->tenant_id,
+    ]);
 });
 
 test('tenant admin cannot update user from another tenant', function () {
@@ -98,7 +106,7 @@ test('regular user cannot access tenant user management', function () {
     $this->actingAs($user)->get(route('tenant.users.index'))->assertForbidden();
 });
 
-test('role change and disable write audit logs', function () {
+test('tenant admin can deactivate learner without changing role', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $member = User::factory()->create(['tenant_id' => $tenant->id]);
@@ -110,25 +118,25 @@ test('role change and disable write audit logs', function () {
         'is_active' => false,
     ])->assertRedirect(route('tenant.users.index'));
 
-    $this->assertDatabaseHas('audit_logs', ['action' => 'user.role_changed']);
+    $this->assertDatabaseHas('users', ['id' => $member->id, 'role' => 'user', 'is_active' => false]);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'user.role_changed']);
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.disabled']);
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.updated']);
 });
 
-test('tenant admin cannot promote a member to super admin', function () {
+test('tenant admin cannot promote a learner through a manipulated update', function () {
     $admin = User::factory()->tenantAdmin()->create();
     $member = User::factory()->create(['tenant_id' => $admin->tenant_id]);
-    $original = $member->fresh()->getAttributes();
-
     $this->actingAs($admin)->patch(route('tenant.users.update', $member), [
         'name' => 'Changed',
         'email' => $member->email,
-        'role' => 'super_admin',
-        'is_active' => false,
-    ])->assertSessionHasErrors('role');
+        'role' => 'tenant_admin',
+        'is_active' => true,
+    ])->assertRedirect(route('tenant.users.index'));
 
-    expect($member->fresh()->getAttributes())->toBe($original);
-    $this->assertDatabaseMissing('audit_logs', ['action' => 'user.updated']);
+    expect($member->fresh()->role->value)->toBe('user')
+        ->and($member->fresh()->name)->toBe('Changed');
+    $this->assertDatabaseHas('audit_logs', ['action' => 'user.updated']);
 });
 
 test('tenant admin updates member profile without accepting injected tenant_id', function () {

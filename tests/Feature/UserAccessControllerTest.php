@@ -13,19 +13,18 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->withoutVite();
     $this->tenant = Tenant::factory()->create();
-    $this->admin = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'tenant_admin']);
-    $this->user = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'user']);
-    $this->module1 = TrainingModule::create(['title' => 'Modul 1', 'content' => 'Konten', 'duration_minutes' => 10, 'is_active' => true, 'status' => 'published']);
-    $this->module2 = TrainingModule::create(['title' => 'Modul 2', 'content' => 'Konten', 'duration_minutes' => 10, 'is_active' => true, 'status' => 'published']);
+    $this->admin = User::factory()->tenantAdmin()->create(['tenant_id' => $this->tenant->id]);
+    $this->user = User::factory()->create(['tenant_id' => $this->tenant->id]);
+    $this->module = TrainingModule::create([
+        'title' => 'Modul 1', 'content' => 'Konten', 'duration_minutes' => 10,
+        'is_active' => true, 'status' => 'published',
+    ]);
     $this->package = Package::create([
-        'name' => 'Pro',
-        'slug' => 'pro',
-        'price_monthly' => 1500,
-        'max_users' => 100,
-        'includes_all_modules' => true,
+        'name' => 'Pro', 'slug' => 'pro', 'price_monthly' => 1500,
+        'max_users' => 100, 'includes_all_modules' => true,
         'features' => ['training', 'phishing'],
     ]);
-    $this->subscription = Subscription::create([
+    Subscription::create([
         'tenant_id' => $this->tenant->id,
         'package_id' => $this->package->id,
         'status' => 'active',
@@ -33,205 +32,154 @@ beforeEach(function () {
     ]);
 });
 
-test('tenant admin can grant module access via HTTP', function () {
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => true,
-    ]);
-
-    $response->assertOk();
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'is_allowed' => true,
-    ]);
+test('tenant admin cannot open tenant module access page', function () {
+    $this->actingAs($this->admin)
+        ->get("/tenant/users/{$this->user->id}/access")
+        ->assertNotFound();
 });
 
-test('tenant admin can revoke module access via HTTP', function () {
-    UserModuleAccess::create([
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'tenant_id' => $this->tenant->id,
-        'is_allowed' => true,
-    ]);
+test('tenant admin cannot post tenant module access override', function () {
+    $this->actingAs($this->admin)
+        ->post("/tenant/users/{$this->user->id}/access", [
+            'module_ids' => [$this->module->id],
+            'is_allowed' => false,
+        ])
+        ->assertNotFound();
 
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => false,
-    ]);
-
-    $response->assertOk();
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'is_allowed' => false,
-    ]);
-});
-
-test('tenant admin cannot modify user from other tenant (404 - existence hiding)', function () {
-    $otherTenant = Tenant::factory()->create();
-    $otherUser = User::factory()->create(['tenant_id' => $otherTenant->id]);
-
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $otherUser), [
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => true,
-    ]);
-
-    $response->assertNotFound();
-});
-
-test('regular user cannot access endpoint (403)', function () {
-    $response = $this->actingAs($this->user)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => true,
-    ]);
-
-    $response->assertForbidden();
-});
-
-test('validation: module_id not in package returns 422', function () {
-    $this->package->update(['includes_all_modules' => false]);
-    $this->package->modules()->attach([$this->module1->id]);
-
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module2->id],
-        'is_allowed' => true,
-    ]);
-
-    $response->assertStatus(422);
-    $response->assertJson(['error' => 'Modul tidak termasuk dalam paket tenant']);
-});
-
-test('mixed entitled and unentitled modules leave access unchanged', function (bool $allowed) {
-    $this->package->update(['includes_all_modules' => false]);
-    $this->package->modules()->attach([$this->module1->id]);
-    $access = UserModuleAccess::create([
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'tenant_id' => $this->tenant->id,
-        'is_allowed' => ! $allowed,
-    ]);
-    $original = $access->fresh()->getAttributes();
-
-    $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id, $this->module2->id],
-        'is_allowed' => $allowed,
-    ])->assertStatus(422);
-
-    expect($access->fresh()->getAttributes())->toBe($original);
     $this->assertDatabaseMissing('user_module_access', [
         'user_id' => $this->user->id,
-        'training_module_id' => $this->module2->id,
+        'training_module_id' => $this->module->id,
     ]);
-    $this->assertDatabaseMissing('audit_logs', [
-        'action' => $allowed ? 'user.module_access_granted' : 'user.module_access_revoked',
-    ]);
-})->with(['grant' => true, 'revoke' => false]);
+});
 
-test('super admin can override user access', function () {
-    $superAdmin = User::factory()->create(['role' => 'super_admin', 'tenant_id' => null]);
+test('regular learner cannot access tenant module access endpoints', function () {
+    $this->actingAs($this->user)
+        ->get("/tenant/users/{$this->user->id}/access")
+        ->assertNotFound();
 
-    $response = $this->actingAs($superAdmin)->post(route('platform.tenants.user-access.update', $this->tenant), [
+    $this->actingAs($this->user)
+        ->post("/tenant/users/{$this->user->id}/access", [
+            'module_ids' => [$this->module->id],
+            'is_allowed' => false,
+        ])
+        ->assertNotFound();
+});
+
+test('super admin platform override remains functional', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($superAdmin)->post(route('platform.tenants.user-access.update', $this->tenant), [
         'user_id' => $this->user->id,
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => true,
-    ]);
+        'module_ids' => [$this->module->id],
+        'is_allowed' => false,
+    ])->assertOk();
 
-    $response->assertOk();
     $this->assertDatabaseHas('user_module_access', [
         'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
+        'training_module_id' => $this->module->id,
+        'is_allowed' => false,
+        'granted_by' => $superAdmin->id,
+    ]);
+    $this->assertDatabaseHas('audit_logs', [
+        'action' => 'user.module_access_revoked',
+        'subject_id' => $this->module->id,
+        'actor_user_id' => $superAdmin->id,
+    ]);
+});
+
+test('existing module overrides are preserved when tenant routes are unavailable', function () {
+    $override = UserModuleAccess::create([
+        'tenant_id' => $this->tenant->id,
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module->id,
+        'is_allowed' => false,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get("/tenant/users/{$this->user->id}/access")
+        ->assertNotFound();
+
+    $this->assertDatabaseHas('user_module_access', ['id' => $override->id, 'is_allowed' => false]);
+});
+
+test('tenant admin post cannot alter an existing platform override', function () {
+    $override = UserModuleAccess::create([
+        'tenant_id' => $this->tenant->id,
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module->id,
+        'is_allowed' => false,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->post("/tenant/users/{$this->user->id}/access", [
+            'module_ids' => [$this->module->id],
+            'is_allowed' => true,
+        ])
+        ->assertNotFound();
+
+    expect($override->fresh()->is_allowed)->toBeFalse();
+});
+
+test('learner post cannot alter an existing platform override', function () {
+    $override = UserModuleAccess::create([
+        'tenant_id' => $this->tenant->id,
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module->id,
+        'is_allowed' => false,
+    ]);
+
+    $this->actingAs($this->user)
+        ->post("/tenant/users/{$this->user->id}/access", [
+            'module_ids' => [$this->module->id],
+            'is_allowed' => true,
+        ])
+        ->assertNotFound();
+
+    expect($override->fresh()->is_allowed)->toBeFalse();
+});
+
+test('super admin can open platform user access page', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($superAdmin)
+        ->get(route('platform.tenants.user-access.show', $this->tenant))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Platform/Tenants/UserAccess')
+            ->where('tenant.id', $this->tenant->id)
+        );
+});
+
+test('super admin can grant module access through platform route', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($superAdmin)->post(route('platform.tenants.user-access.update', $this->tenant), [
+        'user_id' => $this->user->id,
+        'module_ids' => [$this->module->id],
+        'is_allowed' => true,
+    ])->assertOk();
+
+    $this->assertDatabaseHas('user_module_access', [
+        'user_id' => $this->user->id,
+        'training_module_id' => $this->module->id,
         'is_allowed' => true,
         'granted_by' => $superAdmin->id,
     ]);
 });
 
-test('super admin actions logged with actor_id', function () {
-    $superAdmin = User::factory()->create(['role' => 'super_admin', 'tenant_id' => null]);
+test('platform override rejects a user from another tenant', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $otherTenant = Tenant::factory()->create();
+    $otherUser = User::factory()->create(['tenant_id' => $otherTenant->id]);
 
     $this->actingAs($superAdmin)->post(route('platform.tenants.user-access.update', $this->tenant), [
-        'user_id' => $this->user->id,
-        'module_ids' => [$this->module1->id],
-        'is_allowed' => true,
-    ]);
-
-    $this->assertDatabaseHas('audit_logs', [
-        'action' => 'user.module_access_granted',
-        'subject_id' => $this->module1->id,
-        'actor_user_id' => $superAdmin->id,
-    ]);
-});
-
-test('grant multiple modules at once', function () {
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id, $this->module2->id],
-        'is_allowed' => true,
-    ]);
-
-    $response->assertOk();
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'is_allowed' => true,
-    ]);
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module2->id,
-        'is_allowed' => true,
-    ]);
-});
-
-test('revoke multiple modules at once', function () {
-    UserModuleAccess::create([
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'tenant_id' => $this->tenant->id,
-        'is_allowed' => true,
-    ]);
-    UserModuleAccess::create([
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module2->id,
-        'tenant_id' => $this->tenant->id,
-        'is_allowed' => true,
-    ]);
-
-    $response = $this->actingAs($this->admin)->post(route('tenant.users.access.update', $this->user), [
-        'module_ids' => [$this->module1->id, $this->module2->id],
+        'user_id' => $otherUser->id,
+        'module_ids' => [$this->module->id],
         'is_allowed' => false,
-    ]);
+    ])->assertNotFound();
 
-    $response->assertOk();
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'is_allowed' => false,
+    $this->assertDatabaseMissing('user_module_access', [
+        'user_id' => $otherUser->id,
+        'training_module_id' => $this->module->id,
     ]);
-    $this->assertDatabaseHas('user_module_access', [
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module2->id,
-        'is_allowed' => false,
-    ]);
-});
-
-test('endpoint returns current access state', function () {
-    UserModuleAccess::create([
-        'user_id' => $this->user->id,
-        'training_module_id' => $this->module1->id,
-        'tenant_id' => $this->tenant->id,
-        'is_allowed' => false,
-    ]);
-
-    $response = $this->actingAs($this->admin)->get(route('tenant.users.access.show', $this->user));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('Tenant/Users/Access')
-        ->has('user')
-        ->has('modules', 2)
-        ->where('user.id', $this->user->id)
-        ->where('modules.0.id', $this->module1->id)
-        ->where('modules.0.is_allowed', false)
-        ->where('modules.1.id', $this->module2->id)
-        ->where('modules.1.is_allowed', true)
-    );
 });

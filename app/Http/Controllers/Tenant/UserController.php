@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\CsvImporter;
@@ -23,6 +24,7 @@ class UserController extends Controller
 
         // Explicit scoping di application layer (RLS tetap berjaga di bawah)
         $users = User::where('tenant_id', $request->user()->tenant_id)
+            ->where('role', UserRole::User->value)
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role', 'is_active', 'created_at']);
 
@@ -41,7 +43,6 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'string', Rule::in(['user', 'tenant_admin'])],
         ]);
 
         try {
@@ -49,7 +50,7 @@ class UserController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Str::random(32), // password sementara; user pakai flow reset
-                'role' => $validated['role'],
+                'role' => UserRole::User->value,
                 'tenant_id' => $request->user()->tenant_id, // SERVER-SIDE, bukan dari request
                 'is_active' => true,
             ]);
@@ -61,9 +62,9 @@ class UserController extends Controller
             ]);
         }
 
-        Audit::log('user.created', $user, ['role' => $validated['role']]);
+        Audit::log('user.created', $user, ['role' => UserRole::User->value]);
 
-        return redirect()->route('tenant.users.index');
+        return redirect()->route('tenant.users.index')->with('success', 'Learner berhasil ditambahkan.');
     }
 
     public function update(Request $request, User $user)
@@ -72,28 +73,28 @@ class UserController extends Controller
 
         $actor = $request->user();
 
+        if ($actor->id === $user->id) {
+            abort(403, 'Anda tidak dapat mengubah akun sendiri dari halaman ini.');
+        }
+
+        if (! $user->isUser()) {
+            abort(403, 'Tenant Admin hanya dapat mengelola akun learner.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['required', 'string', Rule::in(['user', 'tenant_admin'])],
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $oldRole = $user->role->value;
-        $roleChanged = $validated['role'] !== $oldRole;
         $statusChanged = (bool) $validated['is_active'] !== $user->is_active;
 
-        // Proteksi lockout: jangan bisa menurunkan role / mematikan akun sendiri
-        if ($actor->id === $user->id && ($roleChanged || $statusChanged)) {
-            abort(403, 'Anda tidak dapat mengubah role atau status akun sendiri.');
-        }
-
-        $user->fill($validated);
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'is_active' => $validated['is_active'],
+        ]);
         $user->save();
-
-        if ($roleChanged) {
-            Audit::log('user.role_changed', $user, ['from' => $oldRole, 'to' => $validated['role']]);
-        }
 
         if ($statusChanged) {
             Audit::log($validated['is_active'] ? 'user.enabled' : 'user.disabled', $user);
@@ -101,7 +102,7 @@ class UserController extends Controller
 
         Audit::log('user.updated', $user);
 
-        return redirect()->route('tenant.users.index');
+        return redirect()->route('tenant.users.index')->with('success', 'Data learner berhasil diperbarui.');
     }
 
     public function import(Request $request)

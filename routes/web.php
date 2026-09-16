@@ -20,7 +20,6 @@ use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentCo
 use App\Http\Controllers\Tenant\PhishingCampaignController as TenantPhishingController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
-use App\Http\Controllers\Tenant\UserAccessController as TenantUserAccessController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
 use App\Http\Controllers\TenantReportController;
 use App\Http\Controllers\User\BadgeController;
@@ -239,9 +238,6 @@ Route::middleware('auth')->group(function () {
             Route::post('/users', [TenantUserController::class, 'store'])->name('users.store');
             Route::patch('/users/{user}', [TenantUserController::class, 'update'])->name('users.update');
             Route::post('/users/import', [TenantUserController::class, 'import'])->name('users.import');
-            Route::get('/users/{user}/access', [TenantUserAccessController::class, 'show'])->name('users.access.show');
-            Route::post('/users/{user}/access', [TenantUserAccessController::class, 'update'])->name('users.access.update');
-
             // Route Assignments
             Route::get('/assignments', [TenantAssignmentController::class, 'index'])->name('assignments.index');
             Route::post('/assignments', [TenantAssignmentController::class, 'store'])->name('assignments.store');
