@@ -73,7 +73,7 @@ Route::middleware('auth')->group(function () {
         ->prefix('platform')
         ->name('platform.')
         ->group(function () {
-            Route::get('/dashboard', [PlatformReportController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [PlatformReportController::class, 'dashboard'])->name('dashboard');
 
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
@@ -118,7 +118,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/ctf/{challenge}/archive', [PlatformCtfController::class, 'archive'])->name('ctf.archive');
 
             // Route Reports
-            Route::get('/reports', [PlatformReportController::class, 'index'])->name('reports');
+            Route::get('/reports', [PlatformReportController::class, 'reports'])->name('reports');
 
             // Route Packages
             Route::get('/packages', [PlatformPackageController::class, 'index'])->name('packages.index');

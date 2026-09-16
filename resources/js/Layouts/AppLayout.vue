@@ -42,13 +42,15 @@ const menus = computed(() => {
             { section: 'Platform', items: [
                 { label: 'Dashboard', route: 'platform.dashboard' },
                 { label: 'Tenants', route: 'platform.tenants.index' },
-                { label: 'Reports', route: 'platform.reports' },
-                { label: 'Packages & Billing', route: 'platform.packages.index' },
-                { label: 'Billing Requests', route: 'platform.billing.requests' },
                 { label: 'Users', route: 'platform.users.index' },
             ]},
-            { section: 'Konten', items: [
-                { label: 'Studio Konten', route: 'platform.modules.index' },
+            { section: 'Operations', items: [
+                { label: 'Reports', route: 'platform.reports' },
+                { label: 'Packages', route: 'platform.packages.index' },
+                { label: 'Billing Requests', route: 'platform.billing.requests' },
+            ]},
+            { section: 'Content', items: [
+                { label: 'Modul Training', route: 'platform.modules.index' },
                 { label: 'Case Studies', route: 'platform.cases.index' },
                 { label: 'CTF', route: 'platform.ctf.index' },
             ]},
@@ -60,31 +62,32 @@ const menus = computed(() => {
             { section: 'Organisasi', items: [
                 { label: 'Dashboard', route: 'tenant.dashboard' },
                 { label: 'Users', route: 'tenant.users.index' },
-                { label: 'Billing', route: 'tenant.billing.index' },
-            ]},
-            { section: 'Training', items: [
                 { label: 'Penugasan', route: 'tenant.assignments.index' },
-                { label: 'Reports', route: 'tenant.reports' },
             ]},
             { section: 'Simulasi', items: [
-                { label: 'Tabletop', route: 'tenant.ttx.index', locked: !entitlements?.features?.includes('ttx') },
-                { label: 'Simulasi Tabletop', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
-                { label: 'Simulasi Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
+                { label: 'Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
+                { label: 'Tabletop', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
+            ]},
+            { section: 'Analitik', items: [
+                { label: 'Reports', route: 'tenant.reports' },
+            ]},
+            { section: 'Langganan', items: [
+                { label: 'Billing', route: 'tenant.billing.index' },
             ]},
         ];
     }
 
     return [
-        { section: 'Saya', items: [
-            { label: 'Dashboard', route: 'user.dashboard' },
-            { label: 'My Score', route: 'user.score' },
-            { label: 'Badge Saya', route: 'user.badges.index' },
-            { label: 'Leaderboard', route: 'user.leaderboard.index' },
-        ]},
         { section: 'Belajar', items: [
+            { label: 'Dashboard', route: 'user.dashboard' },
             { label: 'Training', route: 'user.training.index' },
             { label: 'Case Studies', route: 'user.cases.index', locked: !entitlements?.features?.includes('case_studies') },
             { label: 'CTF', route: 'user.ctf.index', locked: !entitlements?.features?.includes('ctf') },
+        ]},
+        { section: 'Progress', items: [
+            { label: 'Skor Saya', route: 'user.score' },
+            { label: 'Badge', route: 'user.badges.index' },
+            { label: 'Leaderboard', route: 'user.leaderboard.index' },
         ]},
     ];
 });
