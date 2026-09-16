@@ -10,6 +10,7 @@ const props = defineProps({
     posttestQuiz: Object,
     pretestAttempt: Object,
     posttestAttempt: Object,
+    lifecycle: Object,
 });
 
 const isCompleted = computed(() => props.assignment.status === 'completed');
@@ -25,11 +26,7 @@ const statusLabel = computed(() => {
     return 'Ditugaskan';
 });
 
-const stage = computed(() => {
-    if (props.pretestQuiz && !props.pretestAttempt) return 'pretest';
-    if (props.posttestAttempt) return 'result';
-    return 'materi';
-});
+const stage = computed(() => props.lifecycle?.stage ?? 'configuration_unavailable');
 
 const pretestUrl = computed(() => route('user.training.quiz', { assignment: props.assignment.id, purpose: 'pretest' }));
 const posttestUrl = computed(() => route('user.training.quiz', { assignment: props.assignment.id, purpose: 'posttest' }));
@@ -78,14 +75,19 @@ const markComplete = () => {
                 </div>
             </div>
 
-            <div v-if="stage === 'pretest'" class="rounded-xl border b-line bg-app p-6 sm:p-8">
+            <div v-if="stage === 'configuration_unavailable'" class="rounded-xl border b-line bg-app p-6 sm:p-8" role="status">
+                <h2 class="font-display text-xl font-semibold t-ink mb-2">Assessment belum tersedia</h2>
+                <p class="max-w-2xl text-sm leading-6 t-muted">{{ lifecycle.configuration_message }}</p>
+            </div>
+
+            <div v-else-if="stage === 'pretest_required'" class="rounded-xl border b-line bg-app p-6 sm:p-8">
                 <p class="text-xs font-semibold uppercase tracking-wide t-muted mb-2">Tahap 1 dari 4</p>
                 <h2 class="font-display text-xl font-semibold t-ink mb-2">Mulai dengan pretest</h2>
                 <p class="max-w-2xl text-sm leading-6 t-muted mb-5">Ukur pemahaman awal Anda sebelum mempelajari materi. Hasil ini menjadi titik pembanding dan tidak memengaruhi nilai akhir.</p>
-                <Link :href="pretestUrl" class="btn btn-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">Mulai Pretest</Link>
+                <Link v-if="lifecycle.can_start_pretest" :href="pretestUrl" class="btn btn-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">Mulai Pretest</Link>
             </div>
 
-            <div v-else-if="stage === 'materi'" class="space-y-6">
+            <div v-else-if="stage !== 'completed'" class="space-y-6">
                 <div class="flex items-center gap-3 rounded-xl border b-line bg-app px-4 py-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg badge-ok">
                         <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,13 +102,19 @@ const markComplete = () => {
                 <div class="prose max-w-none" v-html="module.content_html"></div>
 
                 <div class="border-t b-line pt-6 flex flex-col gap-3">
-                    <template v-if="posttestQuiz && !isCompleted">
+                    <template v-if="posttestQuiz && lifecycle.can_start_posttest">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wide t-muted mb-1">Tahap 3 dari 4</p>
                             <p class="text-sm font-medium t-ink">Uji pemahaman Anda melalui posttest.</p>
                         </div>
                         <Link :href="posttestUrl" class="btn btn-primary w-full justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">Lanjut ke Posttest</Link>
                     </template>
+                    <div v-else-if="stage === 'posttest_cooldown'" class="rounded-xl border b-line bg-app p-4 text-sm t-muted" role="status">
+                        Attempt berikutnya tersedia setelah masa tunggu 2 jam. Anda telah menggunakan {{ lifecycle.posttest_attempts_used }} dari {{ lifecycle.posttest_attempts_max }} attempt.
+                    </div>
+                    <div v-else-if="stage === 'attempts_exhausted'" class="rounded-xl border b-line bg-app p-4 text-sm t-muted" role="status">
+                        Batas attempt posttest telah tercapai. Hubungi pengelola jika status training belum diperbarui.
+                    </div>
                     <button v-else-if="!posttestQuiz && !isCompleted" class="btn btn-primary w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" :disabled="completing" @click="markComplete">{{ completing ? 'Memproses...' : 'Tandai Selesai' }}</button>
                     <span v-else class="text-center text-sm t-muted">Materi ini sudah selesai dipelajari.</span>
                 </div>
@@ -116,7 +124,7 @@ const markComplete = () => {
                 <p class="text-xs font-semibold uppercase tracking-wide t-muted mb-2">Tahap 4 dari 4</p>
                 <h2 class="font-display text-xl font-semibold t-ink mb-2">Modul selesai</h2>
                 <p class="max-w-2xl text-sm leading-6 t-muted mb-5">Anda telah menyelesaikan posttest. Tinjau hasilnya untuk melihat perkembangan pemahaman Anda.</p>
-                <Link :href="route('user.quiz.result', posttestAttempt.id)" class="btn btn-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">Lihat Hasil dan Learning Gain</Link>
+                <Link v-if="posttestAttempt" :href="route('user.quiz.result', posttestAttempt.id)" class="btn btn-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2">Lihat Hasil dan Learning Gain</Link>
             </div>
         </div>
     </AppLayout>

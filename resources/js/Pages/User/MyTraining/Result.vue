@@ -9,8 +9,14 @@ const props = defineProps({
 });
 
 const learningGain = computed(() => {
-    if (props.assignment?.pretest_score === null || props.assignment?.pretest_score === undefined || props.attempt?.score === null || props.attempt?.score === undefined) return null;
-    return props.attempt.score - props.assignment.pretest_score;
+    if (props.assignment?.pretest_score === null || props.assignment?.pretest_score === undefined || props.assignment?.score === null || props.assignment?.score === undefined) return null;
+    return props.assignment.score - props.assignment.pretest_score;
+});
+
+const resultMessage = computed(() => {
+    if (props.attempt.passed) return 'Nilai Anda sudah memenuhi standar kelulusan.';
+    if (props.assignment?.status === 'completed') return 'Training telah selesai. Nilai terbaik tetap tersimpan sebagai catatan kompetensi Anda.';
+    return 'Pelajari kembali materi dan coba lagi setelah masa tunggu berakhir.';
 });
 </script>
 
@@ -30,7 +36,7 @@ const learningGain = computed(() => {
                     {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
                 </span>
                 <p class="mt-4 t-muted">
-                    {{ attempt.passed ? 'Nilai Anda sudah memenuhi standar kelulusan.' : 'Pelajari kembali materi dan coba lagi untuk mencapai nilai kelulusan.' }}
+                    {{ resultMessage }}
                 </p>
             </div>
 
@@ -40,7 +46,7 @@ const learningGain = computed(() => {
                     {{ learningGain > 0 ? '+' : '' }}{{ learningGain }}%
                 </div>
                 <div class="text-sm mt-1 t-muted">
-                    Perbandingan nilai pretest {{ assignment.pretest_score }}% dan hasil quiz {{ attempt.score }}%.
+                    Perbandingan nilai pretest {{ assignment.pretest_score }}% dan nilai posttest terbaik {{ assignment.score }}%.
                 </div>
             </div>
 

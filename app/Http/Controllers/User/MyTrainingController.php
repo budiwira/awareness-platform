@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\ModuleAssignment;
 use App\Models\QuizAttempt;
+use App\Services\AssessmentLifecycle;
 use App\Services\TenantEntitlement;
 use App\Services\UserAccessManager;
 use App\Support\Audit\Audit;
@@ -75,23 +76,11 @@ class MyTrainingController extends Controller
 
         $assignment->load(['module.pretestQuiz', 'module.posttestQuiz']);
         $module = $assignment->module;
-
-        $pretestAttempt = $module->pretest_quiz_id
-            ? QuizAttempt::where('quiz_id', $module->pretest_quiz_id)
-                ->where('user_id', auth()->id())
-                ->where('status', 'submitted')
-                ->latest('submitted_at')
-                ->first()
-            : null;
-
-        $posttestAttempt = $module->posttest_quiz_id
-            ? QuizAttempt::where('quiz_id', $module->posttest_quiz_id)
-                ->where('user_id', auth()->id())
-                ->whereIn('status', ['submitted', 'expired'])
-                ->where('passed', true)
-                ->latest('submitted_at')
-                ->first()
-            : null;
+        $lifecycle = app(AssessmentLifecycle::class)->state($assignment);
+        $pretestAttempt = $lifecycle['pretest_attempt'];
+        $posttestAttempt = $lifecycle['posttest_attempt'];
+        $pretestQuiz = $lifecycle['pretest_quiz'];
+        $posttestQuiz = $lifecycle['posttest_quiz'];
 
         return Inertia::render('User/MyTraining/Show', [
             'assignment' => $assignment,
@@ -102,15 +91,16 @@ class MyTrainingController extends Controller
                 'content_html' => $module->content_html,
                 'duration_minutes' => $module->duration_minutes,
             ],
-            'pretestQuiz' => $module->pretestQuiz ? [
-                'id' => $module->pretestQuiz->id,
-                'title' => $module->pretestQuiz->title,
-                'passing_score' => $module->pretestQuiz->passing_score,
+            'lifecycle' => collect($lifecycle)->except(['pretest_attempt', 'posttest_attempt', 'pretest_quiz', 'posttest_quiz'])->all(),
+            'pretestQuiz' => $pretestQuiz ? [
+                'id' => $pretestQuiz->id,
+                'title' => $pretestQuiz->title,
+                'passing_score' => $pretestQuiz->passing_score,
             ] : null,
-            'posttestQuiz' => $module->posttestQuiz ? [
-                'id' => $module->posttestQuiz->id,
-                'title' => $module->posttestQuiz->title,
-                'passing_score' => $module->posttestQuiz->passing_score,
+            'posttestQuiz' => $posttestQuiz ? [
+                'id' => $posttestQuiz->id,
+                'title' => $posttestQuiz->title,
+                'passing_score' => $posttestQuiz->passing_score,
             ] : null,
             'pretestAttempt' => $pretestAttempt ? [
                 'id' => $pretestAttempt->id,

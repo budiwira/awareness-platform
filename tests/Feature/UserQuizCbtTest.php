@@ -9,7 +9,6 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TrainingModule;
 use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
 
 function makeQuizCbtFixture(): array
 {
@@ -149,20 +148,16 @@ test('expired in_progress attempt is finalized on next start', function () {
     $firstAttempt->update(['deadline_at' => now()->subMinutes(5)]);
 
     // Start lagi
-    $secondResponse = $this->actingAs($user)
+    $this->actingAs($user)
         ->postJson(route('user.training.quiz.start', $assignment))
-        ->assertOk();
+        ->assertUnprocessable()
+        ->assertJsonPath('message', 'Attempt kedaluwarsa telah diselesaikan. Attempt berikutnya tersedia setelah masa tunggu 2 jam.');
 
     // Attempt pertama harus expired
     $firstAttempt->refresh();
     expect($firstAttempt->status)->toBe('expired');
 
-    // Attempt kedua harus baru
-    $secondAttemptId = $secondResponse->json('attempt_id');
-    expect($secondAttemptId)->not->toBe($firstAttemptId);
-
-    $secondAttempt = QuizAttempt::find($secondAttemptId);
-    expect($secondAttempt->status)->toBe('in_progress');
+    expect(QuizAttempt::where('user_id', $user->id)->count())->toBe(1);
 });
 
 test('cannot start quiz after passing', function () {
@@ -196,7 +191,7 @@ test('cannot start quiz after passing', function () {
     $this->actingAs($user)
         ->postJson(route('user.training.quiz.start', $assignment))
         ->assertStatus(422)
-        ->assertJson(['message' => 'Anda sudah lulus quiz ini.']);
+        ->assertJson(['message' => 'Assignment sudah selesai. Tidak dapat memulai assessment baru.']);
 });
 
 test('user cannot access another user attempt', function () {
@@ -237,7 +232,7 @@ test('continuing in_progress attempt returns same attempt', function () {
     expect($secondAttemptId)->toBe($firstAttemptId);
 });
 
-test('quiz show page indicates already passed', function () {
+test('completed assignment quiz page redirects to terminal training state', function () {
     [$user, $quiz, $q1, $q2, $assignment] = makeQuizCbtFixture();
 
     // Buat attempt lulus
@@ -266,10 +261,6 @@ test('quiz show page indicates already passed', function () {
     // Akses halaman quiz
     $this->actingAs($user)
         ->get(route('user.training.quiz', $assignment))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('User/MyTraining/Quiz')
-            ->where('alreadyPassed', true)
-            ->has('passedAttempt')
-        );
+        ->assertRedirect(route('user.training.show', $assignment))
+        ->assertSessionHasErrors('quiz');
 });

@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property int $training_module_id
  * @property string $title
  * @property int $passing_score
+ * @property string $purpose
  * @property int|null $duration_minutes
  * @property bool $is_active
  * @property Carbon|null $created_at

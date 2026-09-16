@@ -8,7 +8,7 @@ defineProps({ quizzes: Array, modules: Array });
 const errors = computed(() => usePage().props.errors ?? {});
 
 const showForm = ref(false);
-const form = ref({ training_module_id: '', title: '', passing_score: 70 });
+const form = ref({ training_module_id: '', purpose: 'posttest', title: '', passing_score: 70 });
 
 const submit = () => {
     router.post(route('platform.quizzes.store'), form.value, {
@@ -34,7 +34,7 @@ const submit = () => {
         </div>
 
         <div v-if="showForm" class="card p-6 mb-6">
-            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div>
                     <label class="text-sm t-muted">Modul</label>
                     <select v-model="form.training_module_id" required class="input mt-1 w-full">
@@ -42,6 +42,15 @@ const submit = () => {
                         <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }}</option>
                     </select>
                     <p v-if="errors.training_module_id" class="text-xs text-red-600 mt-1">{{ errors.training_module_id }}</p>
+                </div>
+                <div>
+                    <label class="text-sm t-muted">Tujuan</label>
+                    <select v-model="form.purpose" required class="input mt-1 w-full">
+                        <option value="pretest">Pretest</option>
+                        <option value="posttest">Posttest</option>
+                        <option value="practice">Latihan</option>
+                    </select>
+                    <p v-if="errors.purpose" class="text-xs text-red-600 mt-1">{{ errors.purpose }}</p>
                 </div>
                 <div>
                     <label class="text-sm t-muted">Judul Quiz</label>
@@ -52,7 +61,7 @@ const submit = () => {
                     <label class="text-sm t-muted">Passing Score (%)</label>
                     <input v-model.number="form.passing_score" type="number" min="1" max="100" required class="input mt-1 w-full" />
                 </div>
-                <div class="md:col-span-3 flex justify-end">
+                <div class="md:col-span-4 flex justify-end">
                     <button class="btn btn-primary">Simpan</button>
                 </div>
             </form>

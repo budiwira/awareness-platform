@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property Carbon|null $completed_at
  * @property int|null $score
+ * @property int|null $pretest_score
+ * @property Carbon|null $pretest_completed_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
@@ -31,10 +33,13 @@ class ModuleAssignment extends Model
         'status',
         'completed_at',
         'score',
+        'pretest_score',
+        'pretest_completed_at',
     ];
 
     protected $casts = [
         'completed_at' => 'datetime',
+        'pretest_completed_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
