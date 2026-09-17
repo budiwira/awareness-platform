@@ -55,7 +55,9 @@ class PackageRequest extends Model
 
     public function requestedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'requested_by');
+        return $this->belongsTo(User::class, 'requested_by')->withDefault([
+            'name' => 'Pengguna tidak tersedia',
+        ]);
     }
 
     public function resolvedBy(): BelongsTo

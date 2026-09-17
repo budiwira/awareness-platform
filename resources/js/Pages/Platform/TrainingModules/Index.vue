@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 import { BaseAlert, BaseBadge, BaseButton, BaseTableContainer } from '@/Components';
 
-defineProps({ modules: Array });
+defineProps({ modules: { type: Array, default: () => [] } });
 
 const errors = computed(() => usePage().props.errors ?? {});
 const mutationError = computed(() => errors.value.action ?? errors.value.pretest_quiz_id ?? errors.value.posttest_quiz_id ?? null);
@@ -77,22 +77,22 @@ const statusLabel = (status) => {
 
     <AppLayout title="Studio Konten">
         <BaseAlert v-if="mutationError" variant="danger" class="mb-4">{{ mutationError }}</BaseAlert>
-        <div class="flex items-center justify-between mb-6">
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm t-muted">
                 Kelola materi pembelajaran dari draft hingga siap digunakan organisasi.
             </p>
-            <Link :href="route('platform.modules.create')" class="btn btn-primary">
-                + Buat Modul
+            <Link :href="route('platform.modules.create')" class="btn btn-primary min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2">
+                Buat modul
             </Link>
         </div>
 
         <!-- Filter chips -->
-        <div class="flex gap-2 mb-6">
+        <div class="mb-6 flex flex-wrap gap-2">
             <button
                 v-for="(count, key) in statusCounts"
                 :key="key"
                 @click="statusFilter = key"
-                class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua modul' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
