@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 import { BaseAlert, BaseBadge, BaseButton, BaseTableContainer } from '@/Components';
 
-defineProps({ challenges: Array });
+defineProps({ challenges: { type: Array, default: () => [] } });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
@@ -94,7 +94,7 @@ const statusLabel = (status) => {
 
     <AppLayout title="CTF Challenge Builder">
         <BaseAlert v-if="errors.action" variant="danger" class="mb-4">{{ errors.action }}</BaseAlert>
-        <div class="flex items-center justify-between mb-6">
+        <div class="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-sm t-muted">
                 Buat challenge gamifikasi. Flag diverifikasi server-side dan tidak pernah dikirim ke browser.
             </p>
@@ -152,12 +152,12 @@ const statusLabel = (status) => {
         </div>
 
         <!-- Filter chips -->
-        <div class="flex gap-2 mb-6">
+        <div class="mb-6 flex flex-wrap gap-2">
             <button
                 v-for="(count, key) in statusCounts"
                 :key="key"
                 @click="statusFilter = key"
-                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
+                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>

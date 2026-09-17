@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { BaseAlert, BaseBadge, BaseButton, BaseInput, BaseSelect, BaseTableContainer, BaseTextarea } from '@/Components';
 import EmptyState from '@/Components/EmptyState.vue';
 
-defineProps({ cases: Array });
+defineProps({ cases: { type: Array, default: () => [] } });
 
 const errors = computed(() => usePage().props.errors ?? {});
 
@@ -114,12 +114,12 @@ const statusLabel = (status) => {
         </div>
 
         <!-- Filter chips -->
-        <div class="flex gap-2 mb-6">
+        <div class="mb-6 flex flex-wrap gap-2">
             <button
                 v-for="(count, key) in statusCounts"
                 :key="key"
                 @click="statusFilter = key"
-                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
+                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
