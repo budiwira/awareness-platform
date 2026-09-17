@@ -284,7 +284,7 @@ const logout = () => router.post(route('logout'));
                     <button
                         @click="toggleTheme"
                         class="min-h-[44px] min-w-[44px] rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
-                        :aria-label="theme === 'dark' ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
+                        aria-label="Ganti tema"
                         title="Ganti tema"
                         @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
                         @mouseleave="$event.currentTarget.style.color = ''"
