@@ -107,12 +107,12 @@ const scrollTo = (id) => {
             <div class="max-w-7xl mx-auto">
                 <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
                     <div class="fade-in relative z-10">
-                        <span class="landing-eyebrow">Security awareness yang terukur</span>
+                        <span class="landing-eyebrow">Cybersecurity awareness &amp; readiness</span>
                         <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight t-ink mb-6">
-                            Bangun Budaya Keamanan Siber yang Terukur
+                            Bangun kesiapan keamanan, bukan sekadar menyelesaikan pelatihan.
                         </h1>
                         <p class="text-base sm:text-lg leading-8 t-muted mb-8 max-w-xl">
-                            Platform awareness untuk melatih karyawan, mengukur risiko, dan membantu organisasi meningkatkan kesiapan keamanan.
+                            Satukan training, assessment, phishing simulation, security lab, dan tabletop exercise dalam satu platform untuk membantu organisasi membangun awareness yang dapat dipelajari, dipraktikkan, dan diukur.
                         </p>
                         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <Link :href="ctaHref" class="btn btn-primary landing-hero-cta">
@@ -161,6 +161,34 @@ const scrollTo = (id) => {
             </div>
         </section>
 
+        <!-- Why it matters -->
+        <section id="why-it-matters" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="max-w-3xl mb-10">
+                    <span class="landing-section-kicker">Mengapa readiness penting</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Completion alone does not show whether security understanding has improved.</h2>
+                    <p class="text-base sm:text-lg t-muted">Organisasi membutuhkan rangkaian pembelajaran yang menghubungkan pemahaman, praktik, simulasi, dan visibilitas.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="card landing-story-card p-6 fade-in">
+                        <div class="landing-story-index">01</div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Completion is not enough</h3>
+                        <p class="text-sm t-muted">Selesainya modul belum menunjukkan apakah pemahaman keamanan benar-benar meningkat.</p>
+                    </div>
+                    <div class="card landing-story-card p-6 fade-in" style="animation-delay: 0.1s">
+                        <div class="landing-story-index">02</div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Training needs practice</h3>
+                        <p class="text-sm t-muted">Pembelajaran perlu dilanjutkan dengan keputusan, tantangan, dan latihan respons yang relevan.</p>
+                    </div>
+                    <div class="card landing-story-card p-6 fade-in" style="animation-delay: 0.2s">
+                        <div class="landing-story-index">03</div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Organizations need visibility</h3>
+                        <p class="text-sm t-muted">Tenant admin membutuhkan gambaran yang jelas untuk meninjau progres dan menentukan tindak lanjut.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Metrics Strip -->
         <section class="py-12 px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
@@ -204,9 +232,10 @@ const scrollTo = (id) => {
         <section id="features" class="py-20 px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-12">
-                    <h2 class="font-display text-4xl font-bold t-ink mb-4">Fitur Utama Platform</h2>
+                    <span class="landing-section-kicker">Core capabilities</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Kapabilitas untuk membangun security readiness</h2>
                     <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Modul lengkap untuk membangun awareness keamanan siber yang terstruktur dan terukur
+                        Dari pembelajaran dasar sampai visibilitas organisasi, setiap kapabilitas mendukung langkah berikutnya.
                     </p>
                 </div>
 
@@ -217,8 +246,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Training Modules</h3>
-                        <p class="text-sm t-muted">Konten kurasi berbasis skenario dunia nyata untuk meningkatkan awareness</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Awareness Training</h3>
+                        <p class="text-sm t-muted">Modul terstruktur membantu learner memahami praktik keamanan yang relevan.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.05s">
@@ -227,8 +256,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">CBT Quiz dengan Timer</h3>
-                        <p class="text-sm t-muted">Computer-Based Test dengan batas waktu dan scoring server-side</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Assessment &amp; Learning Gain</h3>
+                        <p class="text-sm t-muted">Assessment sebelum dan sesudah pembelajaran membantu melihat perubahan pemahaman.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.1s">
@@ -237,8 +266,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tabletop Exercise</h3>
-                        <p class="text-sm t-muted">Simulasi 4 fase respons insiden untuk melatih tim keamanan</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Phishing Simulation</h3>
+                        <p class="text-sm t-muted">Latihan simulasi membantu organisasi menguji kesiapan dalam konteks yang terarah.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.15s">
@@ -247,8 +276,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Case Study</h3>
-                        <p class="text-sm t-muted">Studi kasus interaktif dengan keputusan bercabang dan feedback kontekstual</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">CTF / Security Lab</h3>
+                        <p class="text-sm t-muted">Tantangan praktis memberi ruang untuk menerapkan konsep keamanan secara langsung.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.2s">
@@ -257,8 +286,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">CTF Challenge</h3>
-                        <p class="text-sm t-muted">Capture The Flag untuk praktisi keamanan tingkat lanjut</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tabletop Exercise</h3>
+                        <p class="text-sm t-muted">Latihan kolaboratif membantu tim membahas keputusan dan respons bersama.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.25s">
@@ -267,8 +296,18 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Reports & Awareness Score</h3>
-                        <p class="text-sm t-muted">Laporan ekspor dan skor awareness 5 komponen yang transparan</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Multi-Tenant Administration</h3>
+                        <p class="text-sm t-muted">Kelola learner, assignment, latihan, dan konteks paket sesuai kebutuhan organisasi.</p>
+                    </div>
+
+                    <div class="card p-6 fade-in lg:col-span-3">
+                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h4l3 8 4-18 3 10h4" />
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Reporting &amp; Readiness Visibility</h3>
+                        <p class="text-sm t-muted max-w-2xl">Dashboard dan laporan membantu tenant admin meninjau completion, assessment, competency, dan tindak lanjut readiness.</p>
                     </div>
                 </div>
             </div>
@@ -280,36 +319,112 @@ const scrollTo = (id) => {
         <section id="how-it-works" class="py-20 px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-12">
-                    <h2 class="font-display text-4xl font-bold t-ink mb-4">Cara Kerja</h2>
+                    <span class="landing-section-kicker">The readiness journey</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Dari baseline menuju kesiapan yang terlihat</h2>
                     <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Alur lengkap dari setup hingga monitoring awareness keamanan organisasi
+                        Hubungkan assessment, learning, practice, simulation, dan measurement dalam satu perjalanan.
                     </p>
                 </div>
 
-                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
                     <div class="text-center fade-in">
                         <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">1</div>
-                        <h3 class="font-display font-bold t-ink mb-2">Setup Platform</h3>
-                        <p class="text-sm t-muted">Super admin mengatur Package, konten, dan entitlements</p>
+                        <h3 class="font-display font-bold t-ink mb-2">ASSESS</h3>
+                        <p class="text-sm t-muted">Pretest establishes the baseline.</p>
                     </div>
 
                     <div class="text-center fade-in" style="animation-delay: 0.1s">
                         <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">2</div>
-                        <h3 class="font-display font-bold t-ink mb-2">Assign Training</h3>
-                        <p class="text-sm t-muted">Tenant admin menugaskan modul pelatihan ke user</p>
+                        <h3 class="font-display font-bold t-ink mb-2">LEARN</h3>
+                        <p class="text-sm t-muted">Structured awareness modules membangun dasar pemahaman.</p>
                     </div>
 
                     <div class="text-center fade-in" style="animation-delay: 0.2s">
                         <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">3</div>
-                        <h3 class="font-display font-bold t-ink mb-2">Complete Modules</h3>
-                        <p class="text-sm t-muted">User mengikuti training, quiz, case study, dan TTX</p>
+                        <h3 class="font-display font-bold t-ink mb-2">PRACTICE</h3>
+                        <p class="text-sm t-muted">Case Studies dan CTF / Security Lab mengubah konsep menjadi tindakan.</p>
                     </div>
 
                     <div class="text-center fade-in" style="animation-delay: 0.3s">
                         <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">4</div>
-                        <h3 class="font-display font-bold t-ink mb-2">Monitor & Report</h3>
-                        <p class="text-sm t-muted">Organisasi memantau skor awareness dan risk tier</p>
+                        <h3 class="font-display font-bold t-ink mb-2">SIMULATE</h3>
+                        <p class="text-sm t-muted">Phishing Simulation dan Tabletop Exercise melatih respons.</p>
                     </div>
+
+                    <div class="text-center fade-in" style="animation-delay: 0.4s">
+                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">5</div>
+                        <h3 class="font-display font-bold t-ink mb-2">MEASURE</h3>
+                        <p class="text-sm t-muted">Posttest, Learning Gain, completion, competency, dan reporting menunjukkan perubahan.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="beam max-w-7xl mx-auto"></div>
+
+        <!-- Learning modes -->
+        <section id="learning-modes" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="max-w-2xl mb-10">
+                    <span class="landing-section-kicker">Learning modes</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Belajar dengan lebih dari satu cara.</h2>
+                    <p class="text-base sm:text-lg t-muted">Setiap mode menjawab kebutuhan berbeda: memahami, mengambil keputusan, mempraktikkan, dan merespons bersama.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="card p-6">
+                        <span class="landing-mode-label">LEARN</span>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Training Modules</h3>
+                        <p class="text-sm t-muted">Bangun fondasi awareness melalui materi terstruktur.</p>
+                    </div>
+                    <div class="card p-6">
+                        <span class="landing-mode-label">DECIDE</span>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Case Studies</h3>
+                        <p class="text-sm t-muted">Latih penilaian melalui skenario dan keputusan kontekstual.</p>
+                    </div>
+                    <div class="card p-6">
+                        <span class="landing-mode-label">PRACTICE</span>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">CTF / Security Lab</h3>
+                        <p class="text-sm t-muted">Terapkan konsep keamanan melalui tantangan praktis.</p>
+                    </div>
+                    <div class="card p-6">
+                        <span class="landing-mode-label">RESPOND TOGETHER</span>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tabletop Exercise</h3>
+                        <p class="text-sm t-muted">Bahas respons dan keputusan secara kolaboratif.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Measurement -->
+        <section id="measurement" class="py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.2fr] gap-10 items-start">
+                <div>
+                    <span class="landing-section-kicker">Measurement</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Ukur perubahan, bukan hanya completion.</h2>
+                    <p class="text-base sm:text-lg t-muted">Gunakan indikator yang membantu organisasi memahami progres pembelajaran dan area yang perlu diperkuat.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="card p-5"><p class="text-sm t-muted mb-1">Pretest Baseline</p><p class="font-display text-xl font-bold t-ink">Titik awal</p></div>
+                    <div class="card p-5"><p class="text-sm t-muted mb-1">Best Posttest Score</p><p class="font-display text-xl font-bold t-ink">Hasil terbaik</p></div>
+                    <div class="card p-5"><p class="text-sm t-muted mb-1">Learning Gain</p><p class="font-display text-xl font-bold t-ink">Best posttest score - pretest score</p></div>
+                    <div class="card p-5"><p class="text-sm t-muted mb-1">Completion &amp; Competency</p><p class="font-display text-xl font-bold t-ink">Progres dan kemampuan</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Organization value -->
+        <section id="organization-value" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="max-w-2xl mb-10">
+                    <span class="landing-section-kicker">Untuk organisasi</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Visibilitas yang membantu tenant admin bertindak.</h2>
+                    <p class="text-base sm:text-lg t-muted">Kelola perjalanan learner dari assignment sampai laporan tanpa kehilangan konteks operasional.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Kelola learner</h3><p class="text-sm t-muted">Atur peserta dan penugasan training.</p></div>
+                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Pantau progres</h3><p class="text-sm t-muted">Monitor completion dan review assessment.</p></div>
+                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Jalankan latihan</h3><p class="text-sm t-muted">Kelola simulasi dan exercise yang tersedia.</p></div>
+                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Review laporan</h3><p class="text-sm t-muted">Gunakan reporting dan konteks paket untuk tindak lanjut.</p></div>
                 </div>
             </div>
         </section>
@@ -458,9 +573,10 @@ const scrollTo = (id) => {
         <section id="security" class="py-20 px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-12">
-                    <h2 class="font-display text-4xl font-bold t-ink mb-4">Keamanan & Etika</h2>
+                    <span class="landing-section-kicker">Security by design</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Kontrol keamanan yang mendukung kepercayaan.</h2>
                     <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Dibangun dengan prinsip keamanan dan privasi sejak awal
+                        Platform menerapkan kontrol pada akses, data tenant, validasi, media, konten, dan aktivitas.
                     </p>
                 </div>
 
@@ -471,8 +587,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Multi-Tenant Isolation</h3>
-                        <p class="text-sm t-muted">Row-Level Security (RLS) di PostgreSQL memastikan data tenant terisolasi penuh</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Role-Based Authorization</h3>
+                        <p class="text-sm t-muted">Akses diberikan sesuai peran dan kewenangan yang berlaku di platform.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.1s">
@@ -481,8 +597,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Server-Side Scoring</h3>
-                        <p class="text-sm t-muted">Semua scoring dan validasi dilakukan server-side untuk mencegah manipulasi</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tenant Isolation</h3>
+                        <p class="text-sm t-muted">PostgreSQL RLS menjadi boundary isolasi data antar tenant.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.2s">
@@ -491,8 +607,8 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Role-Based Access</h3>
-                        <p class="text-sm t-muted">Kontrol akses berbasis role: SuperAdmin, TenantAdmin, dan User dengan policy ketat</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Server-Side Validation</h3>
+                        <p class="text-sm t-muted">Validasi penting dilakukan di server untuk menjaga integritas proses.</p>
                     </div>
 
                     <div class="card p-6 fade-in" style="animation-delay: 0.3s">
@@ -501,8 +617,38 @@ const scrollTo = (id) => {
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Privasi & Etika</h3>
-                        <p class="text-sm t-muted">Tidak menyimpan data sensitif simulasi; awareness diukur dari partisipasi, bukan penipuan</p>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Private Media Authorization</h3>
+                        <p class="text-sm t-muted">Akses media privat dilindungi melalui otorisasi.</p>
+                    </div>
+
+                    <div class="card p-6 fade-in">
+                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Rich-Content Sanitization</h3>
+                        <p class="text-sm t-muted">Konten rich text disanitasi sebelum digunakan dalam platform.</p>
+                    </div>
+
+                    <div class="card p-6 fade-in">
+                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Audit Logging</h3>
+                        <p class="text-sm t-muted">Aktivitas penting dicatat untuk mendukung peninjauan dan akuntabilitas.</p>
+                    </div>
+
+                    <div class="card p-6 fade-in">
+                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 class="font-display font-bold text-lg t-ink mb-2">Security Headers</h3>
+                        <p class="text-sm t-muted">Header keamanan membantu memperkuat perlindungan pada lapisan web.</p>
                     </div>
                 </div>
             </div>
@@ -512,10 +658,10 @@ const scrollTo = (id) => {
         <section class="py-20 px-6 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
                 <h2 class="font-display text-4xl font-bold t-ink mb-4">
-                    Siap meningkatkan awareness keamanan organisasi Anda?
+                    Bangun awareness yang dapat dipelajari, dipraktikkan, dan diukur.
                 </h2>
                 <p class="text-lg t-muted mb-8">
-                    Mulai bangun budaya keamanan siber yang terukur dengan platform kami
+                    Satukan learning, practice, simulation, dan measurement dalam satu platform.
                 </p>
                 <Link :href="ctaHref" class="btn btn-primary">
                     {{ ctaText }}
@@ -535,6 +681,51 @@ const scrollTo = (id) => {
 </template>
 
 <style scoped>
+.landing-section-muted {
+    background: color-mix(in srgb, var(--surface-2) 46%, transparent);
+}
+
+.landing-section-kicker {
+    color: var(--brand);
+    display: inline-block;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    margin-bottom: .75rem;
+    text-transform: uppercase;
+}
+
+.landing-story-card,
+.landing-capability-card {
+    transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.landing-story-card:hover,
+.landing-capability-card:hover {
+    border-color: var(--card-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.landing-story-index,
+.landing-capability-number {
+    color: var(--brand);
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    margin-bottom: 1rem;
+}
+
+.landing-mode-label {
+    color: var(--brand);
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    margin-bottom: 1rem;
+}
+
 .landing-nav {
     border-color: color-mix(in srgb, var(--line) 80%, transparent);
     box-shadow: 0 8px 30px color-mix(in srgb, var(--bg) 35%, transparent);
