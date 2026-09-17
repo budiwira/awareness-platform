@@ -31,4 +31,37 @@ test.describe('Responsif (tanpa overflow horizontal)', () => {
       expect(overflow).toBe(false);
     });
   }
+
+  test('Dashboard tetap sinkron saat desktop diubah ke mobile tanpa refresh', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/platform/dashboard');
+
+    await expect(page.locator('aside').first()).toBeVisible();
+
+    for (const width of [768, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      await expect(page.locator('button[aria-label="Buka menu navigasi"]')).toBeVisible();
+      await expect.poll(() => page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth
+      )).toBe(true);
+    }
+
+    const tableViewport = page.locator('.base-table-scroll');
+    await expect(tableViewport).toBeVisible();
+    await expect.poll(() => tableViewport.evaluate(
+      element => getComputedStyle(element).overflowX
+    )).toBe('auto');
+  });
+
+  for (const width of [390, 768, 1440]) {
+    test(`Dashboard stabil pada direct load ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/platform/dashboard');
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth
+      );
+      expect(overflow).toBe(false);
+    });
+  }
 });

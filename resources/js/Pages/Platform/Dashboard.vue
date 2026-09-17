@@ -1,6 +1,7 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import BaseTableContainer from '@/Components/BaseTableContainer.vue';
 
 const props = defineProps({ 
     summary: Object,
@@ -43,7 +44,8 @@ const props = defineProps({
             </div>
         </div>
 
-        <div class="card overflow-hidden mb-8">
+        <div class="mb-8 min-w-0">
+            <BaseTableContainer>
             <div class="px-6 py-4 border-b" style="border-color: var(--line)">
                 <div class="font-semibold t-ink">5 organisasi dengan risiko tertinggi</div>
                 <div class="text-xs t-muted mt-1">Prioritas pemantauan berdasarkan skor risiko saat ini.</div>
@@ -86,6 +88,7 @@ const props = defineProps({
                 <div class="font-medium t-ink">Belum ada data risiko organisasi</div>
                 <div class="text-xs mt-1">Data akan muncul setelah organisasi memiliki aktivitas awareness.</div>
             </div>
+            </BaseTableContainer>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

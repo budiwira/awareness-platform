@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onBeforeUnmount, onMounted } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import ToastRegion from '@/Components/ToastRegion.vue';
 
@@ -9,6 +9,13 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const unread = computed(() => page.props.unread ?? 0);
 const showMobileNav = ref(false);
+let desktopMediaQuery;
+
+const syncNavigationWithBreakpoint = (event) => {
+    if (event.matches) {
+        showMobileNav.value = false;
+    }
+};
 
 const theme = ref('dark');
 
@@ -22,6 +29,14 @@ onMounted(() => {
     const saved = localStorage.getItem('theme') || 'dark';
     theme.value = saved;
     document.documentElement.dataset.theme = saved;
+
+    desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
+    syncNavigationWithBreakpoint(desktopMediaQuery);
+    desktopMediaQuery.addEventListener('change', syncNavigationWithBreakpoint);
+});
+
+onBeforeUnmount(() => {
+    desktopMediaQuery?.removeEventListener('change', syncNavigationWithBreakpoint);
 });
 
 const initials = computed(() =>
@@ -118,7 +133,7 @@ const logout = () => router.post(route('logout'));
 </script>
 
 <template>
-    <div class="min-h-screen flex bg-app">
+    <div class="min-h-screen w-full min-w-0 flex bg-app">
         <!-- Sidebar desktop -->
         <aside class="hidden lg:flex lg:flex-col w-64 shrink-0" style="background: var(--sidebar)">
             <div class="flex items-center gap-3 px-6 h-16 border-b b-line">
@@ -199,17 +214,17 @@ const logout = () => router.post(route('logout'));
 
         <!-- Konten -->
         <div class="flex-1 flex flex-col min-w-0">
-            <header class="h-16 flex items-center justify-between px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
-                <div class="flex items-center gap-3">
+            <header class="h-16 min-w-0 flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
+                <div class="flex min-w-0 items-center gap-3">
                     <button type="button" class="lg:hidden rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <h1 class="font-display text-lg font-bold t-ink">{{ title }}</h1>
+                    <h1 class="truncate font-display text-lg font-bold t-ink">{{ title }}</h1>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex shrink-0 items-center gap-3 sm:gap-4">
                     <button
                         @click="toggleTheme"
                         class="transition-colors t-muted"
@@ -270,7 +285,7 @@ const logout = () => router.post(route('logout'));
                 <div class="beam absolute bottom-0 left-0 right-0"></div>
             </header>
 
-            <main class="flex-1 p-6 lg:p-8">
+            <main class="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
                 <slot />
             </main>
         </div>
