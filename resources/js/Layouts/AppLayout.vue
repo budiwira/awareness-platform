@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onBeforeUnmount, onMounted } from 'vue';
+import { computed, nextTick, ref, onBeforeUnmount, onMounted, watch } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import ToastRegion from '@/Components/ToastRegion.vue';
 
@@ -9,11 +9,58 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 const unread = computed(() => page.props.unread ?? 0);
 const showMobileNav = ref(false);
+const mobileNavTrigger = ref(null);
+const mobileNavClose = ref(null);
+const mobileNavPanel = ref(null);
+let returnFocusElement = null;
 let desktopMediaQuery;
 
 const syncNavigationWithBreakpoint = (event) => {
     if (event.matches) {
-        showMobileNav.value = false;
+        closeMobileNav(false);
+    }
+};
+
+const openMobileNav = async (event) => {
+    returnFocusElement = event.currentTarget;
+    showMobileNav.value = true;
+    await nextTick();
+    mobileNavClose.value?.focus();
+};
+
+const closeMobileNav = (restoreFocus = true) => {
+    if (!showMobileNav.value) return;
+
+    showMobileNav.value = false;
+    if (restoreFocus) {
+        nextTick(() => returnFocusElement?.focus());
+    }
+};
+
+const handleMobileNavKeydown = (event) => {
+    if (!showMobileNav.value) return;
+
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMobileNav();
+        return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = [...(mobileNavPanel.value?.querySelectorAll(
+        'a[href], button:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    ) ?? [])].filter(element => element.getClientRects().length);
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
     }
 };
 
@@ -33,10 +80,17 @@ onMounted(() => {
     desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
     syncNavigationWithBreakpoint(desktopMediaQuery);
     desktopMediaQuery.addEventListener('change', syncNavigationWithBreakpoint);
+    document.addEventListener('keydown', handleMobileNavKeydown);
+});
+
+watch(showMobileNav, (isOpen) => {
+    document.body.style.overflow = isOpen ? 'hidden' : '';
 });
 
 onBeforeUnmount(() => {
     desktopMediaQuery?.removeEventListener('change', syncNavigationWithBreakpoint);
+    document.removeEventListener('keydown', handleMobileNavKeydown);
+    document.body.style.overflow = '';
 });
 
 const initials = computed(() =>
@@ -76,18 +130,18 @@ const menus = computed(() => {
         return [
             { section: 'Organisasi', items: [
                 { label: 'Dashboard', route: 'tenant.dashboard' },
-                { label: 'Users', route: 'tenant.users.index' },
-                { label: 'Penugasan', route: 'tenant.assignments.index' },
+                { label: 'Pengguna', route: 'tenant.users.index' },
+                { label: 'Penugasan Pelatihan', route: 'tenant.assignments.index' },
             ]},
             { section: 'Simulasi', items: [
                 { label: 'Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
                 { label: 'Tabletop', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
             ]},
             { section: 'Analitik', items: [
-                { label: 'Reports', route: 'tenant.reports' },
+                { label: 'Laporan', route: 'tenant.reports' },
             ]},
             { section: 'Langganan', items: [
-                { label: 'Billing', route: 'tenant.billing.index' },
+                { label: 'Langganan', route: 'tenant.billing.index' },
             ]},
         ];
     }
@@ -137,7 +191,7 @@ const logout = () => router.post(route('logout'));
         <!-- Sidebar desktop -->
         <aside class="hidden lg:flex lg:flex-col w-64 shrink-0" style="background: var(--sidebar)">
             <div class="flex items-center gap-3 px-6 h-16 border-b b-line">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold" style="background: rgba(124,58,237,.2); color: var(--brand-strong)">SA</div>
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold" style="background: var(--brand-soft); color: var(--brand-strong)">SA</div>
                 <div>
                     <div class="font-display font-semibold leading-tight t-ink">Awareness</div>
                     <div class="text-[11px] t-muted">Security Platform</div>
@@ -156,6 +210,7 @@ const logout = () => router.post(route('logout'));
                             :href="route(item.route)"
                             class="relative flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                             :class="isActive(item) ? 'font-medium' : ''"
+                            :aria-current="isActive(item) ? 'page' : undefined"
                             :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink); box-shadow: var(--glow)' : 'color: var(--muted)'"
                             @mouseenter="!isActive(item) && ($event.currentTarget.style.background = 'var(--surface)', $event.currentTarget.style.color = 'var(--ink)')"
                             @mouseleave="!isActive(item) && ($event.currentTarget.style.background = '', $event.currentTarget.style.color = '')"
@@ -176,11 +231,11 @@ const logout = () => router.post(route('logout'));
 
         <!-- Mobile slide-over -->
         <div v-if="showMobileNav" class="fixed inset-0 z-40 lg:hidden">
-            <div class="absolute inset-0 bg-black/50" @click="showMobileNav = false"></div>
-            <aside id="mobile-navigation" class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
+            <div class="absolute inset-0" style="background: var(--backdrop)" aria-hidden="true" @click="closeMobileNav()"></div>
+            <aside id="mobile-navigation" ref="mobileNavPanel" class="absolute inset-y-0 left-0 flex w-72 flex-col" style="background: var(--sidebar)" role="dialog" aria-modal="true" aria-labelledby="mobile-navigation-title">
                 <div class="flex items-center justify-between px-6 h-16 border-b b-line">
-                    <div class="font-display font-semibold t-ink">Awareness</div>
-                    <button type="button" class="min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
+                    <div id="mobile-navigation-title" class="font-display font-semibold t-ink">Awareness</div>
+                    <button ref="mobileNavClose" type="button" class="min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="closeMobileNav()">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -198,8 +253,9 @@ const logout = () => router.post(route('logout'));
                                 :href="route(item.route)"
                                 class="flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                                 :class="isActive(item) ? 'font-medium' : ''"
+                                :aria-current="isActive(item) ? 'page' : undefined"
                                 :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink)' : 'color: var(--muted)'"
-                                @click="showMobileNav = false"
+                                @click="closeMobileNav(false)"
                             >
                                 <span class="flex-1">{{ item.label }}</span>
                                 <svg v-if="item.locked" class="w-4 h-4" style="color: var(--warn)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,7 +272,7 @@ const logout = () => router.post(route('logout'));
         <div class="flex-1 flex flex-col min-w-0">
             <header class="h-16 min-w-0 flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
                 <div class="flex min-w-0 items-center gap-3">
-                    <button type="button" class="lg:hidden min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
+                    <button ref="mobileNavTrigger" type="button" class="lg:hidden min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="openMobileNav">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -228,7 +284,7 @@ const logout = () => router.post(route('logout'));
                     <button
                         @click="toggleTheme"
                         class="min-h-[44px] min-w-[44px] rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
-                        :aria-label="'Ganti tema'"
+                        aria-label="Ganti tema"
                         title="Ganti tema"
                         @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
                         @mouseleave="$event.currentTarget.style.color = ''"
