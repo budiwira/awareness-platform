@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 const theme = ref('dark');
+const mobileMenuOpen = ref(false);
 
 const toggleTheme = () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark';
@@ -24,7 +25,8 @@ const ctaHref = computed(() => isAuthenticated.value ? '/dashboard' : '/login');
 const scrollTo = (id) => {
     const el = document.getElementById(id);
     if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
+        el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        mobileMenuOpen.value = false;
     }
 };
 </script>
@@ -34,25 +36,25 @@ const scrollTo = (id) => {
 
     <div class="min-h-screen bg-app">
         <!-- Navbar -->
-        <nav class="fixed top-0 left-0 right-0 z-50 bg-surface b-line border-b backdrop-blur-sm" style="background: var(--header)">
-            <div class="max-w-7xl mx-auto px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
+        <nav class="landing-nav fixed top-0 left-0 right-0 z-50 bg-surface b-line border-b backdrop-blur-sm" style="background: var(--header)" aria-label="Navigasi utama">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between min-h-16 py-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold text-sm" style="background: rgba(124,58,237,.2); color: var(--brand-strong)">SA</div>
-                        <span class="font-display font-semibold text-base t-ink">Awareness Platform</span>
+                        <div class="landing-logo w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold text-sm" aria-hidden="true">SA</div>
+                        <span class="font-display font-semibold text-sm sm:text-base t-ink">Awareness Platform</span>
                     </div>
 
-                    <div class="hidden md:flex items-center gap-6 text-sm">
-                        <button @click="scrollTo('features')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                    <div class="hidden md:flex items-center gap-1 text-sm" role="list">
+                        <button @click="scrollTo('features')" class="landing-nav-link t-muted" role="listitem">
                             Fitur
                         </button>
-                        <button @click="scrollTo('how-it-works')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                        <button @click="scrollTo('how-it-works')" class="landing-nav-link t-muted" role="listitem">
                             Cara Kerja
                         </button>
-                        <button @click="scrollTo('packages')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                        <button @click="scrollTo('packages')" class="landing-nav-link t-muted" role="listitem">
                             Paket
                         </button>
-                        <button @click="scrollTo('security')" class="t-muted transition-colors" style="cursor: pointer" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                        <button @click="scrollTo('security')" class="landing-nav-link t-muted" role="listitem">
                             Keamanan
                         </button>
                     </div>
@@ -60,11 +62,9 @@ const scrollTo = (id) => {
                     <div class="flex items-center gap-3">
                         <button
                             @click="toggleTheme"
-                            class="transition-colors t-muted"
-                            :aria-label="'Ganti tema'"
+                            class="landing-icon-button t-muted"
+                            :aria-label="theme === 'dark' ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
                             title="Ganti tema"
-                            @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
-                            @mouseleave="$event.currentTarget.style.color = ''"
                         >
                             <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -74,37 +74,60 @@ const scrollTo = (id) => {
                             </svg>
                         </button>
 
-                        <Link :href="ctaHref" class="btn btn-primary">
+                        <Link :href="ctaHref" class="btn btn-primary hidden sm:inline-flex">
                             {{ ctaText }}
                         </Link>
+                        <button
+                            class="landing-icon-button md:hidden t-muted"
+                            :aria-expanded="mobileMenuOpen"
+                            aria-controls="mobile-navigation"
+                            :aria-label="mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'"
+                            @click="mobileMenuOpen = !mobileMenuOpen"
+                        >
+                            <svg v-if="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
+                </div>
+                <div v-if="mobileMenuOpen" id="mobile-navigation" class="landing-mobile-menu md:hidden" role="list">
+                    <button @click="scrollTo('features')" class="landing-mobile-link" role="listitem">Fitur</button>
+                    <button @click="scrollTo('how-it-works')" class="landing-mobile-link" role="listitem">Cara Kerja</button>
+                    <button @click="scrollTo('packages')" class="landing-mobile-link" role="listitem">Paket</button>
+                    <button @click="scrollTo('security')" class="landing-mobile-link" role="listitem">Keamanan</button>
                 </div>
             </div>
         </nav>
 
         <!-- Hero -->
-        <section class="pt-32 pb-20 px-6 lg:px-8">
+        <section class="landing-hero pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
             <div class="max-w-7xl mx-auto">
-                <div class="grid lg:grid-cols-2 gap-12 items-center">
-                    <div class="fade-in">
-                        <h1 class="font-display text-5xl lg:text-6xl font-bold leading-tight t-ink mb-6">
+                <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+                    <div class="fade-in relative z-10">
+                        <span class="landing-eyebrow">Security awareness yang terukur</span>
+                        <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight t-ink mb-6">
                             Bangun Budaya Keamanan Siber yang Terukur
                         </h1>
-                        <p class="text-lg t-muted mb-8 max-w-xl">
+                        <p class="text-base sm:text-lg leading-8 t-muted mb-8 max-w-xl">
                             Platform awareness untuk melatih karyawan, mengukur risiko, dan membantu organisasi meningkatkan kesiapan keamanan.
                         </p>
-                        <div class="flex flex-wrap gap-4">
-                            <Link :href="ctaHref" class="btn btn-primary">
+                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                            <Link :href="ctaHref" class="btn btn-primary landing-hero-cta">
                                 {{ ctaText }}
                             </Link>
-                            <button @click="scrollTo('features')" class="btn btn-secondary">
+                            <button @click="scrollTo('features')" class="btn btn-secondary landing-hero-cta">
                                 Lihat Fitur
                             </button>
                         </div>
                     </div>
 
-                    <div class="fade-in">
-                        <div class="card p-6 space-y-4">
+                    <div class="fade-in relative">
+                        <div class="landing-hero-orb landing-hero-orb-one" aria-hidden="true"></div>
+                        <div class="landing-hero-orb landing-hero-orb-two" aria-hidden="true"></div>
+                        <div class="card landing-metric-card p-5 sm:p-6 space-y-4">
                             <div class="flex items-center justify-between pb-3 b-line border-b">
                                 <span class="text-sm font-semibold t-muted">Dashboard Metrik</span>
                                 <span class="w-2 h-2 rounded-full" style="background: var(--ok)"></span>
@@ -510,3 +533,156 @@ const scrollTo = (id) => {
         </footer>
     </div>
 </template>
+
+<style scoped>
+.landing-nav {
+    border-color: color-mix(in srgb, var(--line) 80%, transparent);
+    box-shadow: 0 8px 30px color-mix(in srgb, var(--bg) 35%, transparent);
+}
+
+.landing-logo {
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.landing-nav-link,
+.landing-mobile-link,
+.landing-icon-button {
+    transition: color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.landing-nav-link {
+    border-radius: 9999px;
+    cursor: pointer;
+    padding: .55rem .8rem;
+}
+
+.landing-nav-link:hover,
+.landing-nav-link:focus-visible,
+.landing-mobile-link:hover,
+.landing-mobile-link:focus-visible {
+    background: var(--surface-2);
+    color: var(--ink);
+}
+
+.landing-nav-link:active,
+.landing-mobile-link:active,
+.landing-icon-button:active {
+    transform: translateY(1px);
+}
+
+.landing-icon-button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 9999px;
+    cursor: pointer;
+    display: inline-flex;
+    justify-content: center;
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+}
+
+.landing-icon-button:hover,
+.landing-icon-button:focus-visible {
+    background: var(--surface-2);
+    color: var(--ink);
+}
+
+.landing-mobile-menu {
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: .25rem;
+    padding: .75rem 0 1rem;
+}
+
+.landing-mobile-link {
+    background: transparent;
+    border: 0;
+    border-radius: .75rem;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .9375rem;
+    padding: .75rem 1rem;
+    text-align: left;
+}
+
+.landing-hero {
+    isolation: isolate;
+    overflow: hidden;
+    position: relative;
+}
+
+.landing-hero::before {
+    background: radial-gradient(circle at 76% 28%, color-mix(in srgb, var(--brand) 13%, transparent), transparent 34rem);
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+}
+
+.landing-eyebrow {
+    background: var(--brand-soft);
+    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--line));
+    border-radius: 9999px;
+    color: var(--brand-strong);
+    display: inline-flex;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    margin-bottom: 1.25rem;
+    padding: .45rem .75rem;
+    text-transform: uppercase;
+}
+
+.landing-hero-cta {
+    min-height: 2.875rem;
+    padding-inline: 1.25rem;
+}
+
+.landing-metric-card {
+    box-shadow: 0 24px 70px color-mix(in srgb, var(--brand) 14%, transparent);
+    position: relative;
+    z-index: 1;
+}
+
+.landing-hero-orb {
+    border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent);
+    border-radius: 9999px;
+    pointer-events: none;
+    position: absolute;
+}
+
+.landing-hero-orb-one {
+    height: 10rem;
+    right: -2rem;
+    top: -3rem;
+    width: 10rem;
+}
+
+.landing-hero-orb-two {
+    bottom: -4rem;
+    height: 7rem;
+    left: -2rem;
+    opacity: .7;
+    width: 7rem;
+}
+
+@media (max-width: 639px) {
+    .landing-metric-card .grid {
+        gap: .5rem;
+    }
+
+    .landing-metric-card .text-3xl {
+        font-size: 1.6rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-hero-orb {
+        display: none;
+    }
+}
+</style>
