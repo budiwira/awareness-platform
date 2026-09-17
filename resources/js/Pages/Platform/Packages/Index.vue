@@ -8,7 +8,10 @@ import BaseButton from '@/Components/BaseButton.vue';
 import BaseInput from '@/Components/BaseInput.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 
-const props = defineProps({ packages: Array, modules: Array });
+const props = defineProps({
+  packages: { type: Array, default: () => [] },
+  modules: { type: Array, default: () => [] },
+});
 const errors = computed(() => usePage().props.errors ?? {});
 
 const showForm = ref(false);
@@ -87,9 +90,8 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
       <BaseAlert v-if="Object.keys(errors).length" variant="danger" title="Paket belum tersimpan">
         Periksa kembali data yang ditandai lalu coba lagi.
       </BaseAlert>
-    </div>
 
-    <div v-if="showForm" class="card p-4 sm:p-6">
+      <div v-if="showForm" class="card p-4 sm:p-6">
       <div class="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 class="font-display text-lg t-ink">{{ editingPlan ? 'Edit paket' : 'Buat paket baru' }}</h2>
@@ -99,18 +101,19 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
       </div>
       <form @submit.prevent="submit" class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <BaseInput v-model="form.name" label="Nama paket" :error="errors.name" required />
-        <BaseInput v-model.number="form.price_monthly" type="number" min="0" label="Harga (ribu rupiah per bulan)" required />
-        <BaseInput v-model.number="form.max_users" type="number" min="1" label="Maks. pengguna" />
+        <BaseInput v-model.number="form.price_monthly" type="number" min="0" label="Harga (ribu rupiah per bulan)" :error="errors.price_monthly" required />
+        <BaseInput v-model.number="form.max_users" type="number" min="1" label="Maks. pengguna" :error="errors.max_users" />
         <label class="flex min-h-[44px] items-center gap-3 self-end rounded-xl border b-line px-3 text-sm t-muted">
           <input v-model="form.includes_all_modules" type="checkbox" id="includes_all" class="rounded b-line" />
           <span>Sertakan semua modul terbit</span>
         </label>
         <div v-if="!form.includes_all_modules" class="md:col-span-2">
           <label for="module_ids" class="text-sm t-muted">Modul terpilih</label>
-          <select id="module_ids" v-model="form.module_ids" multiple class="input mt-1 h-32 w-full" aria-describedby="module-hint">
+          <select id="module_ids" v-model="form.module_ids" multiple class="input mt-1 h-32 w-full" :aria-invalid="!!errors.module_ids" :aria-describedby="errors.module_ids ? 'module-hint module-error' : 'module-hint'">
             <option v-for="mod in modules" :key="mod.id" :value="mod.id">{{ mod.title }}</option>
           </select>
           <p id="module-hint" class="mt-1 text-xs t-muted">Pilih satu atau beberapa modul yang tersedia untuk paket ini.</p>
+          <p v-if="errors.module_ids" id="module-error" class="mt-1 text-xs" style="color: var(--danger)" role="alert">{{ errors.module_ids }}</p>
         </div>
         <fieldset class="md:col-span-2">
           <legend class="text-sm t-muted">Fitur paket</legend>
@@ -120,15 +123,16 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
               {{ featureLabels[f] || f }}
             </label>
           </div>
+          <p v-if="errors.features" class="mt-1 text-xs" style="color: var(--danger)" role="alert">{{ errors.features }}</p>
         </fieldset>
         <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end md:col-span-2">
           <BaseButton type="button" variant="secondary" @click="showForm = false">Batal</BaseButton>
           <BaseButton type="submit" :loading="submitting" :disabled="submitting">{{ submitting ? 'Menyimpan...' : 'Simpan paket' }}</BaseButton>
         </div>
       </form>
-    </div>
+      </div>
 
-    <div v-if="packages.length" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div v-if="packages.length" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <div v-for="Package in packages" :key="Package.id" class="card flex flex-col p-5 sm:p-6">
         <div class="mb-4 flex items-start justify-between gap-3">
           <div>
@@ -151,7 +155,8 @@ const formatPrice = (p) => (p === 0 ? 'Gratis' : 'Rp ' + (p * 1000).toLocaleStri
         </div>
         <BaseButton variant="secondary" @click="openEdit(Package)" :aria-label="`Edit paket ${Package.name}`">Edit paket</BaseButton>
       </div>
+      </div>
+      <EmptyState v-else title="Belum ada paket" message="Buat paket pertama untuk mulai mengatur pilihan langganan organisasi." />
     </div>
-    <EmptyState v-else title="Belum ada paket" message="Buat paket pertama untuk mulai mengatur pilihan langganan organisasi." />
   </AppLayout>
 </template>
