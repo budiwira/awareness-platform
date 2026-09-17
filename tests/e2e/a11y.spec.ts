@@ -53,6 +53,19 @@ test.describe('Responsif (tanpa overflow horizontal)', () => {
     )).toBe('auto');
   });
 
+  test('Dashboard konsisten dalam tema terang dan gelap', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/platform/dashboard');
+
+    const themeButton = page.locator('button[aria-label="Ganti tema"]');
+    const initialTheme = await page.locator('html').getAttribute('data-theme');
+    await themeButton.click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', initialTheme ?? '');
+    await expect.poll(() => page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth
+    )).toBe(true);
+  });
+
   for (const width of [390, 768, 1440]) {
     test(`Dashboard stabil pada direct load ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
