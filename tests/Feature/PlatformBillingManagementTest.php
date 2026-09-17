@@ -24,6 +24,29 @@ test('super admin can view all billing requests across tenants', function () {
     expect($requests)->toHaveCount(2);
 });
 
+test('billing queue remains available when requester was soft deleted', function () {
+    $superAdmin = User::factory()->superAdmin()->create();
+    $tenant = Tenant::factory()->create();
+    $requester = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $Package = Package::create(['name' => 'Historical', 'slug' => 'historical', 'price_monthly' => 500, 'max_users' => 10, 'is_active' => true]);
+
+    PackageRequest::create([
+        'tenant_id' => $tenant->id,
+        'package_id' => $Package->id,
+        'status' => 'pending',
+        'requested_by' => $requester->id,
+    ]);
+    $requester->delete();
+
+    $this->actingAs($superAdmin)
+        ->get(route('platform.billing.requests'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Platform/Billing/Requests')
+            ->where('requests.0.requested_by', 'Pengguna tidak tersedia')
+        );
+});
+
 test('super admin can approve billing request and creates active subscription', function () {
     Notification::fake();
 

@@ -124,7 +124,7 @@ const resolvedCount = computed(() => props.requests.length - pendingCount.value)
             </section>
         </div>
 
-        <Modal :show="selectedRequest !== null" max-width="md" @close="selectedRequest = null; selectedAction = null">
+        <Modal :show="selectedRequest !== null" max-width="md" aria-label="Konfirmasi keputusan billing" @close="selectedRequest = null; selectedAction = null">
             <div class="p-6">
                 <h2 class="font-display text-lg t-ink">{{ actionLabel }} permintaan paket?</h2>
                 <p class="mt-2 text-sm t-muted">
