@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import EmptyState from '@/Components/EmptyState.vue';
-import { BaseAlert, BaseBadge, BaseTableContainer } from '@/Components';
+import { BaseAlert, BaseBadge, BaseButton, BaseTableContainer } from '@/Components';
 
 defineProps({ challenges: Array });
 
@@ -84,7 +84,7 @@ const statusVariant = (status) => {
 };
 
 const statusLabel = (status) => {
-    const map = { draft: 'Draft', published: 'Published', archived: 'Archived' };
+    const map = { draft: 'Draft', published: 'Terbit', archived: 'Diarsipkan' };
     return map[status] || status;
 };
 </script>
@@ -98,12 +98,9 @@ const statusLabel = (status) => {
             <p class="text-sm t-muted">
                 Buat challenge gamifikasi. Flag diverifikasi server-side dan tidak pernah dikirim ke browser.
             </p>
-            <button
-                @click="showForm = !showForm"
-                class="btn btn-primary"
-            >
-                + Buat Challenge
-            </button>
+            <BaseButton @click="showForm = !showForm" :disabled="submitting">
+                Buat challenge
+            </BaseButton>
         </div>
 
         <div v-if="showForm" class="card p-6 mb-6">
@@ -149,7 +146,7 @@ const statusLabel = (status) => {
                     <input v-model="form.hint" type="text" class="input mt-1 w-full" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
-                    <button :disabled="submitting" class="btn btn-primary">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</button>
+                    <BaseButton type="submit" :loading="submitting" :disabled="submitting">{{ submitting ? 'Menyimpan...' : 'Simpan' }}</BaseButton>
                 </div>
             </form>
         </div>
@@ -160,7 +157,7 @@ const statusLabel = (status) => {
                 v-for="(count, key) in statusCounts"
                 :key="key"
                 @click="statusFilter = key"
-                class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
@@ -200,9 +197,9 @@ const statusLabel = (status) => {
                         <td class="px-6 py-3 t-muted">{{ c.points }}</td>
                         <td class="px-6 py-3 t-muted">{{ c.solves_count }}</td>
                         <td class="px-6 py-3 text-right space-x-3">
-                            <button v-if="c.status === 'draft'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
-                            <button v-if="c.status === 'published'" :disabled="processing !== null" @click="archive(c.id)" class="badge-warn text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `archive:${c.id}` ? 'Memproses...' : 'Arsipkan' }}</button>
-                            <button v-if="c.status === 'archived'" :disabled="processing !== null" @click="publish(c.id)" class="badge-ok text-sm font-medium hover:underline disabled:opacity-50">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</button>
+                            <BaseButton v-if="c.status === 'draft'" size="sm" variant="secondary" :loading="processing === `publish:${c.id}`" :disabled="processing !== null && processing !== `publish:${c.id}`" @click="publish(c.id)">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</BaseButton>
+                            <BaseButton v-if="c.status === 'published'" size="sm" variant="secondary" :loading="processing === `archive:${c.id}`" :disabled="processing !== null && processing !== `archive:${c.id}`" @click="archive(c.id)">{{ processing === `archive:${c.id}` ? 'Memproses...' : 'Arsipkan' }}</BaseButton>
+                            <BaseButton v-if="c.status === 'archived'" size="sm" variant="secondary" :loading="processing === `publish:${c.id}`" :disabled="processing !== null && processing !== `publish:${c.id}`" @click="publish(c.id)">{{ processing === `publish:${c.id}` ? 'Memproses...' : 'Terbitkan' }}</BaseButton>
                         </td>
                     </tr>
                 </tbody>

@@ -154,9 +154,9 @@ const logout = () => router.post(route('logout'));
                             v-for="item in group.items"
                             :key="item.route"
                             :href="route(item.route)"
-                            class="relative flex items-center gap-2 px-3 py-2 rounded-full text-sm transition-all"
+                            class="relative flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                             :class="isActive(item) ? 'font-medium' : ''"
-                            :style="isActive(item) ? 'background: rgba(124,58,237,.15); color: var(--ink); box-shadow: var(--glow)' : 'color: var(--muted)'"
+                            :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink); box-shadow: var(--glow)' : 'color: var(--muted)'"
                             @mouseenter="!isActive(item) && ($event.currentTarget.style.background = 'var(--surface)', $event.currentTarget.style.color = 'var(--ink)')"
                             @mouseleave="!isActive(item) && ($event.currentTarget.style.background = '', $event.currentTarget.style.color = '')"
                         >
@@ -180,7 +180,7 @@ const logout = () => router.post(route('logout'));
             <aside id="mobile-navigation" class="absolute inset-y-0 left-0 w-72 flex flex-col" style="background: var(--sidebar)">
                 <div class="flex items-center justify-between px-6 h-16 border-b b-line">
                     <div class="font-display font-semibold t-ink">Awareness</div>
-                    <button type="button" class="rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
+                    <button type="button" class="min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Tutup menu navigasi" @click="showMobileNav = false">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -196,9 +196,9 @@ const logout = () => router.post(route('logout'));
                                 v-for="item in group.items"
                                 :key="item.route"
                                 :href="route(item.route)"
-                                class="flex items-center gap-2 px-3 py-2 rounded-full text-sm"
+                                class="flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                                 :class="isActive(item) ? 'font-medium' : ''"
-                                :style="isActive(item) ? 'background: rgba(124,58,237,.15); color: var(--ink)' : 'color: var(--muted)'"
+                                :style="isActive(item) ? 'background: var(--brand-soft); color: var(--ink)' : 'color: var(--muted)'"
                                 @click="showMobileNav = false"
                             >
                                 <span class="flex-1">{{ item.label }}</span>
@@ -216,7 +216,7 @@ const logout = () => router.post(route('logout'));
         <div class="flex-1 flex flex-col min-w-0">
             <header class="h-16 min-w-0 flex items-center justify-between gap-3 px-4 sm:px-6 sticky top-0 z-30 backdrop-blur relative" style="background: var(--header)">
                 <div class="flex min-w-0 items-center gap-3">
-                    <button type="button" class="lg:hidden rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
+                    <button type="button" class="lg:hidden min-h-[44px] min-w-[44px] rounded-lg p-2 t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" aria-label="Buka menu navigasi" aria-controls="mobile-navigation" :aria-expanded="showMobileNav" @click="showMobileNav = true">
                         <svg class="h-5 w-5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -227,7 +227,7 @@ const logout = () => router.post(route('logout'));
                 <div class="flex shrink-0 items-center gap-3 sm:gap-4">
                     <button
                         @click="toggleTheme"
-                        class="transition-colors t-muted"
+                        class="min-h-[44px] min-w-[44px] rounded-lg transition-colors t-muted hover:bg-surface2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                         :aria-label="'Ganti tema'"
                         title="Ganti tema"
                         @mouseenter="$event.currentTarget.style.color = 'var(--ink)'"
@@ -241,7 +241,7 @@ const logout = () => router.post(route('logout'));
                         </svg>
                     </button>
 
-                    <Link :href="route('notifications.index')" class="relative t-muted transition-colors" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
+                    <Link :href="route('notifications.index')" class="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg t-muted transition-colors hover:bg-surface2 hover:t-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2" aria-label="Buka notifikasi" @mouseenter="$event.currentTarget.style.color = 'var(--ink)'" @mouseleave="$event.currentTarget.style.color = ''">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>

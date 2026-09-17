@@ -119,7 +119,7 @@ const statusLabel = (status) => {
                 v-for="(count, key) in statusCounts"
                 :key="key"
                 @click="statusFilter = key"
-                class="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                class="min-h-[44px] rounded-lg px-4 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2"
                 :class="statusFilter === key ? 'chip-active shadow-md' : 'bg-surface t-ink hover:bg-app border b-line'"
             >
                 {{ key === 'all' ? 'Semua' : statusLabel(key) }} <span class="opacity-75">({{ count }})</span>
