@@ -1,10 +1,49 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
 const theme = ref('dark');
-const mobileMenuOpen = ref(false);
+const activeJourney = ref(0);
+const activeMode = ref(0);
+const revealedSections = ref(new Set());
+const navOpen = ref(false);
+const journeyTabs = ref([]);
+const modeTabs = ref([]);
+let observer;
+
+const isAuthenticated = computed(() => !!page.props.auth?.user);
+const ctaText = computed(() => isAuthenticated.value ? 'Masuk Dashboard' : 'Masuk ke Platform');
+const ctaHref = computed(() => isAuthenticated.value ? '/dashboard' : '/login');
+
+const journey = [
+    { label: 'ASSESS', title: 'Mulai dari baseline yang jujur', text: 'Pretest memetakan pengetahuan awal tanpa asumsi.', metric: 'Pretest', value: '54', accent: 'brand' },
+    { label: 'LEARN', title: 'Belajar dalam konteks nyata', text: 'Modul singkat membantu tim memahami keputusan yang tepat.', metric: 'Progress', value: '68%', accent: 'ok' },
+    { label: 'PRACTICE', title: 'Uji respons sebelum insiden', text: 'Case study dan CTF mengubah teori menjadi kebiasaan.', metric: 'Scenario', value: '12', accent: 'warn' },
+    { label: 'SIMULATE', title: 'Simulasikan tekanan sebenarnya', text: 'Phishing dan tabletop melatih koordinasi lintas peran.', metric: 'Response', value: '82%', accent: 'danger' },
+    { label: 'MEASURE', title: 'Lihat kesiapan secara menyeluruh', text: 'Reporting menghubungkan aktivitas dengan learning gain.', metric: 'Readiness', value: '82', accent: 'brand' },
+];
+
+const learningModes = [
+    { label: 'LEARN', title: 'Bangun pemahaman yang melekat', text: 'Modul mikro berbasis skenario membuat pembelajaran relevan dengan pekerjaan sehari-hari.', type: 'module', stat: '8 / 10', statLabel: 'modul selesai' },
+    { label: 'DECIDE', title: 'Latih keputusan, bukan hafalan', text: 'Case study bercabang menunjukkan konsekuensi dari setiap pilihan.', type: 'decision', stat: 'B', statLabel: 'pilihan saat ini' },
+    { label: 'PRACTICE', title: 'Berlatih di ruang yang aman', text: 'CTF dan tantangan keamanan memberi ruang untuk mencoba, gagal, lalu memperbaiki.', type: 'challenge', stat: '03:42', statLabel: 'waktu tersisa' },
+    { label: 'RESPOND TOGETHER', title: 'Respons sebagai satu tim', text: 'Tabletop exercise menyatukan peran, komunikasi, dan keputusan ketika tekanan meningkat.', type: 'tabletop', stat: '4 / 4', statLabel: 'fase aktif' },
+];
+
+const currentJourney = computed(() => journey[activeJourney.value]);
+const currentMode = computed(() => learningModes[activeMode.value]);
+
+const scrollTo = (id) => {
+    navOpen.value = false;
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const handleKeydown = (event) => {
+    if (event.key === 'Escape' && navOpen.value) {
+        navOpen.value = false;
+    }
+};
 
 const toggleTheme = () => {
     theme.value = theme.value === 'dark' ? 'light' : 'dark';
@@ -12,882 +51,221 @@ const toggleTheme = () => {
     localStorage.setItem('theme', theme.value);
 };
 
-onMounted(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    theme.value = saved;
-    document.documentElement.dataset.theme = saved;
-});
-
-const isAuthenticated = computed(() => !!page.props.auth.user);
-const ctaText = computed(() => isAuthenticated.value ? 'Masuk Dashboard' : 'Masuk ke Platform');
-const ctaHref = computed(() => isAuthenticated.value ? '/dashboard' : '/login');
-
-const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-        mobileMenuOpen.value = false;
-    }
+const selectJourney = (index) => {
+    activeJourney.value = index;
+    nextTick(() => journeyTabs.value[index]?.focus());
 };
 
-const handleKeydown = (event) => {
-    if (event.key === 'Escape' && mobileMenuOpen.value) {
-        mobileMenuOpen.value = false;
-    }
+const selectMode = (index) => {
+    activeMode.value = index;
+    nextTick(() => modeTabs.value[index]?.focus());
 };
 
-onBeforeUnmount(() => {
-    document.removeEventListener('keydown', handleKeydown);
-});
+const moveJourney = (event, direction) => {
+    event.preventDefault();
+    selectJourney((activeJourney.value + direction + journey.length) % journey.length);
+};
+
+const moveMode = (event, direction) => {
+    event.preventDefault();
+    selectMode((activeMode.value + direction + learningModes.length) % learningModes.length);
+};
 
 onMounted(() => {
     document.addEventListener('keydown', handleKeydown);
+    const saved = localStorage.getItem('theme') || 'dark';
+    theme.value = saved;
+    document.documentElement.dataset.theme = saved;
+
+    observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                revealedSections.value = new Set([...revealedSections.value, entry.target.id]);
+            }
+        });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('[data-reveal]').forEach((section) => observer.observe(section));
+});
+
+onUnmounted(() => {
+    observer?.disconnect();
+    document.removeEventListener('keydown', handleKeydown);
 });
 </script>
 
 <template>
-    <Head title="Security Awareness Platform" />
+    <Head title="Awareness — Cybersecurity Awareness & Readiness Platform" />
 
-    <div class="min-h-screen bg-app">
-        <!-- Navbar -->
-        <nav class="landing-nav fixed top-0 left-0 right-0 z-50 bg-surface b-line border-b backdrop-blur-sm" style="background: var(--header)" aria-label="Navigasi utama">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between min-h-16 py-3">
-                    <div class="flex items-center gap-3">
-                        <div class="landing-logo w-9 h-9 rounded-xl flex items-center justify-center font-display font-bold text-sm" aria-hidden="true">SA</div>
-                        <span class="font-display font-semibold text-sm sm:text-base t-ink">Awareness Platform</span>
-                    </div>
-
-                    <div class="hidden md:flex items-center gap-1 text-sm">
-                        <button @click="scrollTo('features')" class="landing-nav-link t-muted">
-                            Fitur
-                        </button>
-                        <button @click="scrollTo('how-it-works')" class="landing-nav-link t-muted">
-                            Cara Kerja
-                        </button>
-                        <button @click="scrollTo('packages')" class="landing-nav-link t-muted">
-                            Paket
-                        </button>
-                        <button @click="scrollTo('security')" class="landing-nav-link t-muted">
-                            Keamanan
-                        </button>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <button
-                            @click="toggleTheme"
-                            class="landing-icon-button t-muted"
-                            :aria-label="theme === 'dark' ? 'Aktifkan tema terang' : 'Aktifkan tema gelap'"
-                            title="Ganti tema"
-                        >
-                            <svg v-if="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                        </button>
-
-                        <Link :href="ctaHref" class="btn btn-primary hidden sm:inline-flex">
-                            {{ ctaText }}
-                        </Link>
-                        <button
-                            class="landing-icon-button md:hidden t-muted"
-                            :aria-expanded="mobileMenuOpen"
-                            aria-controls="mobile-navigation"
-                            :aria-label="mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'"
-                            @click="mobileMenuOpen = !mobileMenuOpen"
-                        >
-                            <svg v-if="!mobileMenuOpen" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
+    <div class="landing-shell">
+        <nav class="site-nav" aria-label="Navigasi utama">
+            <div class="nav-inner">
+                <button class="brand-mark" aria-label="Kembali ke beranda" @click="scrollTo('top')">
+                    <span class="brand-symbol">A</span>
+                    <span class="brand-name">Awareness<span>.</span></span>
+                </button>
+                <div class="desktop-nav">
+                    <button @click="scrollTo('journey')">Perjalanan</button>
+                    <button @click="scrollTo('features')">Platform</button>
+                    <button @click="scrollTo('security')">Keamanan</button>
                 </div>
-                <div v-if="mobileMenuOpen" id="mobile-navigation" class="landing-mobile-menu md:hidden">
-                    <button @click="scrollTo('features')" class="landing-mobile-link">Fitur</button>
-                    <button @click="scrollTo('how-it-works')" class="landing-mobile-link">Cara Kerja</button>
-                    <button @click="scrollTo('packages')" class="landing-mobile-link">Paket</button>
-                    <button @click="scrollTo('security')" class="landing-mobile-link">Keamanan</button>
+                <div class="nav-actions">
+                    <button class="theme-toggle" :aria-label="`Ganti ke tema ${theme === 'dark' ? 'terang' : 'gelap'}`" @click="toggleTheme">
+                        <svg v-if="theme === 'dark'" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36 6.36-1.42-1.42M7.05 7.05 5.64 5.64m12.72 0-1.42 1.41M7.05 16.95l-1.41 1.41M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/></svg>
+                        <svg v-else aria-hidden="true" viewBox="0 0 24 24"><path d="M20.35 15.35A9 9 0 0 1 8.65 3.65 9 9 0 1 0 20.35 15.35Z"/></svg>
+                    </button>
+                    <Link :href="ctaHref" class="nav-cta">{{ ctaText }}</Link>
+                    <button class="menu-toggle" :aria-expanded="navOpen" aria-label="Buka navigasi" @click="navOpen = !navOpen">
+                        <span></span><span></span>
+                    </button>
                 </div>
+            </div>
+            <div v-if="navOpen" class="mobile-nav">
+                <button @click="scrollTo('journey')">Perjalanan</button>
+                <button @click="scrollTo('features')">Platform</button>
+                <button @click="scrollTo('security')">Keamanan</button>
             </div>
         </nav>
 
-        <!-- Hero -->
-        <section class="landing-hero pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-                    <div class="fade-in relative z-10">
-                        <span class="landing-eyebrow">Cybersecurity awareness &amp; readiness</span>
-                        <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight t-ink mb-6">
-                            Bangun kesiapan keamanan, bukan sekadar menyelesaikan pelatihan.
-                        </h1>
-                        <p class="text-base sm:text-lg leading-8 t-muted mb-8 max-w-xl">
-                            Satukan training, assessment, phishing simulation, security lab, dan tabletop exercise dalam satu platform untuk membantu organisasi membangun awareness yang dapat dipelajari, dipraktikkan, dan diukur.
-                        </p>
-                        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                            <Link :href="ctaHref" class="btn btn-primary landing-hero-cta">
-                                {{ ctaText }}
-                            </Link>
-                            <button @click="scrollTo('features')" class="btn btn-secondary landing-hero-cta">
-                                Lihat Fitur
-                            </button>
-                        </div>
+        <main id="top">
+            <section class="hero-section section-wrap">
+                <div class="hero-copy fade-in">
+                    <p class="eyebrow"><span class="eyebrow-dot"></span> CYBERSECURITY READINESS PLATFORM</p>
+                    <h1>Bangun kesiapan keamanan, <em>bukan sekadar</em> menyelesaikan pelatihan.</h1>
+                    <p class="hero-lede">Awareness membantu organisasi mengubah pengetahuan menjadi keputusan yang lebih aman — lalu mengukurnya dengan jelas.</p>
+                    <div class="hero-actions">
+                        <Link :href="ctaHref" class="primary-action">{{ ctaText }} <span>↗</span></Link>
+                        <button class="text-action" @click="scrollTo('journey')">Jelajahi platform <span>↓</span></button>
                     </div>
+                    <div class="hero-note"><span class="pulse-dot"></span> Untuk tim yang ingin siap sebelum insiden terjadi</div>
+                </div>
+                <div class="hero-visual" aria-label="Pratinjau dashboard readiness" role="img">
+                    <div class="hero-grid"></div>
+                    <div class="orbit-line"></div>
+                    <div class="readiness-surface">
+                        <div class="surface-top"><span>ORGANIZATION READINESS</span><span class="live-status"><i></i> LIVE VIEW</span></div>
+                        <div class="readiness-score"><strong>82</strong><span>/ 100<br><small>readiness index</small></span></div>
+                        <div class="score-line"><span style="width: 82%"></span></div>
+                        <div class="surface-meta"><span>Learning gain <b>+28</b></span><span>Completion <b>76%</b></span></div>
+                        <div class="mini-bars"><i style="height: 38%"></i><i style="height: 52%"></i><i style="height: 45%"></i><i style="height: 68%"></i><i style="height: 58%"></i><i style="height: 82%"></i><i style="height: 74%"></i><i style="height: 92%"></i></div>
+                    </div>
+                    <div class="float-gain"><span>LEARNING GAIN</span><strong>+28</strong><small>best posttest</small></div>
+                    <div class="float-training"><span class="float-icon">✓</span><span><b>Phishing simulation</b><small>Completed by 92% of team</small></span></div>
+                </div>
+            </section>
 
-                    <div class="fade-in relative">
-                        <div class="landing-hero-orb landing-hero-orb-one" aria-hidden="true"></div>
-                        <div class="landing-hero-orb landing-hero-orb-two" aria-hidden="true"></div>
-                        <div class="card landing-metric-card p-5 sm:p-6 space-y-4">
-                            <div class="flex items-center justify-between pb-3 b-line border-b">
-                                <span class="text-sm font-semibold t-muted">Dashboard Metrik</span>
-                                <span class="w-2 h-2 rounded-full" style="background: var(--ok)"></span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="text-center">
-                                    <div class="text-3xl font-display font-bold" style="color: var(--brand)">78</div>
-                                    <div class="text-xs t-muted mt-1">Awareness Score</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-3xl font-display font-bold" style="color: var(--ok)">92%</div>
-                                    <div class="text-xs t-muted mt-1">Training Completion</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-3xl font-display font-bold" style="color: var(--warn)">Cukup</div>
-                                    <div class="text-xs t-muted mt-1">Risk Tier</div>
-                                </div>
-                            </div>
-                            <div class="pt-3 space-y-2">
-                                <div class="flex items-center justify-between text-xs">
-                                    <span class="t-muted">Training Modules</span>
-                                    <span class="t-ink font-semibold">8/10</span>
-                                </div>
-                                <div class="h-2 rounded-full" style="background: var(--surface-2)">
-                                    <div class="h-2 rounded-full transition-all" style="width: 80%; background: var(--brand)"></div>
-                                </div>
-                            </div>
-                        </div>
+            <section id="problem" class="editorial-section section-wrap reveal-section" :class="{ visible: revealedSections.has('problem') }" data-reveal>
+                <div class="editorial-heading"><p class="eyebrow">THE READINESS GAP</p><h2>Completion <em>bukan</em> ukuran kesiapan.</h2></div>
+                <div class="editorial-intro"><p>Pelatihan selesai adalah awal, bukan akhir. Kesiapan terlihat ketika orang tahu apa yang harus dilakukan, bisa mempraktikkannya, dan organisasi dapat melihat kemajuannya.</p></div>
+                <div class="principles">
+                    <div class="principle"><span class="principle-number">01</span><div><h3>TRAINING</h3><p>Bangun pengetahuan yang relevan dengan pekerjaan sehari-hari.</p></div></div>
+                    <div class="principle"><span class="principle-number">02</span><div><h3>PRACTICE</h3><p>Uji keputusan dan respons dalam skenario yang aman.</p></div></div>
+                    <div class="principle"><span class="principle-number">03</span><div><h3>VISIBILITY</h3><p>Ukur learning gain dan lihat area yang masih perlu diperkuat.</p></div></div>
+                </div>
+            </section>
+
+            <section id="journey" class="journey-section reveal-section" :class="{ visible: revealedSections.has('journey') }" data-reveal>
+                <div class="section-wrap">
+                    <div class="section-heading"><p class="eyebrow">ONE CONTINUOUS JOURNEY</p><h2>Dari baseline menuju kesiapan.</h2><p>Setiap tahap terhubung. Setiap aktivitas punya tujuan yang dapat diukur.</p></div>
+                    <div class="journey-track" role="tablist" aria-label="Tahap readiness journey">
+                        <span class="journey-rail" aria-hidden="true"><i :style="{ width: `${(activeJourney / (journey.length - 1)) * 100}%` }"></i></span>
+                        <button v-for="(item, index) in journey" :key="item.label" ref="journeyTabs" class="journey-node" :class="{ active: activeJourney === index }" role="tab" :aria-selected="activeJourney === index" :aria-controls="`journey-panel-${index}`" :tabindex="activeJourney === index ? 0 : -1" @click="selectJourney(index)" @keydown.left="moveJourney($event, -1)" @keydown.right="moveJourney($event, 1)" @keydown.home.prevent="selectJourney(0)" @keydown.end.prevent="selectJourney(journey.length - 1)">
+                            <span class="node-dot">{{ String(index + 1).padStart(2, '0') }}</span><span>{{ item.label }}</span>
+                        </button>
+                    </div>
+                    <div class="journey-panel" :id="`journey-panel-${activeJourney}`" role="tabpanel" :aria-label="currentJourney.label">
+                        <div class="panel-copy"><p class="eyebrow">{{ currentJourney.metric }}</p><h3>{{ currentJourney.title }}</h3><p>{{ currentJourney.text }}</p></div>
+                        <div class="journey-preview"><span class="preview-label">{{ currentJourney.label }} / SAMPLE VIEW</span><strong :class="`accent-${currentJourney.accent}`">{{ currentJourney.value }}</strong><div class="preview-lines"><i></i><i></i><i></i><i></i></div><span class="preview-foot">Illustrative product state</span></div>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Why it matters -->
-        <section id="why-it-matters" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="max-w-3xl mb-10">
-                    <span class="landing-section-kicker">Mengapa readiness penting</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Completion alone does not show whether security understanding has improved.</h2>
-                    <p class="text-base sm:text-lg t-muted">Organisasi membutuhkan rangkaian pembelajaran yang menghubungkan pemahaman, praktik, simulasi, dan visibilitas.</p>
+            <section id="features" class="stories-section section-wrap reveal-section" :class="{ visible: revealedSections.has('features') }" data-reveal>
+                <div class="section-heading narrow"><p class="eyebrow">THE PLATFORM</p><h2>Lebih dari konten. Sebuah sistem latihan.</h2></div>
+                <article class="feature-story"><div class="story-copy"><span class="story-index">01 / MEASURE LEARNING</span><h3>Assessment yang menunjukkan <em>perubahan</em>.</h3><p>Bandingkan pretest baseline dengan best posttest untuk memahami learning gain secara nyata — bukan sekadar angka completion.</p><button class="inline-link" @click="scrollTo('measurement')">Lihat cara mengukur <span>→</span></button></div><div class="assessment-visual"><div class="assessment-header"><span>LEARNING GAIN</span><b>+28</b></div><div class="compare-row"><div><small>PRETEST</small><strong>54</strong></div><span class="compare-arrow">→</span><div><small>BEST POSTTEST</small><strong>82</strong></div></div><div class="compare-track"><i></i></div><small class="visual-caption">best posttest score - pretest score</small></div></article>
+                <article class="feature-story story-reverse"><div class="story-copy"><span class="story-index">02 / PRACTICE RESPONSE</span><h3>Latihan yang terasa seperti <em>keputusan nyata</em>.</h3><p>Phishing simulation, case study, CTF, dan tabletop exercise membuat respons menjadi kebiasaan yang bisa dilatih bersama.</p><button class="inline-link" @click="selectMode(2); scrollTo('modes')">Masuk ke ruang latihan <span>→</span></button></div><div class="simulation-visual"><div class="mail-row"><span class="mail-avatar">IT</span><span><b>Urgent: Review shared document</b><small>external-sender.example</small></span><em>Suspicious</em></div><div class="mail-divider"></div><div class="decision-row"><span>What would you do?</span><button>Report</button><button class="muted-choice">Open</button></div></div></article>
+                <article class="feature-story"><div class="story-copy"><span class="story-index">03 / TEAM READINESS</span><h3>Respons bersama, bukan silo.</h3><p>Satukan peran dan percakapan lintas fungsi dalam tabletop exercise yang terstruktur dan mudah dievaluasi.</p><button class="inline-link" @click="selectMode(3); scrollTo('modes')">Lihat mode respons <span>→</span></button></div><div class="team-visual"><div class="team-line"><span>DETECT</span><i></i><span>DECIDE</span><i></i><span>RESPOND</span></div><div class="team-roles"><span>Security</span><span>People</span><span>Leadership</span></div></div></article>
+                <div class="capability-rail"><span>ALSO IN THE PLATFORM</span><b>Multi-tenant administration</b><b>Reporting & visibility</b><b>Private media</b><b>Audit logging</b></div>
+            </section>
+
+            <section id="modes" class="modes-section reveal-section" :class="{ visible: revealedSections.has('modes') }" data-reveal>
+                <div class="section-wrap"><div class="section-heading"><p class="eyebrow">LEARNING MODES</p><h2>Satu platform, empat cara untuk siap.</h2><p>Pilih mode yang sesuai dengan kebutuhan tim Anda.</p></div>
+                    <div class="mode-tabs" role="tablist" aria-label="Mode pembelajaran"><button v-for="(mode, index) in learningModes" :key="mode.label" ref="modeTabs" role="tab" :aria-selected="activeMode === index" :aria-controls="`mode-panel-${index}`" :tabindex="activeMode === index ? 0 : -1" :class="{ active: activeMode === index }" @click="selectMode(index)" @keydown.left="moveMode($event, -1)" @keydown.right="moveMode($event, 1)" @keydown.home.prevent="selectMode(0)" @keydown.end.prevent="selectMode(learningModes.length - 1)">{{ mode.label }}</button></div>
+                    <div class="mode-panel" :id="`mode-panel-${activeMode}`" role="tabpanel" :aria-label="currentMode.label"><div class="mode-copy"><span class="mode-count">0{{ activeMode + 1 }}</span><h3>{{ currentMode.title }}</h3><p>{{ currentMode.text }}</p><span class="mode-status"><i></i> Preview diperbarui secara langsung</span></div><div class="mode-preview" :class="`mode-${currentMode.type}`"><div class="preview-window-top"><span>awareness / {{ currentMode.label.toLowerCase() }}</span><span>•••</span></div><div v-if="currentMode.type === 'module'" class="module-view"><div class="module-progress"><i style="width: 80%"></i></div><span>Module 08 / Secure collaboration</span><h4>Recognize the signal.</h4><div class="module-options"><b>○</b> Verify the sender <b>○</b> Share immediately</div></div><div v-else-if="currentMode.type === 'decision'" class="decision-view"><span class="scenario-tag">CASE STUDY / 03</span><h4>Dokumen sensitif dikirim ke alamat eksternal.</h4><p>Langkah pertama yang paling tepat?</p><div class="decision-options"><span>A</span> Laporkan dan verifikasi melalui kanal resmi.<br><span>B</span> Balas untuk meminta konfirmasi.</div></div><div v-else-if="currentMode.type === 'challenge'" class="challenge-view"><span class="scenario-tag">CTF / NETWORK</span><h4>Find the signal in the noise_</h4><div class="code-lines">01  scan --target gateway<br>02  found: <b>03</b> open ports<br>03  _</div></div><div v-else class="tabletop-view"><span class="scenario-tag">TABLETOP / PHASE 04</span><h4>Containment decision</h4><div class="people-row"><span>SEC</span><span>HR</span><span>OPS</span><span>LEAD</span></div><p>Siapa yang mengomunikasikan langkah berikutnya?</p></div><div class="mode-stat"><strong>{{ currentMode.stat }}</strong><span>{{ currentMode.statLabel }}</span></div></div></div>
                 </div>
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div class="card landing-story-card p-6 fade-in">
-                        <div class="landing-story-index">01</div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Completion is not enough</h3>
-                        <p class="text-sm t-muted">Selesainya modul belum menunjukkan apakah pemahaman keamanan benar-benar meningkat.</p>
-                    </div>
-                    <div class="card landing-story-card p-6 fade-in" style="animation-delay: 0.1s">
-                        <div class="landing-story-index">02</div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Training needs practice</h3>
-                        <p class="text-sm t-muted">Pembelajaran perlu dilanjutkan dengan keputusan, tantangan, dan latihan respons yang relevan.</p>
-                    </div>
-                    <div class="card landing-story-card p-6 fade-in" style="animation-delay: 0.2s">
-                        <div class="landing-story-index">03</div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Organizations need visibility</h3>
-                        <p class="text-sm t-muted">Tenant admin membutuhkan gambaran yang jelas untuk meninjau progres dan menentukan tindak lanjut.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Metrics Strip -->
-        <section class="py-12 px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="grid md:grid-cols-3 gap-6">
-                    <div class="card p-6 text-center fade-in">
-                        <div class="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">CBT Interaktif</h3>
-                        <p class="text-sm t-muted">Quiz berbasis skenario dengan timer dan feedback langsung</p>
-                    </div>
+            <section id="measurement" class="measurement-section reveal-section" :class="{ visible: revealedSections.has('measurement') }" data-reveal><div class="section-wrap"><div class="measurement-intro"><p class="eyebrow">A DATA STORY</p><h2>Belajar adalah perubahan yang bisa dilihat.</h2><p>Angka di bawah adalah ilustrasi bagaimana platform menghubungkan aktivitas belajar dengan hasilnya.</p></div><div class="measurement-story"><div class="measure-point"><span>PRETEST BASELINE</span><strong>54</strong><small>starting point</small></div><div class="measure-bridge"><span>+28 learning gain</span><i></i><i></i><i></i><i></i><i></i></div><div class="measure-point highlight"><span>BEST POSTTEST</span><strong>82</strong><small>highest demonstrated score</small></div></div><div class="supporting-metrics"><span><b>76%</b> completion</span><span><b>68%</b> competency</span><span><b>Illustrative values</b> bukan statistik pelanggan</span></div></div></section>
 
-                    <div class="card p-6 text-center fade-in" style="animation-delay: 0.1s">
-                        <div class="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Package & Entitlements</h3>
-                        <p class="text-sm t-muted">Paket fleksibel dengan gating fitur berbasis langganan</p>
-                    </div>
+            <section id="visibility" class="visibility-section section-wrap reveal-section" :class="{ visible: revealedSections.has('visibility') }" data-reveal><div class="visibility-copy"><p class="eyebrow">ORGANIZATION VISIBILITY</p><h2>Begini rasanya mengoperasikan platform.</h2><p>Dari satu pandangan, tim dapat memahami siapa yang sudah siap, latihan apa yang berjalan, dan area mana yang membutuhkan perhatian.</p><button class="inline-link" @click="scrollTo('security')">Pelajari fondasinya <span>→</span></button></div><div class="dashboard-canvas"><div class="canvas-sidebar"><strong>A</strong><i></i><i></i><i></i><i></i></div><div class="canvas-main"><div class="canvas-header"><span>Organization overview</span><small>Last synced just now</small></div><div class="canvas-score"><span>Readiness index</span><strong>82 <small>+12%</small></strong><div class="canvas-bar"><i></i></div></div><div class="canvas-columns"><div><small>LEARNER PROGRESS</small><b>76%</b><span class="tiny-bars"><i></i><i></i><i></i><i></i><i></i></span></div><div><small>ACTIVE EXERCISES</small><b>04</b><span class="exercise-dot"><i></i> 2 in progress</span></div><div><small>COMPETENCY</small><b>68%</b><span class="competency-line"></span></div></div></div></div></section>
 
-                    <div class="card p-6 text-center fade-in" style="animation-delay: 0.2s">
-                        <div class="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tenant Analytics</h3>
-                        <p class="text-sm t-muted">Laporan dan awareness score 5 komponen yang transparan</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+            <section id="security" class="security-section reveal-section" :class="{ visible: revealedSections.has('security') }" data-reveal><div class="section-wrap"><div class="section-heading narrow"><p class="eyebrow">SECURITY BY DESIGN</p><h2>Kepercayaan dibangun dari <em>lapisan</em> yang jelas.</h2><p>Fondasi platform membantu menjaga batas akses dan data di setiap langkah.</p></div><div class="security-flow"><div><b>RBAC</b><span>Role-based access</span></div><i></i><div><b>TENANT ISOLATION</b><span>Data boundaries</span></div><i></i><div><b>POSTGRESQL RLS</b><span>Database boundary</span></div><i></i><div><b>SERVER AUTHORIZATION</b><span>Validated actions</span></div><i></i><div><b>AUDIT & SANITIZATION</b><span>Traceable content</span></div></div><div class="security-facts"><span>Private media authorization</span><span>Rich-content sanitization</span><span>Audit logging</span><span>Server-side validation</span></div></div></section>
 
-        <div class="beam max-w-7xl mx-auto"></div>
-
-        <!-- Features -->
-        <section id="features" class="py-20 px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center mb-12">
-                    <span class="landing-section-kicker">Core capabilities</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Kapabilitas untuk membangun security readiness</h2>
-                    <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Dari pembelajaran dasar sampai visibilitas organisasi, setiap kapabilitas mendukung langkah berikutnya.
-                    </p>
-                </div>
-
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="card p-6 fade-in">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Awareness Training</h3>
-                        <p class="text-sm t-muted">Modul terstruktur membantu learner memahami praktik keamanan yang relevan.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.05s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Assessment &amp; Learning Gain</h3>
-                        <p class="text-sm t-muted">Assessment sebelum dan sesudah pembelajaran membantu melihat perubahan pemahaman.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.1s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Phishing Simulation</h3>
-                        <p class="text-sm t-muted">Latihan simulasi membantu organisasi menguji kesiapan dalam konteks yang terarah.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.15s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">CTF / Security Lab</h3>
-                        <p class="text-sm t-muted">Tantangan praktis memberi ruang untuk menerapkan konsep keamanan secara langsung.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.2s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tabletop Exercise</h3>
-                        <p class="text-sm t-muted">Latihan kolaboratif membantu tim membahas keputusan dan respons bersama.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.25s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Multi-Tenant Administration</h3>
-                        <p class="text-sm t-muted">Kelola learner, assignment, latihan, dan konteks paket sesuai kebutuhan organisasi.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in lg:col-span-3">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h4l3 8 4-18 3 10h4" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Reporting &amp; Readiness Visibility</h3>
-                        <p class="text-sm t-muted max-w-2xl">Dashboard dan laporan membantu tenant admin meninjau completion, assessment, competency, dan tindak lanjut readiness.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="beam max-w-7xl mx-auto"></div>
-
-        <!-- How it Works -->
-        <section id="how-it-works" class="py-20 px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center mb-12">
-                    <span class="landing-section-kicker">The readiness journey</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Dari baseline menuju kesiapan yang terlihat</h2>
-                    <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Hubungkan assessment, learning, practice, simulation, dan measurement dalam satu perjalanan.
-                    </p>
-                </div>
-
-                <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-6">
-                    <div class="text-center fade-in">
-                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">1</div>
-                        <h3 class="font-display font-bold t-ink mb-2">ASSESS</h3>
-                        <p class="text-sm t-muted">Pretest establishes the baseline.</p>
-                    </div>
-
-                    <div class="text-center fade-in" style="animation-delay: 0.1s">
-                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">2</div>
-                        <h3 class="font-display font-bold t-ink mb-2">LEARN</h3>
-                        <p class="text-sm t-muted">Structured awareness modules membangun dasar pemahaman.</p>
-                    </div>
-
-                    <div class="text-center fade-in" style="animation-delay: 0.2s">
-                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">3</div>
-                        <h3 class="font-display font-bold t-ink mb-2">PRACTICE</h3>
-                        <p class="text-sm t-muted">Case Studies dan CTF / Security Lab mengubah konsep menjadi tindakan.</p>
-                    </div>
-
-                    <div class="text-center fade-in" style="animation-delay: 0.3s">
-                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">4</div>
-                        <h3 class="font-display font-bold t-ink mb-2">SIMULATE</h3>
-                        <p class="text-sm t-muted">Phishing Simulation dan Tabletop Exercise melatih respons.</p>
-                    </div>
-
-                    <div class="text-center fade-in" style="animation-delay: 0.4s">
-                        <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center font-display text-2xl font-bold" style="background: var(--brand-soft); color: var(--brand)">5</div>
-                        <h3 class="font-display font-bold t-ink mb-2">MEASURE</h3>
-                        <p class="text-sm t-muted">Posttest, Learning Gain, completion, competency, dan reporting menunjukkan perubahan.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="beam max-w-7xl mx-auto"></div>
-
-        <!-- Learning modes -->
-        <section id="learning-modes" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="max-w-2xl mb-10">
-                    <span class="landing-section-kicker">Learning modes</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Belajar dengan lebih dari satu cara.</h2>
-                    <p class="text-base sm:text-lg t-muted">Setiap mode menjawab kebutuhan berbeda: memahami, mengambil keputusan, mempraktikkan, dan merespons bersama.</p>
-                </div>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="card p-6">
-                        <span class="landing-mode-label">LEARN</span>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Training Modules</h3>
-                        <p class="text-sm t-muted">Bangun fondasi awareness melalui materi terstruktur.</p>
-                    </div>
-                    <div class="card p-6">
-                        <span class="landing-mode-label">DECIDE</span>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Case Studies</h3>
-                        <p class="text-sm t-muted">Latih penilaian melalui skenario dan keputusan kontekstual.</p>
-                    </div>
-                    <div class="card p-6">
-                        <span class="landing-mode-label">PRACTICE</span>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">CTF / Security Lab</h3>
-                        <p class="text-sm t-muted">Terapkan konsep keamanan melalui tantangan praktis.</p>
-                    </div>
-                    <div class="card p-6">
-                        <span class="landing-mode-label">RESPOND TOGETHER</span>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tabletop Exercise</h3>
-                        <p class="text-sm t-muted">Bahas respons dan keputusan secara kolaboratif.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Measurement -->
-        <section id="measurement" class="py-20 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto grid lg:grid-cols-[1fr_1.2fr] gap-10 items-start">
-                <div>
-                    <span class="landing-section-kicker">Measurement</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Ukur perubahan, bukan hanya completion.</h2>
-                    <p class="text-base sm:text-lg t-muted">Gunakan indikator yang membantu organisasi memahami progres pembelajaran dan area yang perlu diperkuat.</p>
-                </div>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <div class="card p-5"><p class="text-sm t-muted mb-1">Pretest Baseline</p><p class="font-display text-xl font-bold t-ink">Titik awal</p></div>
-                    <div class="card p-5"><p class="text-sm t-muted mb-1">Best Posttest Score</p><p class="font-display text-xl font-bold t-ink">Hasil terbaik</p></div>
-                    <div class="card p-5"><p class="text-sm t-muted mb-1">Learning Gain</p><p class="font-display text-xl font-bold t-ink">Best posttest score - pretest score</p></div>
-                    <div class="card p-5"><p class="text-sm t-muted mb-1">Completion &amp; Competency</p><p class="font-display text-xl font-bold t-ink">Progres dan kemampuan</p></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Organization value -->
-        <section id="organization-value" class="landing-section-muted py-20 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="max-w-2xl mb-10">
-                    <span class="landing-section-kicker">Untuk organisasi</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Visibilitas yang membantu tenant admin bertindak.</h2>
-                    <p class="text-base sm:text-lg t-muted">Kelola perjalanan learner dari assignment sampai laporan tanpa kehilangan konteks operasional.</p>
-                </div>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Kelola learner</h3><p class="text-sm t-muted">Atur peserta dan penugasan training.</p></div>
-                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Pantau progres</h3><p class="text-sm t-muted">Monitor completion dan review assessment.</p></div>
-                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Jalankan latihan</h3><p class="text-sm t-muted">Kelola simulasi dan exercise yang tersedia.</p></div>
-                    <div class="card p-5"><h3 class="font-display font-bold t-ink mb-2">Review laporan</h3><p class="text-sm t-muted">Gunakan reporting dan konteks paket untuk tindak lanjut.</p></div>
-                </div>
-            </div>
-        </section>
-
-        <div class="beam max-w-7xl mx-auto"></div>
-
-        <!-- packages -->
-        <section id="packages" class="py-20 px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center mb-12">
-                    <h2 class="font-display text-4xl font-bold t-ink mb-4">Paket Langganan</h2>
-                    <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Pilih paket yang sesuai dengan kebutuhan organisasi Anda
-                    </p>
-                </div>
-
-                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="card p-6 fade-in">
-                        <h3 class="font-display font-bold text-xl t-ink mb-2">Starter</h3>
-                        <p class="text-sm t-muted mb-6">Training dasar dengan modul kurasi</p>
-                        <ul class="space-y-2 text-sm t-muted mb-6">
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Training modules</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>CBT quiz dasar</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Awareness score</span>
-                            </li>
-                        </ul>
-                        <button class="btn btn-secondary w-full">Hubungi Admin</button>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.1s">
-                        <h3 class="font-display font-bold text-xl t-ink mb-2">Pro</h3>
-                        <p class="text-sm t-muted mb-6">Semua modul dan reports export</p>
-                        <ul class="space-y-2 text-sm t-muted mb-6">
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Semua fitur Starter</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Case studies</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Tabletop exercise</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Reports export</span>
-                            </li>
-                        </ul>
-                        <button class="btn btn-primary w-full">Ajukan Upgrade</button>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.2s">
-                        <h3 class="font-display font-bold text-xl t-ink mb-2">Enterprise</h3>
-                        <p class="text-sm t-muted mb-6">Semua fitur termasuk CTF</p>
-                        <ul class="space-y-2 text-sm t-muted mb-6">
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Semua fitur Pro</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>CTF challenges</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Advanced analytics</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Priority support</span>
-                            </li>
-                        </ul>
-                        <button class="btn btn-primary w-full">Ajukan Upgrade</button>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.3s">
-                        <h3 class="font-display font-bold text-xl t-ink mb-2">Custom</h3>
-                        <p class="text-sm t-muted mb-6">Fitur dan modul fleksibel</p>
-                        <ul class="space-y-2 text-sm t-muted mb-6">
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Custom modules</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Fitur pilihan</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>Dedicated support</span>
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 flex-shrink-0" style="color: var(--ok)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>On-premise option</span>
-                            </li>
-                        </ul>
-                        <button class="btn btn-secondary w-full">Hubungi Admin</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="beam max-w-7xl mx-auto"></div>
-
-        <!-- Security & Ethics -->
-        <section id="security" class="py-20 px-6 lg:px-8">
-            <div class="max-w-7xl mx-auto">
-                <div class="text-center mb-12">
-                    <span class="landing-section-kicker">Security by design</span>
-                    <h2 class="font-display text-3xl sm:text-4xl font-bold t-ink mb-4">Kontrol keamanan yang mendukung kepercayaan.</h2>
-                    <p class="text-lg t-muted max-w-2xl mx-auto">
-                        Platform menerapkan kontrol pada akses, data tenant, validasi, media, konten, dan aktivitas.
-                    </p>
-                </div>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="card p-6 fade-in">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Role-Based Authorization</h3>
-                        <p class="text-sm t-muted">Akses diberikan sesuai peran dan kewenangan yang berlaku di platform.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.1s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Tenant Isolation</h3>
-                        <p class="text-sm t-muted">PostgreSQL RLS menjadi boundary isolasi data antar tenant.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.2s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Server-Side Validation</h3>
-                        <p class="text-sm t-muted">Validasi penting dilakukan di server untuk menjaga integritas proses.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in" style="animation-delay: 0.3s">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Private Media Authorization</h3>
-                        <p class="text-sm t-muted">Akses media privat dilindungi melalui otorisasi.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Rich-Content Sanitization</h3>
-                        <p class="text-sm t-muted">Konten rich text disanitasi sebelum digunakan dalam platform.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Audit Logging</h3>
-                        <p class="text-sm t-muted">Aktivitas penting dicatat untuk mendukung peninjauan dan akuntabilitas.</p>
-                    </div>
-
-                    <div class="card p-6 fade-in">
-                        <div class="w-10 h-10 rounded-lg mb-4 flex items-center justify-center" style="background: var(--brand-soft)">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" style="color: var(--brand)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-bold text-lg t-ink mb-2">Security Headers</h3>
-                        <p class="text-sm t-muted">Header keamanan membantu memperkuat perlindungan pada lapisan web.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Final CTA -->
-        <section class="py-20 px-6 lg:px-8">
-            <div class="max-w-4xl mx-auto text-center">
-                <h2 class="font-display text-4xl font-bold t-ink mb-4">
-                    Bangun awareness yang dapat dipelajari, dipraktikkan, dan diukur.
-                </h2>
-                <p class="text-lg t-muted mb-8">
-                    Satukan learning, practice, simulation, dan measurement dalam satu platform.
-                </p>
-                <Link :href="ctaHref" class="btn btn-primary">
-                    {{ ctaText }}
-                </Link>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="py-8 px-6 lg:px-8 b-line border-t">
-            <div class="max-w-7xl mx-auto text-center">
-                <p class="text-sm t-muted">
-                    Security Awareness Platform — Bangun budaya keamanan siber yang terukur
-                </p>
-            </div>
-        </footer>
+            <section id="final-cta" class="final-cta"><div class="cta-orb"></div><div class="section-wrap"><p class="eyebrow">READY WHEN YOU ARE</p><h2>Bangun awareness yang dapat dipelajari, dipraktikkan, dan diukur.</h2><Link :href="ctaHref" class="primary-action light">Mulai perjalanan readiness <span>↗</span></Link></div></section>
+        </main>
+        <footer class="site-footer section-wrap"><span class="brand-name">Awareness<span>.</span></span><span>Cybersecurity Awareness & Readiness Platform</span><button @click="scrollTo('top')">Kembali ke atas ↑</button></footer>
     </div>
 </template>
 
 <style scoped>
-.landing-section-muted {
-    background: color-mix(in srgb, var(--surface-2) 46%, transparent);
-}
-
-.landing-section-kicker {
-    color: var(--brand);
-    display: inline-block;
-    font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .1em;
-    margin-bottom: .75rem;
-    text-transform: uppercase;
-}
-
-.landing-story-card,
-.landing-capability-card {
-    transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
-}
-
-.landing-story-card:hover,
-.landing-capability-card:hover {
-    border-color: var(--card-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-}
-
-.landing-story-index,
-.landing-capability-number {
-    color: var(--brand);
-    font-family: var(--font-mono);
-    font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    margin-bottom: 1rem;
-}
-
-.landing-mode-label {
-    color: var(--brand);
-    display: inline-block;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: .1em;
-    margin-bottom: 1rem;
-}
-
-.landing-nav {
-    border-color: color-mix(in srgb, var(--line) 80%, transparent);
-    box-shadow: 0 8px 30px color-mix(in srgb, var(--bg) 35%, transparent);
-}
-
-.landing-logo {
-    background: var(--brand-soft);
-    color: var(--brand-strong);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 20%, transparent);
-}
-
-.landing-nav-link,
-.landing-mobile-link,
-.landing-icon-button {
-    transition: color 180ms ease, background-color 180ms ease, transform 180ms ease;
-}
-
-.landing-nav-link {
-    border-radius: 9999px;
-    cursor: pointer;
-    padding: .55rem .8rem;
-}
-
-.landing-nav-link:hover,
-.landing-nav-link:focus-visible,
-.landing-mobile-link:hover,
-.landing-mobile-link:focus-visible {
-    background: var(--surface-2);
-    color: var(--ink);
-}
-
-.landing-nav-link:active,
-.landing-mobile-link:active,
-.landing-icon-button:active {
-    transform: translateY(1px);
-}
-
-.landing-icon-button {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: 9999px;
-    cursor: pointer;
-    display: inline-flex;
-    justify-content: center;
-    min-height: 2.5rem;
-    min-width: 2.5rem;
-}
-
-.landing-icon-button:hover,
-.landing-icon-button:focus-visible {
-    background: var(--surface-2);
-    color: var(--ink);
-}
-
-.landing-mobile-menu {
-    border-top: 1px solid var(--line);
-    display: grid;
-    gap: .25rem;
-    padding: .75rem 0 1rem;
-}
-
-.landing-mobile-link {
-    background: transparent;
-    border: 0;
-    border-radius: .75rem;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: .9375rem;
-    padding: .75rem 1rem;
-    text-align: left;
-}
-
-.landing-hero {
-    isolation: isolate;
-    overflow: hidden;
-    position: relative;
-}
-
-.landing-hero::before {
-    background: radial-gradient(circle at 76% 28%, color-mix(in srgb, var(--brand) 13%, transparent), transparent 34rem);
-    content: '';
-    inset: 0;
-    pointer-events: none;
-    position: absolute;
-    z-index: -1;
-}
-
-.landing-eyebrow {
-    background: var(--brand-soft);
-    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--line));
-    border-radius: 9999px;
-    color: var(--brand-strong);
-    display: inline-flex;
-    font-size: .75rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    margin-bottom: 1.25rem;
-    padding: .45rem .75rem;
-    text-transform: uppercase;
-}
-
-.landing-hero-cta {
-    min-height: 2.875rem;
-    padding-inline: 1.25rem;
-}
-
-.landing-metric-card {
-    box-shadow: 0 24px 70px color-mix(in srgb, var(--brand) 14%, transparent);
-    position: relative;
-    z-index: 1;
-}
-
-.landing-hero-orb {
-    border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent);
-    border-radius: 9999px;
-    pointer-events: none;
-    position: absolute;
-}
-
-.landing-hero-orb-one {
-    height: 10rem;
-    right: -2rem;
-    top: -3rem;
-    width: 10rem;
-}
-
-.landing-hero-orb-two {
-    bottom: -4rem;
-    height: 7rem;
-    left: -2rem;
-    opacity: .7;
-    width: 7rem;
-}
-
-@media (max-width: 639px) {
-    .landing-metric-card .grid {
-        gap: .5rem;
-    }
-
-    .landing-metric-card .text-3xl {
-        font-size: 1.6rem;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .landing-hero-orb {
-        display: none;
-    }
-}
+:global(html) { scroll-behavior: smooth; }
+:global(body) { overflow-x: hidden; }
+.landing-shell { --landing-max: 1240px; color: var(--ink); background: var(--bg); overflow: hidden; }
+.section-wrap { width: min(calc(100% - 48px), var(--landing-max)); margin: 0 auto; }
+.site-nav { position: fixed; inset: 0 0 auto; z-index: 50; border-bottom: 1px solid color-mix(in srgb, var(--line) 75%, transparent); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(18px); }
+.nav-inner { width: min(calc(100% - 48px), var(--landing-max)); height: 76px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.brand-mark, .desktop-nav button, .theme-toggle, .menu-toggle, .mobile-nav button, .site-footer button { border: 0; background: none; color: inherit; cursor: pointer; }
+.brand-mark { display: flex; align-items: center; gap: 10px; padding: 0; }
+.brand-symbol { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; color: var(--white); background: linear-gradient(140deg, var(--brand-mid), var(--brand-strong)); font: 700 14px var(--font-sans); }
+.brand-name { font: 700 18px var(--font-sans); letter-spacing: -.04em; }
+.brand-name span { color: var(--brand-mid); }
+.desktop-nav { display: flex; gap: 30px; margin-left: auto; }
+.desktop-nav button, .mobile-nav button { color: var(--muted); font-size: 13px; transition: color .18s ease; }
+.desktop-nav button:hover, .desktop-nav button:focus-visible, .mobile-nav button:hover, .mobile-nav button:focus-visible { color: var(--ink); }
+.nav-actions { display: flex; align-items: center; gap: 18px; }
+.theme-toggle { display: grid; place-items: center; width: 34px; height: 34px; color: var(--muted); border-radius: 50%; transition: color .18s ease, background .18s ease; }
+.theme-toggle:hover { color: var(--ink); background: var(--surface-2); }
+.theme-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.nav-cta { color: var(--white); background: var(--brand); border-radius: 7px; padding: 10px 16px; font-size: 12px; font-weight: 700; transition: transform .18s ease, background .18s ease; }
+.nav-cta:hover { background: var(--brand-strong); transform: translateY(-1px); }
+.menu-toggle { display: none; padding: 8px 0 8px 8px; }
+.menu-toggle span { display: block; width: 22px; height: 1px; margin: 5px 0; background: var(--ink); }
+.mobile-nav { display: none; }
+.hero-section { min-height: 750px; padding-top: 170px; padding-bottom: 100px; display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 70px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 22px; color: var(--brand-mid); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.eyebrow-dot, .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-mid); }
+.hero-copy h1 { max-width: 670px; margin: 0; font: 700 clamp(3.2rem, 5.5vw, 5.8rem)/.98 var(--font-sans); letter-spacing: -.075em; }
+.hero-copy h1 em, h2 em, h3 em { color: var(--brand-mid); font-style: normal; }
+.hero-lede { max-width: 500px; margin: 27px 0 32px; color: var(--muted); font-size: 17px; line-height: 1.65; }
+.hero-actions { display: flex; align-items: center; gap: 24px; }
+.primary-action { display: inline-flex; align-items: center; gap: 17px; padding: 14px 19px; border-radius: 7px; color: var(--white); background: var(--brand); font-size: 13px; font-weight: 700; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.primary-action span { font-size: 18px; line-height: 0; }
+.primary-action:hover { background: var(--brand-strong); box-shadow: 0 12px 30px color-mix(in srgb, var(--brand) 28%, transparent); transform: translateY(-2px); }
+.text-action, .inline-link { border: 0; padding: 0; color: var(--muted); background: none; cursor: pointer; font-size: 13px; transition: color .18s ease; }
+.text-action:hover, .inline-link:hover { color: var(--ink); }
+.text-action span, .inline-link span { margin-left: 8px; color: var(--brand-mid); }
+.hero-note { display: flex; align-items: center; gap: 8px; margin-top: 50px; color: var(--muted); font-size: 11px; }
+.pulse-dot { background: var(--ok); box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok) 12%, transparent); }
+.hero-visual { position: relative; min-height: 490px; }
+.hero-grid { position: absolute; inset: 4% -10% 7% 5%; opacity: .4; background-image: linear-gradient(color-mix(in srgb, var(--brand) 12%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--brand) 12%, transparent) 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(ellipse, #000 20%, transparent 72%); }
+.orbit-line { position: absolute; top: 8%; right: 3%; width: 72%; height: 75%; border: 1px solid color-mix(in srgb, var(--brand-mid) 32%, transparent); border-left-color: transparent; border-bottom-color: transparent; border-radius: 50%; transform: rotate(23deg); }
+.readiness-surface { position: absolute; inset: 15% 7% 13% 10%; padding: 26px 30px; background: color-mix(in srgb, var(--surface) 93%, transparent); border: 1px solid var(--line); box-shadow: 20px 24px 70px rgba(0,0,0,.22); transform: rotate(-2deg); }
+.surface-top, .surface-meta, .assessment-header { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+.live-status { color: var(--ok); font-size: 9px; }.live-status i { display: inline-block; width: 5px; height: 5px; margin-right: 5px; border-radius: 50%; background: var(--ok); }
+.readiness-score { display: flex; align-items: baseline; gap: 10px; margin: 42px 0 20px; }.readiness-score strong { font-size: clamp(5rem, 10vw, 8rem); line-height: .8; letter-spacing: -.1em; }.readiness-score span { color: var(--muted); font-size: 18px; }.readiness-score small { font-size: 10px; }
+.score-line, .compare-track, .canvas-bar { height: 5px; overflow: hidden; background: var(--surface-2); }.score-line span, .compare-track i, .canvas-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-mid)); }
+.surface-meta { margin-top: 18px; font-size: 11px; }.surface-meta b { margin-left: 8px; color: var(--ink); }.mini-bars { display: flex; align-items: end; gap: 8px; height: 90px; margin-top: 36px; border-bottom: 1px solid var(--line); }.mini-bars i { flex: 1; display: block; background: linear-gradient(180deg, var(--brand-mid), color-mix(in srgb, var(--brand) 35%, transparent)); opacity: .7; }
+.float-gain, .float-training { position: absolute; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: 10px 14px 35px rgba(0,0,0,.2); }.float-gain { top: 9%; right: -1%; transform: rotate(4deg); }.float-gain span, .float-training small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .08em; }.float-gain strong { display: block; margin: 5px 0 2px; color: var(--ok); font-size: 28px; letter-spacing: -.06em; }.float-gain small { color: var(--muted); font-size: 10px; }.float-training { bottom: 4%; left: 0; display: flex; align-items: center; gap: 10px; transform: rotate(-3deg); }.float-training b { display: block; margin-bottom: 4px; font-size: 11px; }.float-icon { display: grid; place-items: center; width: 27px; height: 27px; color: var(--ok); background: var(--ok-bg); border-radius: 50%; }
+.editorial-section { padding: 145px 0 160px; display: grid; grid-template-columns: 1.25fr .75fr; gap: 80px 12%; }.editorial-heading h2, .section-heading h2, .measurement-intro h2, .visibility-copy h2, .final-cta h2 { max-width: 700px; margin: 0; font-size: clamp(2.3rem, 5vw, 4.7rem); line-height: 1.02; letter-spacing: -.07em; }.editorial-intro { padding-top: 42px; }.editorial-intro p, .section-heading > p:not(.eyebrow), .visibility-copy > p, .measurement-intro > p:not(.eyebrow) { max-width: 440px; margin: 0; color: var(--muted); line-height: 1.7; font-size: 15px; }.principles { grid-column: 1 / -1; margin-top: 20px; border-top: 1px solid var(--line); }.principle { display: grid; grid-template-columns: 110px 1fr; gap: 25px; max-width: 870px; padding: 28px 0; border-bottom: 1px solid var(--line); }.principle-number, .story-index { color: var(--brand-mid); font: 700 11px var(--font-mono); letter-spacing: .12em; }.principle h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .1em; }.principle p { margin: 0; color: var(--muted); font-size: 14px; }
+.journey-section { padding: 120px 0 140px; background: var(--surface-2); }.section-heading { margin-bottom: 55px; }.section-heading h2 { max-width: 660px; font-size: clamp(2.4rem, 4vw, 4rem); }.section-heading > p:last-child { margin-top: 20px; }.journey-track { position: relative; display: flex; justify-content: space-between; margin: 70px 0 55px; }.journey-rail { position: absolute; top: 17px; left: 2%; width: 96%; height: 1px; background: var(--line); }.journey-rail i { display: block; height: 100%; background: var(--brand-mid); transition: width .25s ease; }.journey-node { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 13px; min-width: 80px; padding: 0; color: var(--muted); border: 0; background: none; cursor: pointer; font: 700 10px var(--font-sans); letter-spacing: .1em; transition: color .18s ease; }.journey-node:hover, .journey-node.active { color: var(--ink); }.node-dot { display: grid; place-items: center; width: 35px; height: 35px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-2); font-size: 10px; transition: background .2s, border .2s, color .2s; }.journey-node.active .node-dot { border-color: var(--brand-mid); color: var(--white); background: var(--brand); }.journey-panel { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 70px; padding-top: 42px; border-top: 1px solid var(--line); }.panel-copy .eyebrow { margin-bottom: 17px; }.panel-copy h3 { margin: 0 0 14px; font-size: 31px; letter-spacing: -.05em; }.panel-copy > p:last-child { max-width: 430px; margin: 0; color: var(--muted); line-height: 1.7; }.journey-preview { position: relative; min-height: 180px; padding: 26px 30px; background: var(--surface); border-left: 2px solid var(--brand); }.preview-label, .preview-foot { display: block; color: var(--muted); font-size: 9px; letter-spacing: .12em; }.journey-preview strong { display: block; margin: 20px 0 8px; font-size: 68px; letter-spacing: -.08em; }.accent-ok { color: var(--ok); }.accent-warn { color: var(--warn); }.accent-danger { color: var(--danger); }.preview-lines { display: flex; gap: 5px; height: 25px; align-items: end; }.preview-lines i { width: 28px; height: 100%; background: var(--brand-soft); }.preview-lines i:nth-child(2) { height: 65%; }.preview-lines i:nth-child(3) { height: 85%; }.preview-lines i:nth-child(4) { height: 42%; }.preview-foot { position: absolute; right: 30px; bottom: 28px; }
+.stories-section { padding: 145px 0 120px; }.section-heading.narrow { max-width: 760px; }.feature-story { display: grid; grid-template-columns: .85fr 1.15fr; align-items: center; gap: 12%; min-height: 450px; padding: 85px 0; border-bottom: 1px solid var(--line); }.feature-story.story-reverse { grid-template-columns: 1.15fr .85fr; }.story-reverse .story-copy { grid-column: 2; grid-row: 1; }.story-reverse .simulation-visual { grid-column: 1; grid-row: 1; }.story-copy h3 { max-width: 460px; margin: 18px 0; font-size: clamp(2rem, 3.5vw, 3.35rem); line-height: 1.04; letter-spacing: -.065em; }.story-copy p { max-width: 410px; margin: 0 0 25px; color: var(--muted); line-height: 1.7; font-size: 14px; }.assessment-visual, .simulation-visual, .team-visual { min-height: 270px; padding: 30px; background: var(--surface-2); border-top: 1px solid var(--line); }.assessment-header { color: var(--muted); }.assessment-header b { color: var(--ok); font-size: 22px; }.compare-row { display: flex; align-items: end; justify-content: space-between; margin: 53px 0 25px; }.compare-row small { display: block; color: var(--muted); font-size: 9px; letter-spacing: .1em; }.compare-row strong { display: block; margin-top: 7px; font-size: 63px; line-height: .8; letter-spacing: -.08em; }.compare-arrow { color: var(--brand-mid); font-size: 30px; }.compare-track { margin-bottom: 12px; }.compare-track i { width: 74%; }.visual-caption { color: var(--muted); font: 10px var(--font-mono); }.mail-row { display: flex; align-items: center; gap: 12px; }.mail-avatar { display: grid; place-items: center; width: 32px; height: 32px; color: var(--brand-mid); background: var(--brand-soft); border-radius: 50%; font-size: 9px; }.mail-row b, .mail-row small { display: block; }.mail-row b { font-size: 12px; }.mail-row small { margin-top: 4px; color: var(--muted); font-size: 10px; }.mail-row em { margin-left: auto; padding: 5px 7px; color: var(--danger); background: var(--danger-bg); font-size: 9px; font-style: normal; }.mail-divider { margin: 25px 0; border-top: 1px solid var(--line); }.decision-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }.decision-row span { margin-right: auto; }.decision-row button { border: 0; padding: 8px 12px; border-radius: 5px; color: var(--white); background: var(--brand); font-size: 10px; cursor: pointer; }.decision-row .muted-choice { color: var(--muted); background: var(--surface); }.team-line { display: flex; align-items: center; color: var(--ink); font: 700 11px var(--font-sans); }.team-line i { flex: 1; height: 1px; margin: 0 14px; background: var(--brand-mid); }.team-roles { display: flex; justify-content: space-between; margin-top: 90px; color: var(--muted); font-size: 11px; }.capability-rail { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; padding: 28px 0; color: var(--muted); font-size: 11px; }.capability-rail span { color: var(--brand-mid); font: 700 9px var(--font-mono); letter-spacing: .12em; }.capability-rail b { font-weight: 500; }
+.modes-section { padding: 125px 0 145px; background: var(--surface-2); }.mode-tabs { display: flex; gap: 28px; overflow-x: auto; margin-bottom: 45px; border-bottom: 1px solid var(--line); }.mode-tabs button { flex: 0 0 auto; position: relative; padding: 0 0 17px; border: 0; color: var(--muted); background: none; cursor: pointer; font: 700 11px var(--font-sans); letter-spacing: .1em; transition: color .18s ease; }.mode-tabs button::after { content: ''; position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; }.mode-tabs button.active, .mode-tabs button:hover { color: var(--ink); }.mode-tabs button.active::after { background: var(--brand-mid); }.mode-panel { display: grid; grid-template-columns: .7fr 1.3fr; gap: 10%; align-items: center; }.mode-count { color: var(--brand-mid); font: 700 12px var(--font-mono); }.mode-copy h3 { max-width: 390px; margin: 22px 0 17px; font-size: 35px; line-height: 1.05; letter-spacing: -.06em; }.mode-copy > p { max-width: 360px; margin: 0; color: var(--muted); line-height: 1.7; font-size: 14px; }.mode-status { display: flex; align-items: center; gap: 7px; margin-top: 35px; color: var(--muted); font-size: 10px; }.mode-status i { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); }.mode-preview { position: relative; min-height: 355px; padding: 24px; background: var(--surface); border: 1px solid var(--line); box-shadow: 15px 20px 50px rgba(0,0,0,.12); }.preview-window-top { display: flex; justify-content: space-between; color: var(--muted); font: 10px var(--font-mono); }.module-view, .decision-view, .challenge-view, .tabletop-view { max-width: 560px; margin: 60px auto 0; }.module-progress { height: 3px; margin-bottom: 25px; background: var(--surface-2); }.module-progress i { display: block; height: 100%; background: var(--brand-mid); }.module-view > span, .scenario-tag { color: var(--brand-mid); font: 10px var(--font-mono); letter-spacing: .08em; }.module-view h4, .decision-view h4, .challenge-view h4, .tabletop-view h4 { margin: 18px 0; font-size: 29px; letter-spacing: -.05em; }.module-options, .decision-view p, .tabletop-view p { color: var(--muted); font-size: 12px; line-height: 2; }.module-options b { margin-right: 5px; color: var(--brand-mid); }.decision-options { padding: 15px; border-left: 1px solid var(--brand-mid); color: var(--muted); font-size: 12px; line-height: 2; }.decision-options span { color: var(--brand-mid); }.code-lines { padding: 17px; color: var(--muted); background: var(--surface-2); font: 12px/2 var(--font-mono); }.code-lines b { color: var(--ok); }.people-row { display: flex; gap: 10px; }.people-row span { padding: 8px 12px; color: var(--brand-mid); background: var(--brand-soft); font: 10px var(--font-mono); }.mode-stat { position: absolute; right: 24px; bottom: 24px; text-align: right; }.mode-stat strong { display: block; color: var(--brand-mid); font-size: 24px; }.mode-stat span { color: var(--muted); font-size: 9px; }
+.measurement-section { padding: 150px 0 145px; color: var(--on-hero); background: var(--brand-dark-2); }.measurement-section .eyebrow { color: var(--on-hero-muted); }.measurement-intro { display: flex; justify-content: space-between; gap: 50px; }.measurement-intro h2 { max-width: 610px; }.measurement-intro > p:last-child { max-width: 260px; margin-top: 12px; color: var(--on-hero-muted); }.measurement-story { display: flex; align-items: center; gap: 8%; margin-top: 105px; }.measure-point span { display: block; color: var(--on-hero-muted); font: 10px var(--font-mono); letter-spacing: .1em; }.measure-point strong { display: block; margin: 17px 0 7px; color: var(--on-hero); font-size: clamp(5rem, 10vw, 8rem); line-height: .8; letter-spacing: -.1em; }.measure-point small { color: var(--on-hero-muted); font-size: 11px; }.measure-point.highlight strong { color: #d8c7ff; }.measure-bridge { flex: 1; position: relative; padding-top: 26px; }.measure-bridge span { position: absolute; top: 0; color: var(--brand-mid); font: 11px var(--font-mono); }.measure-bridge::before { content: ''; position: absolute; top: 48px; right: 0; left: 0; height: 1px; background: color-mix(in srgb, var(--brand-mid) 45%, transparent); }.measure-bridge i { display: inline-block; position: relative; z-index: 1; width: 6px; height: 6px; margin: 45px 9%; border-radius: 50%; background: var(--brand-mid); }.supporting-metrics { display: flex; gap: 40px; margin-top: 70px; padding-top: 24px; border-top: 1px solid color-mix(in srgb, var(--on-hero-muted) 25%, transparent); color: var(--on-hero-muted); font-size: 11px; }.supporting-metrics b { margin-right: 6px; color: var(--on-hero); font-size: 20px; }
+.visibility-section { display: grid; grid-template-columns: .65fr 1.35fr; align-items: center; gap: 10%; padding-top: 145px; padding-bottom: 150px; }.visibility-copy h2 { font-size: clamp(2.4rem, 4vw, 4rem); }.visibility-copy > p { margin: 24px 0; }.dashboard-canvas { display: grid; grid-template-columns: 54px 1fr; min-height: 345px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0,0,0,.13); }.canvas-sidebar { display: flex; flex-direction: column; align-items: center; gap: 25px; padding: 24px 0; border-right: 1px solid var(--line); color: var(--brand-mid); }.canvas-sidebar i { width: 15px; height: 2px; background: var(--line); }.canvas-main { padding: 28px; }.canvas-header { display: flex; justify-content: space-between; padding-bottom: 25px; border-bottom: 1px solid var(--line); font-size: 12px; }.canvas-header small { color: var(--muted); font-size: 9px; }.canvas-score { padding: 28px 0; }.canvas-score span, .canvas-columns small { display: block; color: var(--muted); font: 9px var(--font-mono); letter-spacing: .1em; }.canvas-score strong { display: block; margin: 12px 0 17px; font-size: 52px; letter-spacing: -.08em; }.canvas-score strong small { margin-left: 10px; color: var(--ok); font: 11px var(--font-sans); letter-spacing: 0; }.canvas-bar { height: 4px; }.canvas-bar i { width: 82%; }.canvas-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-top: 22px; border-top: 1px solid var(--line); }.canvas-columns b { display: block; margin: 11px 0; font-size: 24px; }.tiny-bars { display: flex; align-items: end; gap: 3px; height: 19px; }.tiny-bars i { flex: 1; height: 80%; background: var(--brand-soft); }.tiny-bars i:nth-child(2) { height: 55%; }.tiny-bars i:nth-child(3) { height: 70%; }.tiny-bars i:nth-child(4) { height: 95%; }.tiny-bars i:nth-child(5) { height: 75%; }.exercise-dot { color: var(--muted); font-size: 9px; }.exercise-dot i { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 50%; background: var(--warn); }.competency-line { display: block; width: 75%; height: 3px; background: var(--ok); }
+.security-section { padding: 140px 0; background: var(--surface-2); }.security-flow { display: flex; align-items: center; margin-top: 75px; }.security-flow > div { flex: 1; }.security-flow b, .security-flow span { display: block; }.security-flow b { color: var(--ink); font-size: 11px; }.security-flow span { margin-top: 9px; color: var(--muted); font-size: 10px; line-height: 1.4; }.security-flow > i { width: 35px; height: 1px; background: var(--brand-mid); }.security-facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 55px; color: var(--muted); font-size: 11px; }.security-facts span::before { content: '↳'; margin-right: 8px; color: var(--brand-mid); }
+.final-cta { position: relative; overflow: hidden; padding: 150px 0 160px; color: var(--white); background: linear-gradient(125deg, var(--brand-dark-1), var(--brand-strong)); }.final-cta .section-wrap { position: relative; z-index: 1; }.final-cta .eyebrow { color: #d8c7ff; }.final-cta h2 { max-width: 850px; margin-bottom: 38px; }.primary-action.light { color: var(--brand-strong); background: var(--white); }.primary-action.light:hover { background: #f2edff; }.cta-orb { position: absolute; top: -180px; right: 7%; width: 500px; height: 500px; border: 1px solid rgba(255,255,255,.18); border-radius: 50%; box-shadow: 0 0 0 80px rgba(255,255,255,.025), 0 0 0 160px rgba(255,255,255,.02); }.site-footer { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding-top: 30px; padding-bottom: 30px; color: var(--muted); font-size: 10px; }.site-footer button { color: var(--muted); font-size: 10px; }.site-footer button:hover { color: var(--ink); }
+.reveal-section { opacity: 0; transform: translateY(18px); transition: opacity .5s ease, transform .5s ease; }.reveal-section.visible { opacity: 1; transform: none; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--brand-mid); outline-offset: 4px; }
+@media (max-width: 900px) { .desktop-nav { display: none; }.menu-toggle { display: block; }.mobile-nav { display: flex; flex-direction: column; gap: 18px; padding: 20px 24px 24px; border-top: 1px solid var(--line); }.hero-section, .editorial-section, .visibility-section { grid-template-columns: 1fr; }.hero-section { padding-top: 135px; gap: 45px; }.hero-visual { min-height: 430px; }.editorial-intro { padding-top: 0; }.journey-panel, .mode-panel { grid-template-columns: 1fr; gap: 38px; }.feature-story, .feature-story.story-reverse { grid-template-columns: 1fr; gap: 40px; }.story-reverse .story-copy, .story-reverse .simulation-visual { grid-column: auto; grid-row: auto; }.story-reverse .story-copy { order: 1; }.story-reverse .simulation-visual { order: 2; }.measurement-intro { display: block; }.measurement-intro > p:last-child { margin-top: 25px; }.measurement-story { gap: 4%; }.security-flow { align-items: stretch; flex-direction: column; gap: 0; }.security-flow > div { padding: 16px 0; border-bottom: 1px solid var(--line); }.security-flow > i { width: 1px; height: 20px; margin-left: 10px; }.security-facts { margin-top: 35px; }.canvas-columns { gap: 8px; }.canvas-main { padding: 20px; } }
+@media (max-width: 560px) { .section-wrap, .nav-inner { width: min(calc(100% - 36px), var(--landing-max)); }.nav-inner { height: 66px; }.brand-name { font-size: 16px; }.nav-cta { padding: 9px 11px; font-size: 10px; }.hero-section { min-height: auto; padding-top: 125px; padding-bottom: 85px; }.hero-copy h1 { font-size: clamp(2.85rem, 14vw, 4.2rem); }.hero-lede { font-size: 15px; }.hero-actions { align-items: flex-start; flex-direction: column; gap: 19px; }.hero-note { margin-top: 35px; }.hero-visual { min-height: 330px; margin: 0 -8px; transform: scale(.92); transform-origin: top center; }.readiness-surface { inset: 12% 4% 10% 5%; padding: 19px; }.readiness-score { margin-top: 30px; }.readiness-score strong { font-size: 5rem; }.float-gain { right: -2%; }.float-training { left: -4%; }.editorial-section, .stories-section, .visibility-section { padding-top: 90px; padding-bottom: 95px; }.editorial-section { gap: 45px; }.editorial-heading h2, .section-heading h2, .measurement-intro h2, .visibility-copy h2, .final-cta h2 { font-size: 2.7rem; }.principle { grid-template-columns: 55px 1fr; gap: 15px; }.principle-number { font-size: 10px; }.journey-section, .modes-section, .security-section { padding: 90px 0 100px; }.journey-track { align-items: flex-start; flex-direction: column; gap: 21px; margin: 45px 0; }.journey-rail { top: 17px; bottom: 17px; left: 17px; width: 1px; height: auto; }.journey-rail i { width: 100% !important; height: 0; }.journey-node { flex-direction: row; gap: 12px; }.journey-node.active { color: var(--ink); }.journey-panel { padding-top: 30px; }.journey-preview { min-height: 155px; padding: 20px; }.journey-preview strong { font-size: 55px; }.feature-story { padding: 60px 0; }.assessment-visual, .simulation-visual, .team-visual { min-height: 235px; padding: 20px; }.compare-row { margin-top: 45px; }.compare-row strong { font-size: 47px; }.capability-rail { gap: 13px 20px; }.mode-tabs { gap: 20px; margin-bottom: 35px; }.mode-panel { gap: 30px; }.mode-copy h3 { font-size: 29px; }.mode-preview { min-height: 330px; padding: 17px; }.module-view, .decision-view, .challenge-view, .tabletop-view { margin-top: 45px; }.module-view h4, .decision-view h4, .challenge-view h4, .tabletop-view h4 { font-size: 24px; }.measurement-section { padding: 95px 0; }.measurement-story { align-items: flex-start; flex-direction: column; gap: 38px; margin-top: 65px; }.measure-bridge { width: 100%; padding: 24px 0; }.measure-bridge::before { top: 31px; }.measure-bridge i { margin: 28px 7%; }.supporting-metrics { align-items: flex-start; flex-direction: column; gap: 18px; margin-top: 45px; }.dashboard-canvas { grid-template-columns: 40px 1fr; min-height: 300px; }.canvas-sidebar { padding-top: 20px; gap: 21px; }.canvas-main { padding: 18px 14px; }.canvas-header { gap: 10px; }.canvas-columns { grid-template-columns: 1fr 1fr; }.canvas-columns > div:last-child { grid-column: span 2; }.final-cta { padding: 95px 0 105px; }.cta-orb { right: -55%; width: 400px; height: 400px; }.site-footer { align-items: flex-start; flex-direction: column; gap: 12px; padding-top: 25px; padding-bottom: 25px; } }
+@media (prefers-reduced-motion: reduce) { :global(html) { scroll-behavior: auto; }.reveal-section { opacity: 1; transform: none; transition: none; }.primary-action:hover { transform: none; }.journey-rail i { transition: none; } }
 </style>
