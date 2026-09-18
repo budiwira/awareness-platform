@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -29,6 +29,20 @@ const scrollTo = (id) => {
         mobileMenuOpen.value = false;
     }
 };
+
+const handleKeydown = (event) => {
+    if (event.key === 'Escape' && mobileMenuOpen.value) {
+        mobileMenuOpen.value = false;
+    }
+};
+
+onBeforeUnmount(() => {
+    document.removeEventListener('keydown', handleKeydown);
+});
+
+onMounted(() => {
+    document.addEventListener('keydown', handleKeydown);
+});
 </script>
 
 <template>
@@ -44,17 +58,17 @@ const scrollTo = (id) => {
                         <span class="font-display font-semibold text-sm sm:text-base t-ink">Awareness Platform</span>
                     </div>
 
-                    <div class="hidden md:flex items-center gap-1 text-sm" role="list">
-                        <button @click="scrollTo('features')" class="landing-nav-link t-muted" role="listitem">
+                    <div class="hidden md:flex items-center gap-1 text-sm">
+                        <button @click="scrollTo('features')" class="landing-nav-link t-muted">
                             Fitur
                         </button>
-                        <button @click="scrollTo('how-it-works')" class="landing-nav-link t-muted" role="listitem">
+                        <button @click="scrollTo('how-it-works')" class="landing-nav-link t-muted">
                             Cara Kerja
                         </button>
-                        <button @click="scrollTo('packages')" class="landing-nav-link t-muted" role="listitem">
+                        <button @click="scrollTo('packages')" class="landing-nav-link t-muted">
                             Paket
                         </button>
-                        <button @click="scrollTo('security')" class="landing-nav-link t-muted" role="listitem">
+                        <button @click="scrollTo('security')" class="landing-nav-link t-muted">
                             Keamanan
                         </button>
                     </div>
@@ -93,11 +107,11 @@ const scrollTo = (id) => {
                         </button>
                     </div>
                 </div>
-                <div v-if="mobileMenuOpen" id="mobile-navigation" class="landing-mobile-menu md:hidden" role="list">
-                    <button @click="scrollTo('features')" class="landing-mobile-link" role="listitem">Fitur</button>
-                    <button @click="scrollTo('how-it-works')" class="landing-mobile-link" role="listitem">Cara Kerja</button>
-                    <button @click="scrollTo('packages')" class="landing-mobile-link" role="listitem">Paket</button>
-                    <button @click="scrollTo('security')" class="landing-mobile-link" role="listitem">Keamanan</button>
+                <div v-if="mobileMenuOpen" id="mobile-navigation" class="landing-mobile-menu md:hidden">
+                    <button @click="scrollTo('features')" class="landing-mobile-link">Fitur</button>
+                    <button @click="scrollTo('how-it-works')" class="landing-mobile-link">Cara Kerja</button>
+                    <button @click="scrollTo('packages')" class="landing-mobile-link">Paket</button>
+                    <button @click="scrollTo('security')" class="landing-mobile-link">Keamanan</button>
                 </div>
             </div>
         </nav>
