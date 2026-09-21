@@ -45,6 +45,21 @@ function createTtxSessionInjectFixture(TtxSession $session): TtxInject
     ]);
 }
 
+function ttx_rls_pdo(): PDO
+{
+    return new PDO(
+        sprintf(
+            'pgsql:host=%s;port=%s;dbname=%s',
+            config('database.connections.pgsql.host'),
+            config('database.connections.pgsql.port'),
+            config('database.connections.pgsql.database'),
+        ),
+        env('DB_APP_USERNAME'),
+        env('DB_APP_PASSWORD'),
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+    );
+}
+
 test('an exercise can have multiple sessions with independent tenant and exercise ownership', function () {
     [$tenant, $creator, $exercise, $first] = createTtxSessionFixture();
     $second = TtxSession::forceCreate([
@@ -202,7 +217,7 @@ test('new execution tables isolate tenants through PostgreSQL RLS', function () 
         'created_by' => $creatorB->id,
         'exercise_snapshot' => ['title' => 'RLS exercise B'],
     ]);
-    $pdo = rls_pdo();
+    $pdo = ttx_rls_pdo();
 
     try {
         $pdo->exec("SELECT set_config('app.tenant_id', '{$tenantA->id}', false)");
