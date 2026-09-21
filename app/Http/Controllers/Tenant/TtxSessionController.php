@@ -39,19 +39,19 @@ class TtxSessionController extends Controller
 
     public function ready(TtxSession $session, TtxSessionService $service)
     {
-        Gate::authorize('manage', $session);
-        return response()->json($service->readModel(request()->user(), $service->markReady($session)));
+        Gate::authorize('prepare', $session);
+        return response()->json($service->readModel(request()->user(), $service->markReady(request()->user(), $session)));
     }
 
     public function start(TtxSession $session, TtxSessionService $service)
     {
-        Gate::authorize('manage', $session);
-        return response()->json($service->readModel(request()->user(), $service->start($session)));
+        Gate::authorize('start', $session);
+        return response()->json($service->readModel(request()->user(), $service->start(request()->user(), $session)));
     }
 
     public function advance(Request $request, TtxSession $session, TtxSessionService $service)
     {
-        Gate::authorize('manage', $session);
+        Gate::authorize('advance', $session);
         return response()->json($service->advanceInject($session, $request->user()));
     }
 }

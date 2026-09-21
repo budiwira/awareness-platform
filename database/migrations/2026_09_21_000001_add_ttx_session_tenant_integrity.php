@@ -37,6 +37,8 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('ttx_sessions')->restrictOnDelete();
             $table->foreign(['tenant_id', 'inject_id'], 'ttx_injects_tenant_template_fk')
                 ->references(['tenant_id', 'id'])->on('ttx_injects')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'released_by'], 'ttx_injects_tenant_releaser_fk')
+                ->references(['tenant_id', 'id'])->on('users')->nullOnDelete();
         });
     }
 
@@ -45,6 +47,7 @@ return new class extends Migration
         Schema::table('ttx_session_injects', function (Blueprint $table) {
             $table->dropForeign('ttx_injects_tenant_session_fk');
             $table->dropForeign('ttx_injects_tenant_template_fk');
+            $table->dropForeign('ttx_injects_tenant_releaser_fk');
         });
         Schema::table('ttx_sessions', function (Blueprint $table) {
             $table->dropForeign('ttx_sessions_tenant_exercise_fk');
