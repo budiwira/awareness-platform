@@ -39,13 +39,13 @@ class TtxSessionController extends Controller
     public function ready(TtxSession $session, TtxSessionService $service)
     {
         $this->authorize('manage', $session);
-        return response()->json($service->markReady($session));
+        return response()->json($service->readModel(request()->user(), $service->markReady($session)));
     }
 
     public function start(TtxSession $session, TtxSessionService $service)
     {
         $this->authorize('manage', $session);
-        return response()->json($service->start($session));
+        return response()->json($service->readModel(request()->user(), $service->start($session)));
     }
 
     public function advance(Request $request, TtxSession $session, TtxSessionService $service)

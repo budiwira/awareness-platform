@@ -35,6 +35,7 @@ class TtxSessionInject extends Model
         'inject_snapshot',
         'released_at',
         'locked_at',
+        'released_by',
     ];
 
     protected $casts = [

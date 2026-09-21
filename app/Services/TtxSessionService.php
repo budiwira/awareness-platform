@@ -61,6 +61,10 @@ class TtxSessionService
 
     public function markReady(TtxSession $session): TtxSession
     {
+        if ($session->status !== TtxSessionStatus::Draft) {
+            throw ValidationException::withMessages(['session' => 'Sesi hanya dapat disiapkan dari status draft.']);
+        }
+
         $session->loadMissing('participants', 'injects');
         if (! $session->participants->contains(fn ($p) => $p->session_role === TtxSessionRole::Facilitator) || $session->injects->isEmpty()) {
             throw ValidationException::withMessages(['session' => 'Sesi harus memiliki fasilitator dan minimal satu inject.']);
@@ -82,6 +86,10 @@ class TtxSessionService
 
     public function advanceInject(TtxSession $session, User $actor): TtxSessionInject
     {
+        if ($session->status !== TtxSessionStatus::InProgress) {
+            throw ValidationException::withMessages(['session' => 'Inject hanya dapat dijalankan saat sesi berlangsung.']);
+        }
+
         return DB::transaction(function () use ($session, $actor) {
             $current = $session->injects()->where('status', TtxSessionInjectStatus::Active)->lockForUpdate()->first();
             if ($current) {

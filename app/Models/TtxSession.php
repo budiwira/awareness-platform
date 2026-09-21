@@ -33,6 +33,7 @@ class TtxSession extends Model
         'tenant_id',
         'exercise_id',
         'title',
+        'created_by',
         'status',
         'exercise_snapshot',
         'scheduled_at',
