@@ -56,6 +56,8 @@ Route::get('/phish/{token}', [PhishingTrapController::class, 'show'])->name('phi
 Route::middleware('auth')->group(function () {
     // Session read model is available to assigned participants as well as facilitators.
     Route::get('/ttx/sessions/{session}', [TenantTtxSessionController::class, 'show'])->name('tenant.ttx.sessions.show');
+    // Facilitator console (Inertia page, not JSON).
+    Route::get('/ttx/sessions/{session}/console', [TenantTtxSessionController::class, 'console'])->name('tenant.ttx.sessions.console');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

@@ -42,6 +42,11 @@ class TtxSessionPolicy
         return $this->runtimeActor($user, $session);
     }
 
+    public function facilitate(User $user, TtxSession $session): bool
+    {
+        return $this->runtimeActor($user, $session);
+    }
+
     public function respond(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)

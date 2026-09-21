@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\TtxSessionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class TtxSessionController extends Controller
 {
@@ -60,6 +61,15 @@ class TtxSessionController extends Controller
         Gate::authorize('advance', $session);
 
         return response()->json($service->advanceInject($session, $request->user()));
+    }
+
+    public function console(Request $request, TtxSession $session)
+    {
+        Gate::authorize('facilitate', $session);
+
+        return Inertia::render('Tenant/Ttx/Sessions/FacilitatorConsole', [
+            'sessionId' => $session->id,
+        ]);
     }
 
     public function storeResponse(Request $request, TtxSession $session, TtxSessionService $service)
