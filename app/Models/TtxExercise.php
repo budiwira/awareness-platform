@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property-read TtxPlaybook|null $playbook
  * @property-read TtxRunbook|null $runbook
  * @property-read Collection<int, TtxInject> $injects
+ * @property-read Collection<int, TtxSession> $sessions
  * @property-read Collection<int, TtxTeam> $teams
  */
 class TtxExercise extends Model
@@ -47,6 +48,11 @@ class TtxExercise extends Model
     public function injects(): HasMany
     {
         return $this->hasMany(TtxInject::class, 'exercise_id')->orderBy('order');
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(TtxSession::class, 'exercise_id');
     }
 
     public function teams(): HasMany
