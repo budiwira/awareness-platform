@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -8,8 +8,10 @@ import BaseButton from '@/Components/BaseButton.vue';
 import BaseAlert from '@/Components/BaseAlert.vue';
 import EmptyState from '@/Components/EmptyState.vue';
 import RichContent from '@/Components/RichContent.vue';
+import Modal from '@/Components/Modal.vue';
 import { useToast } from '@/Composables/useToast';
 import InjectTimeline from './Partials/InjectTimeline.vue';
+import ResponseEditor from './Partials/ResponseEditor.vue';
 
 const props = defineProps({
     sessionId: { type: [String, Number], required: true },
@@ -21,8 +23,16 @@ const toast = useToast();
 const session = ref(null);
 const loading = ref(true);
 const refreshing = ref(false);
+const saving = ref(false);
 const error = ref(null);
 const selectedInjectId = ref(null);
+
+// Response editor ref
+const editorRef = ref(null);
+
+// --- Unsaved changes modal ---
+const showUnsavedModal = ref(false);
+const pendingAction = ref(null); // { type: 'select', injectId } | { type: 'refresh' }
 
 // --- Computed ---
 const sortedInjects = computed(() => {
@@ -77,6 +87,9 @@ const fetchSession = async (isRefresh = false) => {
             const active = data.injects?.find((i) => i.status === 'active');
             selectedInjectId.value = active?.id ?? data.injects?.[0]?.id ?? null;
         }
+
+        // After fetch, clear any conflict/validation errors in the editor
+        nextTick(() => editorRef.value?.clearErrors());
     } catch (err) {
         error.value = err.response?.data?.message ?? 'Gagal memuat data sesi.';
     } finally {
@@ -85,10 +98,143 @@ const fetchSession = async (isRefresh = false) => {
     }
 };
 
-const handleRefresh = () => fetchSession(true);
+// --- Refresh with dirty protection ---
+const handleRefresh = () => {
+    if (editorRef.value?.isDirty) {
+        pendingAction.value = { type: 'refresh' };
+        showUnsavedModal.value = true;
+        return;
+    }
+    fetchSession(true);
+};
 
+// --- Conflict resolution: load latest version ---
+const handleConflictLoadLatest = async () => {
+    await fetchSession(true);
+};
+
+// --- Timeline selection with dirty protection ---
 const handleSelect = (injectId) => {
+    if (injectId === selectedInjectId.value) return;
+    if (editorRef.value?.isDirty) {
+        pendingAction.value = { type: 'select', injectId };
+        showUnsavedModal.value = true;
+        return;
+    }
     selectedInjectId.value = injectId;
+};
+
+// --- Unsaved modal actions ---
+const handleUnsavedStay = () => {
+    showUnsavedModal.value = false;
+    pendingAction.value = null;
+};
+
+const handleUnsavedDiscard = () => {
+    showUnsavedModal.value = false;
+    const action = pendingAction.value;
+    pendingAction.value = null;
+
+    if (action?.type === 'select') {
+        selectedInjectId.value = action.injectId;
+    } else if (action?.type === 'refresh') {
+        fetchSession(true);
+    }
+};
+
+// --- Response save ---
+const handleSave = async ({ isCreate, draft, expectedRevision }) => {
+    if (saving.value) return;
+    saving.value = true;
+
+    try {
+        if (isCreate) {
+            await createResponse(draft);
+        } else {
+            await updateResponse(draft, expectedRevision);
+        }
+    } catch (err) {
+        handleSaveError(err);
+    } finally {
+        saving.value = false;
+    }
+};
+
+const createResponse = async (draft) => {
+    const payload = {
+        session_inject_id: selectedInjectId.value,
+        decision: draft.decision,
+        rationale: draft.rationale || null,
+        owner: draft.owner || null,
+        immediate_actions: draft.immediate_actions || null,
+        escalation: draft.escalation || null,
+        unknowns: draft.unknowns || null,
+        notes: draft.notes || null,
+    };
+
+    await axios.post(route('tenant.ttx.sessions.responses.store', props.sessionId), payload);
+
+    toast.success('Response berhasil disimpan.');
+    await fetchSession(true);
+};
+
+const updateResponse = async (draft, expectedRevision) => {
+    const responseId = selectedInject.value?.response?.id;
+    if (!responseId) return;
+
+    const payload = {
+        expected_revision: expectedRevision,
+        decision: draft.decision,
+        rationale: draft.rationale || null,
+        owner: draft.owner || null,
+        immediate_actions: draft.immediate_actions || null,
+        escalation: draft.escalation || null,
+        unknowns: draft.unknowns || null,
+        notes: draft.notes || null,
+    };
+
+    await axios.put(
+        route('tenant.ttx.sessions.responses.update', [props.sessionId, responseId]),
+        payload,
+    );
+
+    toast.success('Response berhasil diperbarui.');
+    await fetchSession(true);
+};
+
+// --- Error handling ---
+const handleSaveError = (err) => {
+    const status = err.response?.status;
+    const data = err.response?.data;
+
+    if (status === 409) {
+        const msg = data?.message ?? 'Versi response tidak sesuai.';
+        // Distinguish between stale-update 409 and duplicate-create 409
+        if (msg.includes('sudah ada') || msg.includes('sudah dibuat')) {
+            // Duplicate create conflict
+            editorRef.value?.setConflictError(
+                'Response untuk inject ini sudah dibuat oleh pengguna lain.',
+            );
+        } else {
+            // Stale revision conflict
+            editorRef.value?.setConflictError(msg);
+        }
+    } else if (status === 422) {
+        editorRef.value?.setValidationError(data?.errors ?? {});
+        // If lifecycle errors suggest state may have changed, show a hint
+        const errors = data?.errors ?? {};
+        if (errors.session || errors.inject || errors.response) {
+            toast.error('Status injeksi atau sesi mungkin telah berubah. Periksa pesan di atas.');
+        }
+    } else if (status === 403) {
+        editorRef.value?.setGeneralError(
+            'Anda tidak memiliki akses untuk mengubah response ini.',
+        );
+    } else {
+        editorRef.value?.setGeneralError(
+            data?.message ?? 'Terjadi kesalahan saat menyimpan response.',
+        );
+    }
 };
 
 // --- Response field labels ---
@@ -99,7 +245,7 @@ const responseFields = [
     { key: 'immediate_actions', label: 'Tindakan Segera' },
     { key: 'escalation', label: 'Eskalasi' },
     { key: 'unknowns', label: 'Yang Belum Diketahui' },
-    { key: 'notes', label: 'Catatan' },
+    { key: 'notes', label: 'Catatan Tim' },
 ];
 
 const formatDate = (iso) => {
@@ -231,36 +377,59 @@ onMounted(() => fetchSession());
                                 <div class="inject-response">
                                     <h3 class="inject-response-title">Response Tim</h3>
 
-                                    <EmptyState
-                                        v-if="!selectedInject.response"
-                                        title="Belum ada response"
-                                        message="Tim belum mengirimkan response untuk injeksi ini."
+                                    <!-- ACTIVE: editable response editor -->
+                                    <ResponseEditor
+                                        v-if="selectedInject.status === 'active'"
+                                        ref="editorRef"
+                                        inject-status="active"
+                                        :response="selectedInject.response"
+                                        :inject-id="selectedInject.id"
+                                        :saving="saving"
+                                        @save="handleSave"
+                                        @discard="handleConflictLoadLatest"
                                     />
 
-                                    <div v-else class="response-fields">
-                                        <div
-                                            v-for="field in responseFields"
-                                            :key="field.key"
-                                            class="response-field"
-                                        >
-                                            <div class="response-field-label">{{ field.label }}</div>
-                                            <div class="response-field-value">
-                                                {{ selectedInject.response[field.key] || '-' }}
+                                    <!-- LOCKED: read-only display -->
+                                    <template v-else-if="selectedInject.status === 'locked'">
+                                        <EmptyState
+                                            v-if="!selectedInject.response"
+                                            title="Belum ada response"
+                                            message="Response belum dikirim untuk injeksi ini."
+                                        />
+
+                                        <div v-else class="response-fields">
+                                            <div
+                                                v-for="field in responseFields"
+                                                :key="field.key"
+                                                class="response-field"
+                                            >
+                                                <div class="response-field-label">{{ field.label }}</div>
+                                                <div class="response-field-value">
+                                                    {{ selectedInject.response[field.key] || '-' }}
+                                                </div>
+                                            </div>
+
+                                            <div class="response-meta">
+                                                <span v-if="selectedInject.response.submitted_at">
+                                                    Dikirim: {{ formatDate(selectedInject.response.submitted_at) }}
+                                                </span>
+                                                <span v-if="selectedInject.response.locked_at">
+                                                    Direvisi: {{ formatDate(selectedInject.response.locked_at) }}
+                                                </span>
+                                                <span v-if="selectedInject.response.revision">
+                                                    Revisi #{{ selectedInject.response.revision }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Locked indicator -->
+                                            <div class="response-locked">
+                                                <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                </svg>
+                                                <span>Response terkunci dan tidak dapat diubah.</span>
                                             </div>
                                         </div>
-
-                                        <div class="response-meta">
-                                            <span v-if="selectedInject.response.submitted_at">
-                                                Dikirim: {{ formatDate(selectedInject.response.submitted_at) }}
-                                            </span>
-                                            <span v-if="selectedInject.response.locked_at">
-                                                Direvisi: {{ formatDate(selectedInject.response.locked_at) }}
-                                            </span>
-                                            <span v-if="selectedInject.response.revision">
-                                                Revisi #{{ selectedInject.response.revision }}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    </template>
                                 </div>
                             </template>
                         </div>
@@ -268,6 +437,24 @@ onMounted(() => fetchSession());
                 </main>
             </div>
         </template>
+
+        <!-- Unsaved changes modal -->
+        <Modal :show="showUnsavedModal" max-width="md" @close="handleUnsavedStay">
+            <div class="unsaved-modal">
+                <h2 class="unsaved-modal-title">Perubahan belum disimpan</h2>
+                <p class="unsaved-modal-message">
+                    Jika Anda melanjutkan, perubahan lokal pada response akan hilang.
+                </p>
+                <div class="unsaved-modal-actions">
+                    <BaseButton variant="secondary" @click="handleUnsavedStay">
+                        Tetap di sini
+                    </BaseButton>
+                    <BaseButton variant="danger" @click="handleUnsavedDiscard">
+                        Buang perubahan
+                    </BaseButton>
+                </div>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
 
@@ -425,6 +612,44 @@ onMounted(() => fetchSession());
     border-top: 1px solid var(--line);
     font-size: 0.75rem;
     color: var(--muted);
+}
+
+.response-locked {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin-top: var(--sp-4);
+}
+
+/* Unsaved modal */
+.unsaved-modal {
+    padding: var(--sp-6);
+}
+
+.unsaved-modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 var(--sp-2);
+}
+
+.unsaved-modal-message {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin: 0 0 var(--sp-6);
+    line-height: 1.6;
+}
+
+.unsaved-modal-actions {
+    display: flex;
+    gap: var(--sp-3);
+    justify-content: flex-end;
 }
 
 /* Skeleton */
