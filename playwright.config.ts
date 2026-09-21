@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: 'list',
   globalSetup: './tests/e2e/global-setup',
   use: {
-    baseURL: 'http://127.0.0.1:8000',
+    baseURL: 'http://127.0.0.1:8001',
     trace: 'on-first-retry',
   },
   projects: [
@@ -17,6 +17,8 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'tests/e2e/.auth/superadmin.json',
       },
+      testMatch: ['**/*.spec.ts'],
+      testIgnore: ['**/facilitator-*.spec.ts'],
     },
     {
       name: 'mobile',
@@ -24,11 +26,25 @@ export default defineConfig({
         ...devices['Pixel 5'],  // Chromium mobile, bukan WebKit
         storageState: 'tests/e2e/.auth/superadmin.json',
       },
+      testMatch: ['**/*.spec.ts'],
+      testIgnore: ['**/facilitator-*.spec.ts'],
+    },
+    {
+      name: 'facilitator',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'tests/e2e/.auth/facilitator.json',
+      },
+      testMatch: ['**/facilitator-*.spec.ts'],
     },
   ],
   webServer: {
-    command: 'php artisan serve',
-    port: 8000,
-    reuseExistingServer: !process.env.CI,
+    command: 'php artisan serve --host=127.0.0.1 --port=8001',
+    port: 8001,
+    reuseExistingServer: false,
+    env: {
+      APP_ENV: 'e2e',
+      DB_DATABASE: 'awareness_e2e',
+    },
   },
 });
