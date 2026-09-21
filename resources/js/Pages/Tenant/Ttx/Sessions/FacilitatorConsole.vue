@@ -24,6 +24,8 @@ const session = ref(null);
 const loading = ref(true);
 const refreshing = ref(false);
 const saving = ref(false);
+const starting = ref(false);
+const advancing = ref(false);
 const error = ref(null);
 const selectedInjectId = ref(null);
 
@@ -68,6 +70,112 @@ const statusVariant = computed(() => {
     };
     return map[session.value?.status] ?? 'neutral';
 });
+
+// --- Lifecycle computed ---
+const isReady = computed(() => session.value?.status === 'ready');
+const isDraft = computed(() => session.value?.status === 'draft');
+const isInProgress = computed(() => session.value?.status === 'in_progress');
+const isDebrief = computed(() => session.value?.status === 'debrief');
+const isCompleted = computed(() => session.value?.status === 'completed');
+
+const activeInject = computed(() => {
+    if (!session.value?.injects) return null;
+    return session.value.injects.find((i) => i.status === 'active') ?? null;
+});
+
+const isFinalInject = computed(() => {
+    if (!activeInject.value || !session.value?.injects) return false;
+    const pendingCount = session.value.injects.filter((i) => i.status === 'pending').length;
+    return pendingCount === 0;
+});
+
+// --- Start exercise ---
+const handleStart = async () => {
+    if (starting.value || refreshing.value || !isReady.value) return;
+    starting.value = true;
+    error.value = null;
+
+    try {
+        await axios.post(route('tenant.ttx.sessions.start', props.sessionId));
+        toast.success('Exercise berhasil dimulai.');
+        await fetchSession(true);
+        // Select the new ACTIVE inject
+        nextTick(() => {
+            if (activeInject.value) {
+                selectedInjectId.value = activeInject.value.id;
+            }
+        });
+    } catch (err) {
+        const status = err.response?.status;
+        const msg = err.response?.data?.message ?? 'Gagal memulai exercise.';
+        if (status === 403) {
+            error.value = 'Anda tidak memiliki akses untuk memulai sesi ini.';
+        } else if (status === 409 || status === 422) {
+            // State conflict or validation: refresh to get authoritative state
+            toast.error(msg);
+            await fetchSession(true);
+        } else {
+            toast.error(msg);
+        }
+    } finally {
+        starting.value = false;
+    }
+};
+
+// --- Advance inject ---
+const canAdvance = computed(() => {
+    if (!isInProgress.value) return false;
+    if (!activeInject.value) return false;
+    if (advancing.value) return false;
+    if (saving.value) return false;
+    if (refreshing.value) return false;
+    if (editorRef.value?.isDirty) return false;
+    // Must have a response with non-empty decision
+    const response = activeInject.value.response;
+    if (!response) return false;
+    if (!response.decision || !response.decision.trim()) return false;
+    return true;
+});
+
+const advanceLabel = computed(() => {
+    return isFinalInject.value ? 'Selesaikan Inject & Masuk Debrief' : 'Rilis Inject Berikutnya';
+});
+
+const handleAdvance = async () => {
+    if (!canAdvance.value) return;
+    advancing.value = true;
+
+    try {
+        await axios.post(route('tenant.ttx.sessions.advance', props.sessionId));
+        toast.success('Inject berhasil dilanjutkan.');
+        await fetchSession(true);
+        // Select new active inject, or most recent locked if debrief
+        nextTick(() => {
+            if (activeInject.value) {
+                selectedInjectId.value = activeInject.value.id;
+            } else if (isDebrief.value) {
+                // Select the most recently locked inject
+                const locked = sortedInjects.value.filter((i) => i.status === 'locked');
+                if (locked.length) {
+                    selectedInjectId.value = locked[locked.length - 1].id;
+                }
+            }
+        });
+    } catch (err) {
+        const status = err.response?.status;
+        const msg = err.response?.data?.message ?? 'Gagal melanjutkan inject.';
+        if (status === 403) {
+            error.value = 'Anda tidak memiliki akses untuk mengubah sesi ini.';
+        } else if (status === 409 || status === 422) {
+            toast.error(msg);
+            await fetchSession(true);
+        } else {
+            toast.error(msg);
+        }
+    } finally {
+        advancing.value = false;
+    }
+};
 
 // --- Data Fetching ---
 const fetchSession = async (isRefresh = false) => {
@@ -324,6 +432,55 @@ onMounted(() => fetchSession());
                 </BaseButton>
             </div>
 
+            <!-- DRAFT state: informational banner -->
+            <BaseAlert
+                v-if="isDraft"
+                variant="info"
+                title="Session belum siap untuk dimulai."
+                class="mb-6"
+            >
+                Persiapan sesi harus diselesaikan terlebih dahulu oleh Tenant Admin sebelum exercise dapat dimulai.
+            </BaseAlert>
+
+            <!-- READY state: Start action -->
+            <BaseAlert
+                v-if="isReady"
+                variant="info"
+                title="Siap untuk dimulai"
+                class="mb-6"
+            >
+                <p>Semua persiapan telah selesai. Tekan tombol di bawah untuk memulai exercise.</p>
+                <BaseButton
+                    variant="primary"
+                    class="mt-3"
+                    :loading="starting"
+                    :disabled="starting"
+                    @click="handleStart"
+                >
+                    Mulai Exercise
+                </BaseButton>
+            </BaseAlert>
+
+            <!-- DEBRIEF banner -->
+            <BaseAlert
+                v-if="isDebrief"
+                variant="info"
+                title="Exercise telah memasuki fase debrief."
+                class="mb-6"
+            >
+                Evaluation dan action items akan tersedia pada fase berikutnya. Timeline dan response yang sudah terkunci dapat ditinjau.
+            </BaseAlert>
+
+            <!-- COMPLETED banner -->
+            <BaseAlert
+                v-if="isCompleted"
+                variant="success"
+                title="Exercise telah selesai."
+                class="mb-6"
+            >
+                Sesi ini sudah selesai dan tidak dapat diubah lagi.
+            </BaseAlert>
+
             <!-- Two-column layout -->
             <div class="console-grid">
                 <!-- Timeline sidebar (desktop: sticky left) -->
@@ -388,6 +545,21 @@ onMounted(() => fetchSession());
                                         @save="handleSave"
                                         @discard="handleConflictLoadLatest"
                                     />
+
+                                    <!-- Advance action (in_progress only) -->
+                                    <div v-if="isInProgress && selectedInject.status === 'active'" class="advance-section">
+                                        <div v-if="editorRef?.isDirty" class="advance-hint">
+                                            Simpan perubahan response sebelum melanjutkan.
+                                        </div>
+                                        <BaseButton
+                                            variant="primary"
+                                            :loading="advancing"
+                                            :disabled="!canAdvance"
+                                            @click="handleAdvance"
+                                        >
+                                            {{ advanceLabel }}
+                                        </BaseButton>
+                                    </div>
 
                                     <!-- LOCKED: read-only display -->
                                     <template v-else-if="selectedInject.status === 'locked'">
@@ -627,6 +799,21 @@ onMounted(() => fetchSession());
     margin-top: var(--sp-4);
 }
 
+/* Advance section */
+.advance-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--line);
+}
+
+.advance-hint {
+    font-size: 0.8125rem;
+    color: var(--warn);
+    line-height: 1.5;
+}
+
 /* Unsaved modal */
 .unsaved-modal {
     padding: var(--sp-6);
@@ -704,6 +891,10 @@ onMounted(() => fetchSession());
 
     .inject-response {
         padding: var(--sp-4);
+    }
+
+    .advance-section .base-btn {
+        width: 100%;
     }
 }
 
