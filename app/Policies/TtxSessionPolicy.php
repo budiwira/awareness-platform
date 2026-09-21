@@ -44,6 +44,12 @@ class TtxSessionPolicy
         return $this->runtimeActor($user, $session);
     }
 
+    public function respond(User $user, TtxSession $session): bool
+    {
+        return $this->sameTenant($user, $session)
+            && $session->participants()->where('user_id', $user->id)->exists();
+    }
+
     private function sameTenant(User $user, TtxSession $session): bool
     {
         return $user->is_active && $user->tenant_id !== null && $user->tenant_id === $session->tenant_id;

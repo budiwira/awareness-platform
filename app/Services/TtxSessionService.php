@@ -9,8 +9,10 @@ use App\Models\TtxExercise;
 use App\Models\TtxSession;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
+use App\Models\TtxSessionResponse;
 use App\Models\User;
 use App\Support\Audit\Audit;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -41,6 +43,7 @@ class TtxSessionService
                 ]);
             }
             Audit::log('ttx.session_created', $session, ['exercise_id' => $exercise->id]);
+
             return $session;
         });
     }
@@ -49,6 +52,7 @@ class TtxSessionService
     {
         abort_unless($actor->is_active && $actor->isTenantAdmin() && $actor->tenant_id === $session->tenant_id, 403);
         abort_unless($participant->is_active && $participant->tenant_id === $session->tenant_id, 403);
+
         return DB::transaction(function () use ($session, $participant, $role) {
             $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
             abort_unless(in_array($lockedSession->status, [TtxSessionStatus::Draft, TtxSessionStatus::Ready], true), 409);
@@ -59,6 +63,7 @@ class TtxSessionService
                 'session_role' => $role,
             ]);
             Audit::log('ttx.session_participant_assigned', $assignment, ['session_id' => $session->id, 'user_id' => $participant->id, 'role' => $role->value]);
+
             return $assignment;
         });
     }
@@ -66,6 +71,7 @@ class TtxSessionService
     public function markReady(User $actor, TtxSession $session): TtxSession
     {
         $this->assertPreparationActor($actor, $session);
+
         return DB::transaction(function () use ($actor, $session) {
             $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
             $this->assertPreparationActor($actor, $session);
@@ -88,6 +94,7 @@ class TtxSessionService
             }
             $session->update(['status' => TtxSessionStatus::Ready]);
             Audit::log('ttx.session_ready', $session);
+
             return $session->fresh();
         });
     }
@@ -95,6 +102,7 @@ class TtxSessionService
     public function start(User $actor, TtxSession $session): TtxSession
     {
         $this->assertRuntimeActor($actor, $session);
+
         return DB::transaction(function () use ($actor, $session) {
             $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
             $this->assertRuntimeActor($actor, $session);
@@ -111,6 +119,7 @@ class TtxSessionService
             $first->update(['status' => TtxSessionInjectStatus::Active, 'released_at' => $now, 'released_by' => $actor->id]);
             Audit::log('ttx.session_started', $session);
             Audit::log('ttx.inject_released', $first, ['session_id' => $session->id, 'initial' => true]);
+
             return $session->fresh();
         });
     }
@@ -140,10 +149,12 @@ class TtxSessionService
                 }
                 $session->update(['status' => TtxSessionStatus::Debrief, 'debrief_started_at' => now()]);
                 Audit::log('ttx.debrief_started', $session);
+
                 return $current;
             }
             $next->update(['status' => TtxSessionInjectStatus::Active, 'released_at' => now(), 'released_by' => $actor->id]);
             Audit::log('ttx.inject_released', $next, ['session_id' => $session->id]);
+
             return TtxSessionInject::query()->findOrFail($next->id);
         });
     }
@@ -157,6 +168,7 @@ class TtxSessionService
             $injects = $injects->whereIn('status', [TtxSessionInjectStatus::Active, TtxSessionInjectStatus::Locked]);
         }
         $current = $injects->firstWhere('status', TtxSessionInjectStatus::Active);
+
         return [
             'id' => $session->id,
             'title' => $session->title,
@@ -167,6 +179,137 @@ class TtxSessionService
             'participants' => $session->participants()->with('user:id,name')->get()->map(fn ($p) => ['id' => $p->user_id, 'name' => $p->user->name, 'role' => $p->session_role->value])->values(),
             'injects' => $injects->map(fn ($i) => ['id' => $i->id, 'order' => $i->order, 'status' => $i->status->value, 'snapshot' => $i->inject_snapshot])->values(),
         ];
+    }
+
+    public function storeResponse(User $actor, TtxSession $session, int $injectId, array $data): TtxSessionResponse
+    {
+        $this->assertResponseActor($actor, $session);
+
+        return DB::transaction(function () use ($actor, $session, $injectId, $data) {
+            // Lock order: Session → Inject (compatible with start/advance)
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+
+            if ($lockedSession->status !== TtxSessionStatus::InProgress) {
+                throw ValidationException::withMessages([
+                    'session' => 'Response hanya dapat dibuat saat sesi berlangsung.',
+                ]);
+            }
+
+            $lockedInject = TtxSessionInject::query()
+                ->where('session_id', $session->id)
+                ->where('id', $injectId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedInject->status !== TtxSessionInjectStatus::Active) {
+                throw ValidationException::withMessages([
+                    'inject' => 'Inject harus berstatus aktif untuk membuat response.',
+                ]);
+            }
+
+            // Application-level uniqueness check (before DB insert)
+            if (TtxSessionResponse::where('session_inject_id', $injectId)->exists()) {
+                abort(409, 'Response untuk inject ini sudah ada.');
+            }
+
+            // Guard against concurrent duplicate creation race at DB level
+            try {
+                $response = TtxSessionResponse::forceCreate([
+                    'tenant_id' => $lockedSession->tenant_id,
+                    'session_id' => $lockedSession->id,
+                    'session_inject_id' => $injectId,
+                    'decision' => $data['decision'],
+                    'rationale' => $data['rationale'] ?? null,
+                    'owner' => $data['owner'] ?? null,
+                    'immediate_actions' => $data['immediate_actions'] ?? null,
+                    'escalation' => $data['escalation'] ?? null,
+                    'unknowns' => $data['unknowns'] ?? null,
+                    'notes' => $data['notes'] ?? null,
+                    'revision' => 1,
+                    'submitted_by' => $actor->id,
+                    'submitted_at' => now(),
+                ]);
+            } catch (QueryException $e) {
+                if (str_contains($e->getMessage(), 'ttx_responses_one_per_inject')) {
+                    abort(409, 'Response untuk inject ini sudah ada.');
+                }
+                throw $e;
+            }
+
+            // Audit inside same transaction
+            Audit::log('ttx.response_saved', $response, [
+                'session_id' => $lockedSession->id,
+                'session_inject_id' => $injectId,
+                'revision' => 1,
+            ]);
+
+            return $response;
+        });
+    }
+
+    public function updateResponse(User $actor, TtxSession $session, int $responseId, int $expectedRevision, array $data): TtxSessionResponse
+    {
+        $this->assertResponseActor($actor, $session);
+
+        return DB::transaction(function () use ($actor, $session, $responseId, $expectedRevision, $data) {
+            // Lock order: Session → Inject (compatible with start/advance)
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+
+            if ($lockedSession->status !== TtxSessionStatus::InProgress) {
+                throw ValidationException::withMessages([
+                    'session' => 'Response hanya dapat diubah saat sesi berlangsung.',
+                ]);
+            }
+
+            // Load response scoped to session (defense-in-depth)
+            $response = TtxSessionResponse::where('id', $responseId)
+                ->where('session_id', $session->id)
+                ->firstOrFail();
+
+            // Lock inject
+            $lockedInject = TtxSessionInject::query()
+                ->where('session_id', $session->id)
+                ->where('id', $response->session_inject_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($lockedInject->status !== TtxSessionInjectStatus::Active) {
+                throw ValidationException::withMessages([
+                    'inject' => 'Inject harus berstatus aktif untuk mengubah response.',
+                ]);
+            }
+
+            // Atomic update with revision check (defense-in-depth: scoped to session_id)
+            $affected = DB::table('ttx_session_responses')
+                ->where('id', $responseId)
+                ->where('session_id', $session->id)
+                ->where('revision', $expectedRevision)
+                ->update([
+                    'decision' => $data['decision'],
+                    'rationale' => $data['rationale'] ?? null,
+                    'owner' => $data['owner'] ?? null,
+                    'immediate_actions' => $data['immediate_actions'] ?? null,
+                    'escalation' => $data['escalation'] ?? null,
+                    'unknowns' => $data['unknowns'] ?? null,
+                    'notes' => $data['notes'] ?? null,
+                    'last_edited_by' => $actor->id,
+                    'revision' => $expectedRevision + 1,
+                ]);
+
+            if ($affected === 0) {
+                abort(409, 'Versi response tidak sesuai. Silakan muat ulang dan coba lagi.');
+            }
+
+            // Audit inside same transaction
+            $fresh = TtxSessionResponse::findOrFail($responseId);
+            Audit::log('ttx.response_saved', $fresh, [
+                'session_id' => $lockedSession->id,
+                'session_inject_id' => $response->session_inject_id,
+                'revision' => $fresh->revision,
+            ]);
+
+            return $fresh;
+        });
     }
 
     private function assertPreparationActor(User $actor, TtxSession $session): void
@@ -186,5 +329,14 @@ class TtxSessionService
     private function exerciseSnapshot(TtxExercise $exercise): array
     {
         return ['title' => $exercise->title, 'scenario' => $exercise->scenario, 'objectives' => $exercise->objectives, 'scope' => $exercise->scope];
+    }
+
+    private function assertResponseActor(User $actor, TtxSession $session): void
+    {
+        abort_unless($actor->is_active && $actor->tenant_id === $session->tenant_id, 403);
+        abort_unless(
+            $session->participants()->where('user_id', $actor->id)->exists(),
+            403
+        );
     }
 }

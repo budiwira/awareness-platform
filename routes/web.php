@@ -287,6 +287,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
         Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
         Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
+        Route::post('/ttx/sessions/{session}/responses', [TenantTtxSessionController::class, 'storeResponse'])->name('ttx.sessions.responses.store');
+        Route::put('/ttx/sessions/{session}/responses/{response}', [TenantTtxSessionController::class, 'updateResponse'])->name('ttx.sessions.responses.update');
     });
 
     Route::middleware('can:access-user-dashboard')
