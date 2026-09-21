@@ -20,6 +20,7 @@ use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentCo
 use App\Http\Controllers\Tenant\PhishingCampaignController as TenantPhishingController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
+use App\Http\Controllers\Tenant\TtxSessionController as TenantTtxSessionController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
 use App\Http\Controllers\TenantReportController;
 use App\Http\Controllers\User\BadgeController;
@@ -53,6 +54,8 @@ Route::get('/', function () {
 Route::get('/phish/{token}', [PhishingTrapController::class, 'show'])->name('phishing.trap');
 
 Route::middleware('auth')->group(function () {
+    // Session read model is available to assigned participants as well as facilitators.
+    Route::get('/ttx/sessions/{session}', [TenantTtxSessionController::class, 'show'])->name('tenant.ttx.sessions.show');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -265,6 +268,11 @@ Route::middleware('auth')->group(function () {
             Route::post('/ttx/exercises/{exercise}/injects', [TenantTtxExerciseController::class, 'storeInject'])->name('ttx.exercises.injects.store');
             Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
             Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
+            Route::post('/ttx/exercises/{exercise}/sessions', [TenantTtxSessionController::class, 'store'])->name('ttx.sessions.store');
+            Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
+            Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
+            Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
+            Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
 
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');

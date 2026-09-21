@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
 class TtxSessionInject extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'session_id',
         'inject_id',
         'order',

@@ -6,6 +6,8 @@ use App\Enums\UserRole;
 use App\Models\ModuleAssignment;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Models\TtxSession;
+use App\Policies\TtxSessionPolicy;
 use App\Observers\ModuleAssignmentObserver;
 use App\Observers\QuizAttemptObserver;
 use App\Support\Tenant\CurrentTenant;
@@ -21,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Gate::policy(TtxSession::class, TtxSessionPolicy::class);
         // Register observers
         QuizAttempt::observe(QuizAttemptObserver::class);
         ModuleAssignment::observe(ModuleAssignmentObserver::class);

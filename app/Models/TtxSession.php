@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
 class TtxSession extends Model
 {
     protected $fillable = [
+        'tenant_id',
         'exercise_id',
         'title',
         'status',

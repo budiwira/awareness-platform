@@ -20,7 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class TtxSessionParticipant extends Model
 {
-    protected $fillable = ['session_id', 'user_id', 'session_role'];
+    protected $fillable = ['tenant_id', 'session_id', 'user_id', 'session_role'];
 
     protected $casts = [
         'session_role' => TtxSessionRole::class,
