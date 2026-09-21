@@ -200,6 +200,16 @@ class TtxSessionService
         }
         $current = $injects->firstWhere('status', TtxSessionInjectStatus::Active);
 
+        // Build response map: session_inject_id → response
+        // Only fetch responses for injects where response exposure is allowed.
+        // For participants: Active + Locked (already the only injects in $injects).
+        // For facilitators: Active + Locked only. Pending/future injects must NOT expose response data.
+        $responseableIds = $injects
+            ->whereIn('status', [TtxSessionInjectStatus::Active, TtxSessionInjectStatus::Locked])
+            ->pluck('id')
+            ->all();
+        $responses = TtxSessionResponse::whereIn('session_inject_id', $responseableIds)->get()->keyBy('session_inject_id');
+
         return [
             'id' => $session->id,
             'title' => $session->title,
@@ -208,7 +218,47 @@ class TtxSessionService
             'actor_role' => $actor?->session_role?->value,
             'progress' => ['current' => $current?->order, 'total' => $session->injects()->count()],
             'participants' => $session->participants()->with('user:id,name')->get()->map(fn ($p) => ['id' => $p->user_id, 'name' => $p->user->name, 'role' => $p->session_role->value])->values(),
-            'injects' => $injects->map(fn ($i) => ['id' => $i->id, 'order' => $i->order, 'status' => $i->status->value, 'snapshot' => $i->inject_snapshot])->values(),
+            'injects' => $injects->map(function ($i) use ($responses) {
+                $payload = [
+                    'id' => $i->id,
+                    'order' => $i->order,
+                    'status' => $i->status->value,
+                    'snapshot' => $i->inject_snapshot,
+                ];
+
+                // Pending injects must NOT contain a response key at all.
+                // Only Active and Locked injects expose response data.
+                if ($i->status !== TtxSessionInjectStatus::Pending) {
+                    $payload['response'] = $this->safeResponsePayload($responses->get($i->id));
+                }
+
+                return $payload;
+            })->values(),
+        ];
+    }
+
+    /**
+     * Build a response payload exposing only frontend-required fields.
+     * Returns null when no response exists for this inject.
+     */
+    private function safeResponsePayload(?TtxSessionResponse $response): ?array
+    {
+        if (! $response) {
+            return null;
+        }
+
+        return [
+            'id' => $response->id,
+            'decision' => $response->decision,
+            'rationale' => $response->rationale,
+            'owner' => $response->owner,
+            'immediate_actions' => $response->immediate_actions,
+            'escalation' => $response->escalation,
+            'unknowns' => $response->unknowns,
+            'notes' => $response->notes,
+            'revision' => $response->revision,
+            'submitted_at' => $response->submitted_at->toISOString(),
+            'locked_at' => $response->locked_at?->toISOString(),
         ];
     }
 

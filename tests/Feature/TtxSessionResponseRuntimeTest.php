@@ -13,6 +13,7 @@ use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
 use App\Models\User;
 use App\Services\TtxSessionService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 function ttxResponseRuntimeFixture(): array
@@ -1422,4 +1423,718 @@ test('no duplicate response_locked audit on repeated failed progression', functi
 
     $afterCount = AuditLog::where('action', 'ttx.response_locked')->count();
     expect($afterCount)->toBe($beforeCount);
+});
+
+// ─── C4: RESPONSE READ MODEL AND SECURE EXPOSURE ─────
+
+function ttxReadModelFixture(): array
+{
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $participant = User::factory()->create(['tenant_id' => $tenant->id]);
+
+    $exercise = TtxExercise::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Read model exercise',
+        'scenario' => 'Read model scenario',
+    ]);
+
+    $inject1 = TtxInject::create([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'order' => 1,
+        'title' => 'First inject',
+        'description' => 'First inject description',
+    ]);
+
+    $inject2 = TtxInject::create([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'order' => 2,
+        'title' => 'Second inject',
+        'description' => 'Second inject description',
+    ]);
+
+    $session = TtxSession::forceCreate([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'title' => 'Read model session',
+        'created_by' => $admin->id,
+        'status' => TtxSessionStatus::InProgress,
+        'started_at' => now(),
+        'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $facilitator->id,
+        'session_role' => TtxSessionRole::Facilitator,
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $participant->id,
+        'session_role' => TtxSessionRole::Security,
+    ]);
+
+    $sessionInject1 = TtxSessionInject::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'inject_id' => $inject1->id,
+        'order' => 1,
+        'status' => TtxSessionInjectStatus::Active,
+        'inject_snapshot' => ['title' => $inject1->title, 'description' => $inject1->description],
+        'released_at' => now(),
+        'released_by' => $admin->id,
+    ]);
+
+    $sessionInject2 = TtxSessionInject::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'inject_id' => $inject2->id,
+        'order' => 2,
+        'status' => TtxSessionInjectStatus::Pending,
+        'inject_snapshot' => ['title' => $inject2->title, 'description' => $inject2->description],
+    ]);
+
+    return [$tenant, $admin, $facilitator, $participant, $exercise, $session, $sessionInject1, $sessionInject2];
+}
+
+// ─── PARTICIPANT: ACTIVE INJECT RESPONSE ──────────────
+
+test('participant: active inject with no response => response is null', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $inject = collect($payload['injects'])->firstWhere('id', $sessionInject->id);
+    expect($inject)->not->toBeNull()
+        ->and($inject['response'])->toBeNull();
+});
+
+test('participant: active inject with response => response is exposed', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Contain the breach',
+        'rationale' => 'Immediate containment.',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $inject = collect($payload['injects'])->firstWhere('id', $sessionInject->id);
+    expect($inject['response'])->not->toBeNull()
+        ->and($inject['response']['decision'])->toBe('Contain the breach')
+        ->and($inject['response']['rationale'])->toBe('Immediate containment.');
+});
+
+test('participant: response content fields are correct', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision text',
+        'rationale' => 'Rationale text',
+        'owner' => 'Owner text',
+        'immediate_actions' => 'Actions text',
+        'escalation' => 'Escalation text',
+        'unknowns' => 'Unknowns text',
+        'notes' => 'Notes text',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect($response['decision'])->toBe('Decision text')
+        ->and($response['rationale'])->toBe('Rationale text')
+        ->and($response['owner'])->toBe('Owner text')
+        ->and($response['immediate_actions'])->toBe('Actions text')
+        ->and($response['escalation'])->toBe('Escalation text')
+        ->and($response['unknowns'])->toBe('Unknowns text')
+        ->and($response['notes'])->toBe('Notes text');
+});
+
+test('participant: revision is exposed', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 3,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect($response['revision'])->toBe(3);
+});
+
+test('participant: update from C2 is reflected with new revision/content', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Original',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    // Simulate C2 update: increment revision and change decision
+    DB::table('ttx_session_responses')
+        ->where('id', $response->id)
+        ->update(['decision' => 'Updated', 'revision' => 2, 'last_edited_by' => $participant->id]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $exposed = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect($exposed['decision'])->toBe('Updated')
+        ->and($exposed['revision'])->toBe(2);
+});
+
+// ─── PARTICIPANT: LOCKED INJECT RESPONSE ─────────────
+
+test('participant: previously locked inject exposes its locked response', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    $lockedInject = TtxSessionInject::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'inject_id' => TtxInject::create([
+            'tenant_id' => $session->tenant_id,
+            'exercise_id' => $session->exercise_id,
+            'order' => 0,
+            'title' => 'Previous inject',
+        ])->id,
+        'order' => 0,
+        'status' => TtxSessionInjectStatus::Locked,
+        'inject_snapshot' => ['title' => 'Previous inject'],
+        'locked_at' => now(),
+    ]);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $lockedInject->id,
+        'decision' => 'Locked decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+        'locked_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $inject = collect($payload['injects'])->firstWhere('id', $lockedInject->id);
+    expect($inject)->not->toBeNull()
+        ->and($inject['response'])->not->toBeNull()
+        ->and($inject['response']['decision'])->toBe('Locked decision');
+});
+
+test('participant: locked response exposes locked_at', function () {
+    [, , , $participant, , $session] = ttxReadModelFixture();
+
+    $lockedInject = TtxSessionInject::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'inject_id' => TtxInject::create([
+            'tenant_id' => $session->tenant_id,
+            'exercise_id' => $session->exercise_id,
+            'order' => 0,
+            'title' => 'Previous inject',
+        ])->id,
+        'order' => 0,
+        'status' => TtxSessionInjectStatus::Locked,
+        'inject_snapshot' => ['title' => 'Previous inject'],
+        'locked_at' => now(),
+    ]);
+
+    $lockTime = now();
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $lockedInject->id,
+        'decision' => 'Locked',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+        'locked_at' => $lockTime,
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $lockedInject->id)['response'];
+    expect($response['locked_at'])->not->toBeNull();
+});
+
+// ─── PARTICIPANT: FUTURE INJECT EXCLUSION ─────────────
+
+test('participant: future/pending inject remains entirely absent', function () {
+    [, , , $participant, , $session, $sessionInject, $sessionInject2] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    // Pending inject should not appear at all
+    $pendingInject = collect($payload['injects'])->firstWhere('id', $sessionInject2->id);
+    expect($pendingInject)->toBeNull();
+});
+
+test('participant: no future response metadata leaks', function () {
+    [, , , $participant, , $session, $sessionInject, $sessionInject2] = ttxReadModelFixture();
+
+    // Create a response for the pending inject via privileged setup (defense-in-depth)
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject2->id,
+        'decision' => 'Leaked decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+    $json = json_encode($payload);
+
+    // The pending inject should not be in the payload at all
+    expect($json)->not->toContain('Leaked decision');
+});
+
+// ─── PARTICIPANT: EXCLUDED FIELDS ─────────────────────
+
+test('participant: response does not expose tenant_id', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect(array_key_exists('tenant_id', $response))->toBeFalse();
+});
+
+test('participant: response does not expose session_id', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect(array_key_exists('session_id', $response))->toBeFalse();
+});
+
+test('participant: response does not expose session_inject_id', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect(array_key_exists('session_inject_id', $response))->toBeFalse();
+});
+
+test('participant: response does not expose submitted_by', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect(array_key_exists('submitted_by', $response))->toBeFalse();
+});
+
+test('participant: response does not expose last_edited_by', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+        'last_edited_by' => $participant->id,
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect(array_key_exists('last_edited_by', $response))->toBeFalse();
+});
+
+// ─── FACILITATOR: TIMELINE AND RESPONSE ───────────────
+
+test('facilitator: sees existing full inject timeline including pending', function () {
+    [, , $facilitator, , , $session, $sessionInject, $sessionInject2] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    // Facilitator sees both Active and Pending injects
+    expect(collect($payload['injects'])->firstWhere('id', $sessionInject->id))->not->toBeNull()
+        ->and(collect($payload['injects'])->firstWhere('id', $sessionInject2->id))->not->toBeNull();
+});
+
+test('facilitator: locked inject exposes official response', function () {
+    [, , $facilitator, , , $session] = ttxReadModelFixture();
+
+    $lockedInject = TtxSessionInject::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'inject_id' => TtxInject::create([
+            'tenant_id' => $session->tenant_id,
+            'exercise_id' => $session->exercise_id,
+            'order' => 0,
+            'title' => 'Previous inject',
+        ])->id,
+        'order' => 0,
+        'status' => TtxSessionInjectStatus::Locked,
+        'inject_snapshot' => ['title' => 'Previous inject'],
+        'locked_at' => now(),
+    ]);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $lockedInject->id,
+        'decision' => 'Locked decision',
+        'revision' => 1,
+        'submitted_by' => $facilitator->id,
+        'submitted_at' => now(),
+        'locked_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $inject = collect($payload['injects'])->firstWhere('id', $lockedInject->id);
+    expect($inject['response']['decision'])->toBe('Locked decision');
+});
+
+test('facilitator: active inject exposes official response when present', function () {
+    [, , $facilitator, , , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Active response',
+        'revision' => 1,
+        'submitted_by' => $facilitator->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect($response['decision'])->toBe('Active response');
+});
+
+test('facilitator: active inject without response => response is null', function () {
+    [, , $facilitator, , , $session, $sessionInject] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $response = collect($payload['injects'])->firstWhere('id', $sessionInject->id)['response'];
+    expect($response)->toBeNull();
+});
+
+test('facilitator: pending inject does NOT expose a response object', function () {
+    [, , $facilitator, , , $session, , $sessionInject2] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $pendingInject = collect($payload['injects'])->firstWhere('id', $sessionInject2->id);
+    expect(array_key_exists('response', $pendingInject))->toBeFalse();
+});
+
+test('facilitator: pending inject does NOT expose response revision/content', function () {
+    [, , $facilitator, , , $session, , $sessionInject2] = ttxReadModelFixture();
+
+    // Privileged setup: insert a response for the pending inject
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject2->id,
+        'decision' => 'Leaked decision',
+        'revision' => 1,
+        'submitted_by' => $facilitator->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $pendingInject = collect($payload['injects'])->firstWhere('id', $sessionInject2->id);
+    expect(array_key_exists('response', $pendingInject))->toBeFalse()
+        ->and(json_encode($pendingInject))->not->toContain('Leaked decision');
+});
+
+test('facilitator: no fabricated future response is returned', function () {
+    [, , $facilitator, , , $session, , $sessionInject2] = ttxReadModelFixture();
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    $pendingInject = collect($payload['injects'])->firstWhere('id', $sessionInject2->id);
+    expect(array_key_exists('response', $pendingInject))->toBeFalse();
+});
+
+// ─── AUTHORIZATION ────────────────────────────────────
+
+test('authorization: assigned participant can read participant runtime', function () {
+    [, , , $participant, , $session] = ttxReadModelFixture();
+
+    $response = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(200);
+});
+
+test('authorization: assigned facilitator can read facilitator runtime', function () {
+    [, , $facilitator, , , $session] = ttxReadModelFixture();
+
+    $response = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(200);
+});
+
+test('authorization: unassigned same-tenant user cannot read runtime', function () {
+    [, , , , , $session] = ttxReadModelFixture();
+    $unassigned = User::factory()->create(['tenant_id' => $session->tenant_id]);
+
+    $response = $this->actingAs($unassigned)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(403);
+});
+
+test('authorization: unassigned Tenant Admin does not gain participant runtime access', function () {
+    [, , , , , $session] = ttxReadModelFixture();
+    $otherAdmin = User::factory()->tenantAdmin()->create(['tenant_id' => $session->tenant_id]);
+
+    $response = $this->actingAs($otherAdmin)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(403);
+});
+
+test('authorization: unassigned Super Admin does not gain runtime access', function () {
+    [, , , , , $session] = ttxReadModelFixture();
+    $superAdmin = User::factory()->superAdmin()->create();
+
+    $response = $this->actingAs($superAdmin)->getJson(route('tenant.ttx.sessions.show', $session));
+    // Super Admin is not in the same tenant, so view policy denies
+    $response->assertStatus(403);
+});
+
+test('authorization: cross-tenant user cannot access session runtime', function () {
+    [, , , , , $session] = ttxReadModelFixture();
+
+    $otherTenant = Tenant::factory()->create();
+    $crossTenantUser = User::factory()->create(['tenant_id' => $otherTenant->id]);
+
+    $response = $this->actingAs($crossTenantUser)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(403);
+});
+
+test('authorization: assigned participant with inactive user account cannot read runtime', function () {
+    [, , , $participant, , $session] = ttxReadModelFixture();
+
+    $participant->update(['is_active' => false]);
+
+    $response = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(403);
+});
+
+test('authorization: assigned facilitator with inactive user account cannot read runtime', function () {
+    [, , $facilitator, , , $session] = ttxReadModelFixture();
+
+    $facilitator->update(['is_active' => false]);
+
+    $response = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session));
+    $response->assertStatus(403);
+});
+
+// ─── SIDE EFFECTS ─────────────────────────────────────
+
+test('side effects: read payload does not increment response revision', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 5,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+
+    $response = TtxSessionResponse::where('session_inject_id', $sessionInject->id)->first();
+    expect($response->revision)->toBe(5);
+});
+
+test('side effects: read payload does not modify locked_at', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+        'locked_at' => null,
+    ]);
+
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+
+    $response = TtxSessionResponse::where('session_inject_id', $sessionInject->id)->first();
+    expect($response->locked_at)->toBeNull();
+});
+
+test('side effects: read payload does not create ttx.response_saved audit', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_saved')->count();
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+    $afterCount = AuditLog::where('action', 'ttx.response_saved')->count();
+
+    expect($afterCount)->toBe($beforeCount);
+});
+
+test('side effects: read payload does not create ttx.response_locked audit', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_locked')->count();
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+    $afterCount = AuditLog::where('action', 'ttx.response_locked')->count();
+
+    expect($afterCount)->toBe($beforeCount);
+});
+
+test('side effects: read payload does not change inject status', function () {
+    [, , , $participant, , $session, $sessionInject] = ttxReadModelFixture();
+
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+
+    expect($sessionInject->fresh()->status)->toBe(TtxSessionInjectStatus::Active);
+});
+
+test('side effects: read payload does not change session status', function () {
+    [, , , $participant, , $session] = ttxReadModelFixture();
+
+    $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session));
+
+    expect($session->fresh()->status)->toBe(TtxSessionStatus::InProgress);
+});
+
+// ─── DEFENSE-IN-DEPTH: PENDING RESPONSE LEAKAGE ──────
+
+test('defense-in-depth: participant payload does not contain pending inject even with out-of-band response', function () {
+    [, , , $participant, , $session, $sessionInject, $sessionInject2] = ttxReadModelFixture();
+
+    // Privileged setup: insert a response for the pending inject
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject2->id,
+        'decision' => 'Out-of-band pending response',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    // Pending inject should not appear at all
+    $pendingVisible = collect($payload['injects'])->contains(fn ($i) => $i['id'] === $sessionInject2->id);
+    expect($pendingVisible)->toBeFalse();
+
+    // No leaked data in JSON
+    $json = json_encode($payload);
+    expect($json)->not->toContain('Out-of-band pending response');
+});
+
+test('defense-in-depth: facilitator payload does not expose pending response content/revision', function () {
+    [, , $facilitator, , , $session, $sessionInject, $sessionInject2] = ttxReadModelFixture();
+
+    // Privileged setup: insert a response for the pending inject
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject2->id,
+        'decision' => 'Secret pending decision',
+        'revision' => 7,
+        'submitted_by' => $facilitator->id,
+        'submitted_at' => now(),
+    ]);
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->json();
+
+    // Facilitator sees the pending inject (timeline), but NOT its response
+    $pendingInject = collect($payload['injects'])->firstWhere('id', $sessionInject2->id);
+    expect($pendingInject)->not->toBeNull()
+        ->and(array_key_exists('response', $pendingInject))->toBeFalse()
+        ->and(json_encode($pendingInject))->not->toContain('Secret pending decision')
+        ->and(json_encode($pendingInject))->not->toContain('"revision":7');
 });

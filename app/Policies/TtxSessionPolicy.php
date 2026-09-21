@@ -15,10 +15,8 @@ class TtxSessionPolicy
 
     public function view(User $user, TtxSession $session): bool
     {
-        return $this->sameTenant($user, $session) && (
-            $user->role === UserRole::TenantAdmin
-            || $session->participants()->where('user_id', $user->id)->exists()
-        );
+        return $this->sameTenant($user, $session)
+            && $session->participants()->where('user_id', $user->id)->exists();
     }
 
     public function assign(User $user, TtxSession $session): bool
