@@ -48,7 +48,7 @@ class TtxSessionService
     public function assignParticipant(User $actor, TtxSession $session, User $participant, TtxSessionRole $role): TtxSessionParticipant
     {
         abort_unless($actor->tenant_id === $session->tenant_id && $participant->tenant_id === $session->tenant_id, 403);
-        return DB::transaction(function () use ($actor, $session, $participant, $role) {
+        return DB::transaction(function () use ($session, $participant, $role) {
             $assignment = TtxSessionParticipant::create([
                 'tenant_id' => $session->tenant_id,
                 'session_id' => $session->id,
@@ -102,7 +102,7 @@ class TtxSessionService
             }
             $next->update(['status' => TtxSessionInjectStatus::Active, 'released_at' => now(), 'released_by' => $actor->id]);
             Audit::log('ttx.session_inject_released', $next, ['session_id' => $session->id]);
-            return $next->fresh();
+            return TtxSessionInject::query()->findOrFail($next->id);
         });
     }
 

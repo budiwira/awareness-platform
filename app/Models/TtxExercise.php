@@ -45,6 +45,9 @@ class TtxExercise extends Model
         return $this->belongsTo(TtxRunbook::class, 'runbook_id');
     }
 
+    /**
+     * @return HasMany<TtxInject, $this>
+     */
     public function injects(): HasMany
     {
         return $this->hasMany(TtxInject::class, 'exercise_id')->orderBy('order');
@@ -55,6 +58,9 @@ class TtxExercise extends Model
         return $this->hasMany(TtxSession::class, 'exercise_id');
     }
 
+    /**
+     * @return HasMany<TtxTeam, $this>
+     */
     public function teams(): HasMany
     {
         return $this->hasMany(TtxTeam::class, 'exercise_id');

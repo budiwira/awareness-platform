@@ -56,11 +56,17 @@ class TtxSession extends Model
         return $this->belongsTo(TtxExercise::class, 'exercise_id');
     }
 
+    /**
+     * @return HasMany<TtxSessionParticipant, $this>
+     */
     public function participants(): HasMany
     {
         return $this->hasMany(TtxSessionParticipant::class, 'session_id');
     }
 
+    /**
+     * @return HasMany<TtxSessionInject, $this>
+     */
     public function injects(): HasMany
     {
         return $this->hasMany(TtxSessionInject::class, 'session_id')->orderBy('order');
