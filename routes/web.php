@@ -269,11 +269,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
             Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
             Route::post('/ttx/exercises/{exercise}/sessions', [TenantTtxSessionController::class, 'store'])->name('ttx.sessions.store');
-            Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
-            Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
-            Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
-            Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
-
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
@@ -286,6 +281,13 @@ Route::middleware('auth')->group(function () {
             Route::get('/phishing/{campaign}', [TenantPhishingController::class, 'show'])->name('phishing.show');
             Route::post('/phishing/{campaign}/send', [TenantPhishingController::class, 'send'])->name('phishing.send');
         });
+
+    Route::prefix('tenant')->name('tenant.')->group(function () {
+        Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
+        Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
+        Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
+        Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
+    });
 
     Route::middleware('can:access-user-dashboard')
         ->prefix('me')

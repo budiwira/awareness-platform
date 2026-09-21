@@ -62,27 +62,33 @@ class TtxSessionService
 
     public function markReady(TtxSession $session): TtxSession
     {
-        if ($session->status !== TtxSessionStatus::Draft) {
-            throw ValidationException::withMessages(['session' => 'Sesi hanya dapat disiapkan dari status draft.']);
-        }
+        return DB::transaction(function () use ($session) {
+            $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            if ($session->status !== TtxSessionStatus::Draft) {
+                throw ValidationException::withMessages(['session' => 'Sesi hanya dapat disiapkan dari status draft.']);
+            }
 
-        $session->loadMissing('participants', 'injects');
-        if (! $session->participants->contains(fn ($p) => $p->session_role === TtxSessionRole::Facilitator) || $session->injects->isEmpty()) {
-            throw ValidationException::withMessages(['session' => 'Sesi harus memiliki fasilitator dan minimal satu inject.']);
-        }
-        $session->update(['status' => TtxSessionStatus::Ready]);
-        Audit::log('ttx.session_ready', $session);
-        return $session->fresh();
+            $session->loadMissing('participants', 'injects');
+            if (! $session->participants->contains(fn ($p) => $p->session_role === TtxSessionRole::Facilitator) || $session->injects->isEmpty()) {
+                throw ValidationException::withMessages(['session' => 'Sesi harus memiliki fasilitator dan minimal satu inject.']);
+            }
+            $session->update(['status' => TtxSessionStatus::Ready]);
+            Audit::log('ttx.session_ready', $session);
+            return $session->fresh();
+        });
     }
 
     public function start(TtxSession $session): TtxSession
     {
-        if ($session->status !== TtxSessionStatus::Ready) {
-            throw ValidationException::withMessages(['session' => 'Sesi belum siap dimulai.']);
-        }
-        $session->update(['status' => TtxSessionStatus::InProgress, 'started_at' => now()]);
-        Audit::log('ttx.session_started', $session);
-        return $session->fresh();
+        return DB::transaction(function () use ($session) {
+            $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            if ($session->status !== TtxSessionStatus::Ready) {
+                throw ValidationException::withMessages(['session' => 'Sesi belum siap dimulai.']);
+            }
+            $session->update(['status' => TtxSessionStatus::InProgress, 'started_at' => now()]);
+            Audit::log('ttx.session_started', $session);
+            return $session->fresh();
+        });
     }
 
     public function advanceInject(TtxSession $session, User $actor): TtxSessionInject
@@ -92,6 +98,10 @@ class TtxSessionService
         }
 
         return DB::transaction(function () use ($session, $actor) {
+            $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            if ($session->status !== TtxSessionStatus::InProgress) {
+                throw ValidationException::withMessages(['session' => 'Inject hanya dapat dijalankan saat sesi berlangsung.']);
+            }
             $current = $session->injects()->where('status', TtxSessionInjectStatus::Active)->lockForUpdate()->first();
             if ($current) {
                 $current->update(['status' => TtxSessionInjectStatus::Locked, 'locked_at' => now()]);

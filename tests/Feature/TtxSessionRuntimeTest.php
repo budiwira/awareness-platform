@@ -88,7 +88,9 @@ test('wrong tenant and wrong role cannot manage a session', function () {
 
     expect(fn () => $service->assignParticipant($otherAdmin, $session, $otherAdmin, TtxSessionRole::Facilitator))
         ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
-    expect(Gate::forUser($participant)->allows('manage', $session))->toBeFalse();
+    expect(Gate::forUser($participant)->allows('manage', $session))->toBeFalse()
+        ->and($this->actingAs($participant)->get(route('tenant.ttx.sessions.show', $session))->status())->toBe(200)
+        ->and($this->actingAs($participant)->post(route('tenant.ttx.sessions.start', $session))->status())->toBe(403);
 });
 
 test('session cannot start before readiness', function () {
