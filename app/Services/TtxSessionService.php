@@ -26,6 +26,7 @@ class TtxSessionService
                 'exercise_id' => $exercise->id,
                 'title' => $title,
                 'created_by' => $actor->id,
+                'status' => TtxSessionStatus::Draft,
                 'scheduled_at' => $scheduledAt,
                 'exercise_snapshot' => $this->exerciseSnapshot($exercise),
             ]);
