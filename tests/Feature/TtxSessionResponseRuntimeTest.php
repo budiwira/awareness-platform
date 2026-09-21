@@ -12,6 +12,8 @@ use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
 use App\Models\User;
+use App\Services\TtxSessionService;
+use Illuminate\Validation\ValidationException;
 
 function ttxResponseRuntimeFixture(): array
 {
@@ -846,5 +848,578 @@ test('failed mutation due to lifecycle lock emits no audit event', function () {
     ]);
 
     $afterCount = AuditLog::where('action', 'ttx.response_saved')->count();
+    expect($afterCount)->toBe($beforeCount);
+});
+
+// ─── C3: RESPONSE LOCKING AND PROGRESSION INTEGRITY ─────
+
+function ttxProgressionFixture(): array
+{
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $participant = User::factory()->create(['tenant_id' => $tenant->id]);
+
+    $exercise = TtxExercise::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Progression exercise',
+        'scenario' => 'Progression scenario',
+    ]);
+
+    $inject1 = TtxInject::create([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'order' => 1,
+        'title' => 'First inject',
+        'description' => 'First inject description',
+    ]);
+
+    $inject2 = TtxInject::create([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'order' => 2,
+        'title' => 'Second inject',
+        'description' => 'Second inject description',
+    ]);
+
+    $session = TtxSession::forceCreate([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'title' => 'Progression session',
+        'created_by' => $admin->id,
+        'status' => TtxSessionStatus::InProgress,
+        'started_at' => now(),
+        'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $admin->id,
+        'session_role' => TtxSessionRole::Facilitator,
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $participant->id,
+        'session_role' => TtxSessionRole::Security,
+    ]);
+
+    $sessionInject1 = TtxSessionInject::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'inject_id' => $inject1->id,
+        'order' => 1,
+        'status' => TtxSessionInjectStatus::Active,
+        'inject_snapshot' => ['title' => $inject1->title, 'description' => $inject1->description],
+        'released_at' => now(),
+        'released_by' => $admin->id,
+    ]);
+
+    $sessionInject2 = TtxSessionInject::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'inject_id' => $inject2->id,
+        'order' => 2,
+        'status' => TtxSessionInjectStatus::Pending,
+        'inject_snapshot' => ['title' => $inject2->title, 'description' => $inject2->description],
+    ]);
+
+    return [$tenant, $admin, $facilitator, $participant, $exercise, $inject1, $inject2, $session, $sessionInject1, $sessionInject2];
+}
+
+function ttxFinalProgressionFixture(): array
+{
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $participant = User::factory()->create(['tenant_id' => $tenant->id]);
+
+    $exercise = TtxExercise::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Final progression exercise',
+        'scenario' => 'Final scenario',
+    ]);
+
+    $inject1 = TtxInject::create([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'order' => 1,
+        'title' => 'Only inject',
+        'description' => 'Only inject description',
+    ]);
+
+    $session = TtxSession::forceCreate([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'title' => 'Final progression session',
+        'created_by' => $admin->id,
+        'status' => TtxSessionStatus::InProgress,
+        'started_at' => now(),
+        'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $admin->id,
+        'session_role' => TtxSessionRole::Facilitator,
+    ]);
+
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $participant->id,
+        'session_role' => TtxSessionRole::Security,
+    ]);
+
+    $sessionInject1 = TtxSessionInject::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'inject_id' => $inject1->id,
+        'order' => 1,
+        'status' => TtxSessionInjectStatus::Active,
+        'inject_snapshot' => ['title' => $inject1->title, 'description' => $inject1->description],
+        'released_at' => now(),
+        'released_by' => $admin->id,
+    ]);
+
+    return [$tenant, $admin, $participant, $exercise, $inject1, $session, $sessionInject1];
+}
+
+// ─── FAILED PROGRESSION ──────────────────────────────────
+
+test('facilitator cannot advance ACTIVE inject with no official response', function () {
+    [, $admin, , , , , , $session] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $service = app(TtxSessionService::class);
+    expect(fn () => $service->advanceInject($session, $admin))
+        ->toThrow(ValidationException::class);
+});
+
+test('facilitator cannot advance with blank decision', function () {
+    [, $admin, , , , , , $session, $sessionInject] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => '',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    expect(fn () => $service->advanceInject($session, $admin))
+        ->toThrow(ValidationException::class);
+});
+
+test('whitespace-only decision cannot satisfy progression', function () {
+    [, $admin, , , , , , $session, $sessionInject] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => '   ',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    expect(fn () => $service->advanceInject($session, $admin))
+        ->toThrow(ValidationException::class);
+});
+
+test('failed progression leaves current inject ACTIVE', function () {
+    [, $admin, , , , , , $session, $sessionInject] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    expect($sessionInject->fresh()->status)->toBe(TtxSessionInjectStatus::Active);
+});
+
+test('failed progression does not activate next inject', function () {
+    [, $admin, , , , , , $session, $sessionInject1, $sessionInject2] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    expect($sessionInject2->fresh()->status)->toBe(TtxSessionInjectStatus::Pending);
+});
+
+test('failed progression does not enter DEBRIEF', function () {
+    [, $admin, , , , , , $session] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    expect($session->fresh()->status)->toBe(TtxSessionStatus::InProgress);
+});
+
+test('failed progression does not set response locked_at', function () {
+    [, $admin, , , , , , $session, $sessionInject] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'decision' => '',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    expect($response->fresh()->locked_at)->toBeNull();
+});
+
+test('failed progression emits no ttx.response_locked success audit', function () {
+    [, $admin, , , , , , $session] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_locked')->count();
+
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    $afterCount = AuditLog::where('action', 'ttx.response_locked')->count();
+    expect($afterCount)->toBe($beforeCount);
+});
+
+// ─── SUCCESSFUL NON-FINAL PROGRESSION ────────────────────
+
+test('successful non-final progression locks response and advances inject', function () {
+    [, $admin, , , , , , $session, $sessionInject1, $sessionInject2] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Contain the breach',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $result = $service->advanceInject($session, $admin);
+
+    // Response locked_at becomes non-null
+    expect($response->fresh()->locked_at)->not->toBeNull();
+    // Response revision does NOT change
+    expect($response->fresh()->revision)->toBe(1);
+    // Current inject becomes LOCKED
+    expect($sessionInject1->fresh()->status)->toBe(TtxSessionInjectStatus::Locked);
+    // Next inject becomes ACTIVE
+    expect($sessionInject2->fresh()->status)->toBe(TtxSessionInjectStatus::Active);
+    // Next inject released_at/released_by populated
+    expect($sessionInject2->fresh()->released_at)->not->toBeNull()
+        ->and($sessionInject2->fresh()->released_by)->toBe($admin->id);
+    // Returned inject is the next one
+    expect($result->id)->toBe($sessionInject2->fresh()->id);
+});
+
+test('ttx.response_locked emitted exactly once on non-final progression', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Action taken',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_locked')->count();
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $afterCount = AuditLog::where('action', 'ttx.response_locked')->count();
+    expect($afterCount)->toBe($beforeCount + 1);
+});
+
+test('existing inject progression audits remain correct on non-final progression', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.inject_locked']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.inject_released']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.response_locked']);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'ttx.debrief_started']);
+});
+
+// ─── SUCCESSFUL FINAL PROGRESSION ────────────────────────
+
+test('successful final progression enters DEBRIEF and locks response', function () {
+    [, $admin, , , , $session, $sessionInject1] = ttxFinalProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Final decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $result = $service->advanceInject($session, $admin);
+
+    // Response locked_at becomes non-null
+    expect($response->fresh()->locked_at)->not->toBeNull();
+    // Response revision unchanged
+    expect($response->fresh()->revision)->toBe(1);
+    // Current inject becomes LOCKED
+    expect($sessionInject1->fresh()->status)->toBe(TtxSessionInjectStatus::Locked);
+    // Session becomes DEBRIEF
+    expect($session->fresh()->status)->toBe(TtxSessionStatus::Debrief);
+    // debrief_started_at is populated
+    expect($session->fresh()->debrief_started_at)->not->toBeNull();
+    // Returned inject is the current one (final advance convention)
+    expect($result->id)->toBe($sessionInject1->fresh()->id);
+});
+
+test('ttx.response_locked and ttx.debrief_started emitted on final progression', function () {
+    [, $admin, , , , $session, $sessionInject1] = ttxFinalProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Final decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.inject_locked']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.response_locked']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.debrief_started']);
+});
+
+// ─── IMMUTABILITY AFTER PROGRESSION ──────────────────────
+
+test('response update after progression is rejected', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Original decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    // Inject is now LOCKED — update should be rejected
+    $update = $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+        'expected_revision' => 1,
+        'decision' => 'Should not work',
+    ]);
+
+    $update->assertStatus(422);
+});
+
+test('rejected update after progression does not alter response content', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Original decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+        'expected_revision' => 1,
+        'decision' => 'Should not apply',
+    ]);
+
+    expect($response->fresh()->decision)->toBe('Original decision');
+});
+
+test('rejected update after progression does not increment revision', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Original decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+        'expected_revision' => 1,
+        'decision' => 'Should not work',
+    ]);
+
+    expect($response->fresh()->revision)->toBe(1);
+});
+
+test('rejected update after progression does not emit ttx.response_saved', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Original decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_saved')->count();
+
+    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+        'expected_revision' => 1,
+        'decision' => 'Should not audit',
+    ]);
+
+    $afterCount = AuditLog::where('action', 'ttx.response_saved')->count();
+    expect($afterCount)->toBe($beforeCount);
+});
+
+// ─── CONCURRENCY / LIFECYCLE ─────────────────────────────
+
+test('response update cannot commit after concurrent progression has locked the inject', function () {
+    [, $admin, , $participant, , , , $session, $sessionInject1] = ttxProgressionFixture();
+
+    $response = TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Original',
+        'revision' => 1,
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    // Simulate concurrent advance: lock the inject (as advanceInject would)
+    $sessionInject1->update(['status' => TtxSessionInjectStatus::Locked, 'locked_at' => now()]);
+
+    // Editor attempts update — inject is now LOCKED → rejected
+    $update = $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+        'expected_revision' => 1,
+        'decision' => 'Should not work',
+    ]);
+
+    $update->assertStatus(422);
+});
+
+test('repeated advance after entering DEBRIEF remains rejected', function () {
+    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject1->id,
+        'decision' => 'Decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
+    $service = app(TtxSessionService::class);
+    $service->advanceInject($session, $admin);
+
+    expect(fn () => $service->advanceInject($session->fresh(), $admin))
+        ->toThrow(ValidationException::class);
+});
+
+test('no duplicate response_locked audit on repeated failed progression', function () {
+    [, $admin, , , , , , $session] = ttxProgressionFixture();
+    $this->actingAs($admin);
+
+    $beforeCount = AuditLog::where('action', 'ttx.response_locked')->count();
+
+    // No response exists — advance fails
+    $service = app(TtxSessionService::class);
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+    try {
+        $service->advanceInject($session, $admin);
+    } catch (Exception $e) {
+    }
+
+    $afterCount = AuditLog::where('action', 'ttx.response_locked')->count();
     expect($afterCount)->toBe($beforeCount);
 });

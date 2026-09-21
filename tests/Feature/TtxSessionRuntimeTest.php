@@ -6,10 +6,12 @@ use App\Enums\TtxSessionStatus;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
 use App\Models\TtxInject;
+use App\Models\TtxSessionResponse;
 use App\Models\User;
 use App\Services\TtxSessionService;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 function ttxRuntimeFixture(): array
 {
@@ -94,8 +96,8 @@ test('only explicitly assigned facilitators can start, including tenant admins',
     $service->assignParticipant($admin, $session, $participant, TtxSessionRole::Security);
     $service->markReady($admin, $session);
 
-    expect(fn () => $service->start($otherAdmin, $session))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
-    expect(fn () => $service->start($participant, $session))->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+    expect(fn () => $service->start($otherAdmin, $session))->toThrow(HttpException::class);
+    expect(fn () => $service->start($participant, $session))->toThrow(HttpException::class);
     expect($service->start($admin, $session)->status)->toBe(TtxSessionStatus::InProgress);
     expect($session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->count())->toBe(1);
 });
@@ -123,13 +125,13 @@ test('assignment is limited to draft or ready sessions and active targets', func
     $service->assignParticipant($admin, $session, $participant, TtxSessionRole::Security);
     $service->assignParticipant($admin, $session, $admin, TtxSessionRole::Facilitator);
     expect(fn () => $service->assignParticipant($admin, $session, $inactive, TtxSessionRole::Management))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
     $service->markReady($admin, $session);
     $lateParticipant = User::factory()->create(['tenant_id' => $exercise->tenant_id]);
     $service->assignParticipant($admin, $session, $lateParticipant, TtxSessionRole::Security);
     $service->start($admin, $session);
     expect(fn () => $service->assignParticipant($admin, $session, $lateParticipant, TtxSessionRole::Management))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
 });
 
 test('start activates the first inject and final advance enters debrief', function () {
@@ -153,12 +155,39 @@ test('start activates the first inject and final advance enters debrief', functi
     expect($session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->count())->toBe(1)
         ->and($session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->first()->released_by)->toBe($admin->id)
         ->and($session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->first()->released_at)->not->toBeNull();
+
+    // Create response for first inject before advancing
+    $firstInject = $session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->first();
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $firstInject->id,
+        'decision' => 'First decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
     $service->advanceInject($session, $admin);
+
+    // Create response for second inject before advancing
+    $secondInject = $session->fresh()->injects()->where('status', TtxSessionInjectStatus::Active)->first();
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $session->tenant_id,
+        'session_id' => $session->id,
+        'session_inject_id' => $secondInject->id,
+        'decision' => 'Second decision',
+        'revision' => 1,
+        'submitted_by' => $admin->id,
+        'submitted_at' => now(),
+    ]);
+
     $service->advanceInject($session->fresh(), $admin);
 
     expect($session->fresh()->status)->toBe(TtxSessionStatus::Debrief);
     $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.inject_locked']);
     $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.debrief_started']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'ttx.response_locked']);
     expect(fn () => $service->advanceInject($session->fresh(), $admin))
         ->toThrow(ValidationException::class);
 });
@@ -191,9 +220,9 @@ test('wrong tenant and wrong role cannot manage a session', function () {
     $service->assignParticipant($admin, $session, $participant, TtxSessionRole::Security);
 
     expect(fn () => $service->assignParticipant($otherAdmin, $session, $otherAdmin, TtxSessionRole::Facilitator))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
     expect(fn () => $service->advanceInject($session, $participant))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
     expect(Gate::forUser($participant)->allows('manage', $session))->toBeFalse()
         ->and($this->actingAs($participant)->get(route('tenant.ttx.sessions.show', $session))->status())->toBe(200)
         ->and($this->actingAs($participant)->post(route('tenant.ttx.sessions.start', $session))->status())->toBe(403);
@@ -206,7 +235,7 @@ test('session cannot start before readiness', function () {
     $session = $service->create($admin, $exercise, 'Not ready');
 
     expect(fn () => $service->start($admin, $session))
-        ->toThrow(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
 });
 
 test('participant HTTP access is outside tenant admin middleware but runtime actions remain forbidden', function () {

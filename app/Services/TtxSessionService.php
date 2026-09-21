@@ -132,26 +132,57 @@ class TtxSessionService
         }
 
         return DB::transaction(function () use ($session, $actor) {
+            // Lock order: Session → Current Inject → Current Response → Next Inject
             $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
             $this->assertRuntimeActor($actor, $session);
             if ($session->status !== TtxSessionStatus::InProgress) {
                 throw ValidationException::withMessages(['session' => 'Inject hanya dapat dijalankan saat sesi berlangsung.']);
             }
+
+            // Lock current ACTIVE inject
             $current = $session->injects()->where('status', TtxSessionInjectStatus::Active)->lockForUpdate()->first();
-            if ($current) {
-                $current->update(['status' => TtxSessionInjectStatus::Locked, 'locked_at' => now()]);
-                Audit::log('ttx.inject_locked', $current, ['session_id' => $session->id]);
+            if (! $current) {
+                throw ValidationException::withMessages(['inject' => 'Tidak ada inject aktif untuk diselesaikan.']);
             }
+
+            // Locate and lock official response (must exist with non-empty decision)
+            $response = TtxSessionResponse::where('session_inject_id', $current->id)->lockForUpdate()->first();
+            if (! $response) {
+                throw ValidationException::withMessages(['response' => 'Response harus dibuat sebelum inject diselesaikan.']);
+            }
+            if (trim($response->decision) === '') {
+                throw ValidationException::withMessages(['response' => 'Decision tidak boleh kosong.']);
+            }
+            if ($response->locked_at !== null) {
+                throw ValidationException::withMessages(['response' => 'Response sudah terkunci.']);
+            }
+
+            // Lock next PENDING inject
             $next = $session->injects()->where('status', TtxSessionInjectStatus::Pending)->lockForUpdate()->first();
+
+            // Update current inject → LOCKED
+            $current->update(['status' => TtxSessionInjectStatus::Locked, 'locked_at' => now()]);
+            Audit::log('ttx.inject_locked', $current, ['session_id' => $session->id]);
+
+            // Lock response (does not increment revision — locked_at not in $fillable)
+            DB::table('ttx_session_responses')
+                ->where('id', $response->id)
+                ->update(['locked_at' => now()]);
+            Audit::log('ttx.response_locked', $response, [
+                'session_id' => $session->id,
+                'session_inject_id' => $current->id,
+                'response_id' => $response->id,
+                'revision' => $response->revision,
+            ]);
+
+            // Activate next or enter debrief
             if (! $next) {
-                if (! $current) {
-                    throw ValidationException::withMessages(['inject' => 'Tidak ada inject aktif untuk diselesaikan.']);
-                }
                 $session->update(['status' => TtxSessionStatus::Debrief, 'debrief_started_at' => now()]);
                 Audit::log('ttx.debrief_started', $session);
 
                 return $current;
             }
+
             $next->update(['status' => TtxSessionInjectStatus::Active, 'released_at' => now(), 'released_by' => $actor->id]);
             Audit::log('ttx.inject_released', $next, ['session_id' => $session->id]);
 
@@ -276,6 +307,13 @@ class TtxSessionService
             if ($lockedInject->status !== TtxSessionInjectStatus::Active) {
                 throw ValidationException::withMessages([
                     'inject' => 'Inject harus berstatus aktif untuk mengubah response.',
+                ]);
+            }
+
+            // Defense-in-depth: response immutability after progression lock
+            if ($response->locked_at !== null) {
+                throw ValidationException::withMessages([
+                    'response' => 'Response sudah terkunci dan tidak dapat diubah.',
                 ]);
             }
 
