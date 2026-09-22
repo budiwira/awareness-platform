@@ -325,7 +325,7 @@ defineExpose({
                 :disabled="!canSave"
                 @click="handleSave"
             >
-                {{ isCreate ? 'Simpan Response' : 'Simpan Perubahan' }}
+                {{ saving ? 'Menyimpan...' : (isCreate ? 'Simpan Response' : 'Simpan Perubahan') }}
             </BaseButton>
             <span v-if="serverSnapshot" class="response-revision">
                 Revisi #{{ serverSnapshot.revision }}

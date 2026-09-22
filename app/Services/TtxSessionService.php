@@ -398,14 +398,19 @@ class TtxSessionService
             'status' => $session->status->value,
             'scheduled_at' => $session->scheduled_at?->toISOString(),
             'actor_role' => $actor?->session_role?->value,
-            'progress' => ['current' => $current?->order, 'total' => $session->injects()->count()],
+            'progress' => [
+                'current' => $current?->order,
+                'total' => $facilitator ? $session->injects()->count() : $injects->count(),
+            ],
             'participants' => $session->participants()->with('user:id,name')->get()->map(fn ($p) => ['id' => $p->user_id, 'name' => $p->user->name, 'role' => $p->session_role->value])->values(),
-            'injects' => $injects->map(function ($i) use ($responses) {
+            'injects' => $injects->map(function ($i) use ($responses, $facilitator) {
                 $payload = [
                     'id' => $i->id,
                     'order' => $i->order,
                     'status' => $i->status->value,
-                    'snapshot' => $i->inject_snapshot,
+                    'snapshot' => $facilitator
+                        ? $i->inject_snapshot
+                        : $this->safeParticipantInjectSnapshot($i->inject_snapshot),
                 ];
 
                 // Pending injects must NOT contain a response key at all.
@@ -417,6 +422,22 @@ class TtxSessionService
                 return $payload;
             })->values(),
         ];
+    }
+
+    /**
+     * Only expose released, participant-facing inject content. Snapshot JSON is
+     * deliberately allow-listed so later facilitator/evaluation fields cannot
+     * cross the participant boundary by accident.
+     */
+    private function safeParticipantInjectSnapshot(?array $snapshot): array
+    {
+        return collect($snapshot ?? [])->only([
+            'title',
+            'description',
+            'situation',
+            'known_facts',
+            'discussion_prompt',
+        ])->all();
     }
 
     /**

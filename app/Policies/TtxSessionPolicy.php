@@ -58,6 +58,15 @@ class TtxSessionPolicy
         return $this->runtimeActor($user, $session);
     }
 
+    public function participate(User $user, TtxSession $session): bool
+    {
+        return $this->sameTenant($user, $session)
+            && $session->participants()
+                ->where('user_id', $user->id)
+                ->where('session_role', '!=', 'facilitator')
+                ->exists();
+    }
+
     public function respond(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)

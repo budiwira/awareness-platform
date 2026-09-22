@@ -30,6 +30,7 @@ use App\Http\Controllers\User\LeaderboardController;
 use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\User\MyTrainingController as UserTrainingController;
+use App\Http\Controllers\User\TtxSessionController as UserTtxSessionController;
 use App\Models\CaseParticipation;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
@@ -58,6 +59,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/ttx/sessions/{session}', [TenantTtxSessionController::class, 'show'])->name('tenant.ttx.sessions.show');
     // Facilitator console (Inertia page, not JSON).
     Route::get('/ttx/sessions/{session}/console', [TenantTtxSessionController::class, 'console'])->name('tenant.ttx.sessions.console');
+    // Assigned non-facilitator participant workspace (Inertia page, not JSON).
+    Route::get('/ttx/sessions/{session}/workspace', [TenantTtxSessionController::class, 'workspace'])->name('tenant.ttx.sessions.workspace');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -342,6 +345,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/quiz/attempt/{attempt}/review', [UserQuizController::class, 'review'])->name('training.quiz.review');
             Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
             Route::get('/score', [UserScoreController::class, 'index'])->name('score');
+
+            // Assigned Tabletop sessions for learners and facilitators.
+            Route::get('/tabletop', [UserTtxSessionController::class, 'index'])->name('ttx.index');
 
             // Route Cases for Users
             Route::get('/cases', [UserCaseController::class, 'index'])->name('cases.index');

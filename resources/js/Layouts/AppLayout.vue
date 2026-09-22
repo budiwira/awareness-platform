@@ -152,6 +152,7 @@ const menus = computed(() => {
             { label: 'Training', route: 'user.training.index' },
             { label: 'Case Studies', route: 'user.cases.index', locked: !entitlements?.features?.includes('case_studies') },
             { label: 'CTF', route: 'user.ctf.index', locked: !entitlements?.features?.includes('ctf') },
+            { label: 'Tabletop', route: 'user.ttx.index', locked: !entitlements?.features?.includes('ttx') },
         ]},
         { section: 'Progress', items: [
             { label: 'Skor Saya', route: 'user.score' },

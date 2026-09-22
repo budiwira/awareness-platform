@@ -106,6 +106,15 @@ class TtxSessionController extends Controller
         ]);
     }
 
+    public function workspace(Request $request, TtxSession $session)
+    {
+        Gate::authorize('participate', $session);
+
+        return Inertia::render('Tenant/Ttx/Sessions/ParticipantWorkspace', [
+            'sessionId' => $session->id,
+        ]);
+    }
+
     public function storeResponse(Request $request, TtxSession $session, TtxSessionService $service)
     {
         Gate::authorize('respond', $session);
