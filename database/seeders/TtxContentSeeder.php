@@ -14,6 +14,22 @@ use Illuminate\Database\Seeder;
 
 class TtxContentSeeder extends Seeder
 {
+    public const FLAGSHIP_TITLE = 'Credential Compromise & Coordinated Incident Response';
+
+    /**
+     * Evaluation evidence expected from each inject. This stays in content code
+     * because the inject schema intentionally has no objective metadata field.
+     *
+     * @var array<int, list<string>>
+     */
+    public const FLAGSHIP_OBJECTIVE_MAP = [
+        1 => ['EX-1'],
+        2 => ['EX-2', 'EX-3'],
+        3 => ['EX-3', 'EX-4'],
+        4 => ['EX-4', 'EX-5'],
+        5 => ['EX-6'],
+    ];
+
     public function run(): void
     {
         $tenant = Tenant::where('slug', 'acme')->first() ?? Tenant::first();
@@ -105,6 +121,8 @@ class TtxContentSeeder extends Seeder
             );
         }
 
+        $this->seedFlagshipScenario($tenant);
+
         // --- TEAMS (pembagian peran, contoh mentor) ---
         $teamNames = [
             ['name' => 'Tim Incident Response', 'desc' => 'Deteksi, analisis, isolasi, eradikasi.'],
@@ -131,6 +149,64 @@ class TtxContentSeeder extends Seeder
                     ['tenant_id' => $tenant->id, 'role_in_team' => 'lead']
                 );
             }
+        }
+    }
+
+    private function seedFlagshipScenario(Tenant $tenant): void
+    {
+        $exercise = TtxExercise::updateOrCreate(
+            ['tenant_id' => $tenant->id, 'title' => self::FLAGSHIP_TITLE],
+            [
+                'scenario' => 'Arunika Services, sebuah organisasi layanan bisnis fiktif, menerima laporan aktivitas tidak wajar pada akun seorang manajer keuangan. Tim harus memvalidasi indikasi awal, menjaga operasi tetap berjalan, dan mengoordinasikan respons dengan informasi yang belum lengkap.',
+                'objectives' => "EX-1 Detection & Triage\nEX-2 Escalation & Ownership\nEX-3 Containment Decision\nEX-4 Cross-functional Coordination\nEX-5 Incident Communication\nEX-6 Recovery & Improvement",
+                'scope' => 'Beginner–Intermediate · 45–60 menit · 4–8 peserta · 1 fasilitator',
+                'playbook_id' => null,
+                'runbook_id' => null,
+                'phase' => 'planning',
+                'scheduled_at' => null,
+            ]
+        );
+
+        $injects = [
+            [
+                'order' => 1,
+                'title' => 'Suspicious Account Activity',
+                'description' => "Situasi:\nPukul 09.10, Service Desk menerima laporan dari manajer keuangan Arunika Services tentang beberapa permintaan persetujuan MFA yang tidak ia lakukan. Pemantauan identitas juga menandai satu login berhasil dari lokasi yang tidak biasa.\n\nFakta yang diketahui:\n- Pemilik akun dapat dihubungi dan sedang bekerja dari lokasi normal.\n- Belum ada konfirmasi bahwa kredensial atau sesi telah disalahgunakan.\n- Layanan bisnis utama masih berjalan normal.\n- Log identitas dan perangkat tersedia untuk ditinjau.\n\nPertanyaan diskusi:\nTindakan apa yang harus dilakukan tim dalam 30 menit berikutnya, siapa yang memiliki setiap tindakan, dan informasi apa yang masih diperlukan untuk menentukan tingkat keparahan insiden?",
+            ],
+            [
+                'order' => 2,
+                'title' => 'Confirmed Credential Compromise',
+                'description' => "Situasi:\nPeninjauan awal mengonfirmasi bahwa pengguna memasukkan kredensial pada halaman masuk palsu sehari sebelumnya. Sebuah sesi yang tidak dikenal membuat aturan penerusan email dan membuka beberapa dokumen kerja bersama.\n\nFakta yang diketahui:\n- Aktivitas tersebut menggunakan identitas manajer keuangan yang sah.\n- Aturan penerusan mengarah ke alamat eksternal yang tidak dikenal.\n- Belum diketahui seluruh dokumen yang dilihat atau disalin.\n- Penutupan akun akan memengaruhi persetujuan transaksi rutin pagi ini.\n\nPertanyaan diskusi:\nSiapa yang mengambil kepemilikan insiden, kepada siapa insiden harus dieskalasikan, dan tindakan containment apa yang harus disetujui sekarang sambil menjaga proses bisnis kritis tetap terkendali?",
+            ],
+            [
+                'order' => 3,
+                'title' => 'Lateral Business Impact',
+                'description' => "Situasi:\nService Desk menemukan bahwa akun yang dikompromikan telah mengirim permintaan reset akses kepada dua rekan kerja dan mengajukan perubahan rekening pembayaran pemasok. Salah satu rekan mengikuti tautan tersebut sebelum melapor.\n\nFakta yang diketahui:\n- Permintaan perubahan rekening masih menunggu persetujuan kedua.\n- Sesi aktif pengguna terkait masih ada pada laptop dan perangkat seluler terkelola.\n- Finance sedang menyelesaikan proses pembayaran harian dengan tenggat siang ini.\n- Security, Operasional TI, Finance, dan People/HR memiliki bagian informasi yang berbeda.\n\nPertanyaan diskusi:\nBagaimana tim menentukan cakupan containment akun dan sesi, mengoordinasikan fungsi yang terdampak, serta menyeimbangkan penghentian risiko dengan kelangsungan operasi? Tetapkan pemilik dan urutan tindakan segera.",
+            ],
+            [
+                'order' => 4,
+                'title' => 'External and Internal Communication Pressure',
+                'description' => "Situasi:\nSeorang pemasok mempertanyakan permintaan perubahan rekening, rumor mulai beredar di kanal percakapan internal, dan seorang klien utama meminta konfirmasi dalam satu jam setelah menerima pesan mencurigakan dari akun Arunika Services.\n\nFakta yang diketahui:\n- Investigasi masih berlangsung dan belum ada bukti terverifikasi mengenai pengambilan data.\n- Permintaan pembayaran palsu berhasil dihentikan sebelum diproses.\n- Belum ada pernyataan internal atau eksternal yang disetujui.\n- Tim hukum dan privasi sedang menilai kewajiban pemberitahuan.\n\nPertanyaan diskusi:\nSiapa yang harus diberi tahu sekarang, pesan sementara apa yang dapat disampaikan dengan jujur, siapa yang menyetujui dan menyampaikan pesan, serta bagaimana tim akan memperbarui pemangku kepentingan ketika fakta berubah?",
+            ],
+            [
+                'order' => 5,
+                'title' => 'Recovery and Lessons',
+                'description' => "Situasi:\nAkun dan sesi yang terdampak telah diamankan. Tidak ada aktivitas mencurigakan baru selama enam jam, tetapi proses Finance masih memakai prosedur manual dan beberapa pengguna menunggu pemulihan akses. Pimpinan meminta rencana kembali ke operasi normal.\n\nFakta yang diketahui:\n- Bukti dan log utama telah dipertahankan untuk peninjauan lanjutan.\n- Pemeriksaan awal mengarah pada phishing dan verifikasi perubahan pembayaran yang tidak konsisten.\n- Pemantauan tambahan dapat diterapkan pada akun dan transaksi berisiko tinggi.\n- Belum ada pemilik atau tenggat untuk tindakan perbaikan jangka panjang.\n\nPertanyaan diskusi:\nKriteria apa yang harus dipenuhi sebelum akses dan proses normal dipulihkan, pemantauan apa yang diperlukan, dan pelajaran serta tindakan korektif apa yang harus dimiliki tim untuk 24 jam dan 30 hari berikutnya?",
+            ],
+        ];
+
+        foreach ($injects as $inject) {
+            TtxInject::updateOrCreate(
+                [
+                    'tenant_id' => $tenant->id,
+                    'exercise_id' => $exercise->id,
+                    'order' => $inject['order'],
+                ],
+                [
+                    'title' => $inject['title'],
+                    'description' => $inject['description'],
+                ]
+            );
         }
     }
 }
