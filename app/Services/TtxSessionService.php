@@ -163,18 +163,10 @@ class TtxSessionService
         }
 
         $injects = $session->injects;
-        $allPending = $injects->isNotEmpty()
-            && $injects->every(fn ($inject) => $inject->status === TtxSessionInjectStatus::Pending);
-
-        $readiness = [
-            'has_exercise_snapshot' => ! empty($snapshot),
-            'has_inject' => $injects->isNotEmpty(),
-            'exactly_one_facilitator' => $facilitators->count() === 1,
-            'has_participants' => $session->participants->where('session_role', '!=', TtxSessionRole::Facilitator)->isNotEmpty(),
-            'all_injects_pending' => $allPending,
-            'not_started' => $session->started_at === null,
-        ];
-        $readiness['ready'] = ! in_array(false, $readiness, true);
+        $readiness = $this->readiness($session);
+        $canManageRoster = Gate::forUser($actor)->allows('assign', $session);
+        $canMarkReady = $readiness['can_mark_ready'];
+        $canOpenConsole = Gate::forUser($actor)->allows('facilitate', $session);
 
         return [
             'session' => [
@@ -203,8 +195,13 @@ class TtxSessionService
                 ->values()
                 ->all(),
             'readiness' => $readiness,
-            'can_assign' => Gate::forUser($actor)->allows('assign', $session),
-            'can_assign_facilitator' => Gate::forUser($actor)->allows('assign', $session) && $facilitator === null,
+            'permissions' => [
+                'can_manage_roster' => $canManageRoster,
+                'can_mark_ready' => $canMarkReady,
+                'can_open_console' => $canOpenConsole,
+            ],
+            'can_assign' => $canManageRoster,
+            'can_assign_facilitator' => $canManageRoster && $facilitator === null,
             'assignable_users' => User::query()
                 ->where('tenant_id', $session->tenant_id)
                 ->where('is_active', true)
@@ -221,7 +218,7 @@ class TtxSessionService
             ],
             // Reflects the SAME semantics as TtxSessionPolicy::facilitate for the
             // current actor. Tenant Admin is NOT automatically allowed.
-            'can_open_console' => Gate::forUser($actor)->allows('facilitate', $session),
+            'can_open_console' => $canOpenConsole,
         ];
     }
 
@@ -237,16 +234,7 @@ class TtxSessionService
             }
 
             $session->loadMissing('participants', 'injects');
-            $facilitators = $session->participants->where('session_role', TtxSessionRole::Facilitator);
-            $nonFacilitators = $session->participants->where('session_role', '!=', TtxSessionRole::Facilitator);
-            $allPending = $session->injects->every(fn ($inject) => $inject->status === TtxSessionInjectStatus::Pending);
-            if (empty($session->exercise_snapshot)
-                || $facilitators->count() !== 1
-                || $nonFacilitators->isEmpty()
-                || $session->injects->isEmpty()
-                || ! $allPending
-                || $session->started_at !== null
-            ) {
+            if (! $this->readiness($session)['ready']) {
                 throw ValidationException::withMessages(['session' => 'Sesi belum memenuhi kontrak readiness.']);
             }
             $session->update(['status' => TtxSessionStatus::Ready]);
@@ -254,6 +242,43 @@ class TtxSessionService
 
             return $session->fresh();
         });
+    }
+
+    private function readiness(TtxSession $session): array
+    {
+        $hasFacilitator = $session->participants
+            ->where('session_role', TtxSessionRole::Facilitator)
+            ->count() === 1;
+        $hasParticipant = $session->participants
+            ->where('session_role', '!=', TtxSessionRole::Facilitator)
+            ->isNotEmpty();
+        $hasInjects = $session->injects->isNotEmpty();
+        $allInjectsPending = $hasInjects
+            && $session->injects->every(fn ($inject) => $inject->status === TtxSessionInjectStatus::Pending);
+        $notStarted = $session->started_at === null;
+
+        $readiness = [
+            'has_exercise_snapshot' => ! empty($session->exercise_snapshot),
+            'has_facilitator' => $hasFacilitator,
+            'has_non_facilitator_participant' => $hasParticipant,
+            'has_injects' => $hasInjects,
+            'all_injects_pending' => $allInjectsPending,
+            // Retained for the P2 preparation contract.
+            'has_inject' => $hasInjects,
+            'exactly_one_facilitator' => $hasFacilitator,
+            'has_participants' => $hasParticipant,
+            'not_started' => $notStarted,
+        ];
+        $readiness['ready'] = $readiness['has_exercise_snapshot']
+            && $hasFacilitator
+            && $hasParticipant
+            && $hasInjects
+            && $allInjectsPending
+            && $notStarted;
+        $readiness['can_mark_ready'] = $session->status === TtxSessionStatus::Draft
+            && $readiness['ready'];
+
+        return $readiness;
     }
 
     public function start(User $actor, TtxSession $session): TtxSession

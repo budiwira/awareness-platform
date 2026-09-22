@@ -124,7 +124,7 @@ test('p2 preparation exposes only active unassigned same tenant users and allowe
     $payload = $service->preparationReadModel($admin, $session->fresh());
     expect($payload['assignable_users'])->toBe([['id' => $user->id, 'name' => $user->name]]);
     expect(array_column($payload['role_options'], 'value'))->toBe(array_column(TtxSessionRole::cases(), 'value'));
-    expect(array_keys($payload))->toEqualCanonicalizing(['session', 'exercise_title', 'inject_count', 'facilitator', 'facilitator_count', 'participants', 'readiness', 'can_assign', 'can_assign_facilitator', 'assignable_users', 'role_options', 'can_open_console']);
+    expect(array_keys($payload))->toEqualCanonicalizing(['session', 'exercise_title', 'inject_count', 'facilitator', 'facilitator_count', 'participants', 'readiness', 'permissions', 'can_assign', 'can_assign_facilitator', 'assignable_users', 'role_options', 'can_open_console']);
     expect(json_encode($payload))->not->toContain('SECRET');
     expect($payload['readiness']['has_participants'])->toBeFalse();
 });

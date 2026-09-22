@@ -75,11 +75,12 @@ class TtxSessionController extends Controller
         return response()->json($service->preparationReadModel($request->user(), $session->fresh()));
     }
 
-    public function ready(TtxSession $session, TtxSessionService $service)
+    public function ready(Request $request, TtxSession $session, TtxSessionService $service)
     {
         Gate::authorize('prepare', $session);
+        $session = $service->markReady($request->user(), $session);
 
-        return response()->json($service->readModel(request()->user(), $service->markReady(request()->user(), $session)));
+        return response()->json($service->preparationReadModel($request->user(), $session));
     }
 
     public function start(TtxSession $session, TtxSessionService $service)

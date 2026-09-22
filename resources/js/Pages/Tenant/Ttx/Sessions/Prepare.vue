@@ -13,6 +13,7 @@ const props = defineProps({
     facilitator_count: { type: Number, default: 0 },
     participants: { type: Array, default: () => [] },
     readiness: { type: Object, default: () => ({}) },
+    permissions: { type: Object, default: () => ({}) },
     can_open_console: { type: Boolean, default: false },
     can_assign: Boolean,
     can_assign_facilitator: Boolean,
@@ -23,6 +24,7 @@ const props = defineProps({
 const state = ref({ ...props });
 watch(() => ({ ...props }), (value) => { state.value = value; });
 const saving = ref(false);
+const markingReady = ref(false);
 const loading = ref(false);
 const error = ref('');
 const notice = ref('');
@@ -32,7 +34,7 @@ const participantUser = ref('');
 const participantRole = ref('');
 const regularParticipants = computed(() => state.value.participants.filter((p) => p.role !== 'facilitator'));
 const regularRoles = computed(() => state.value.role_options.filter((r) => r.value !== 'facilitator'));
-const busy = computed(() => saving.value || loading.value || blocked.value);
+const busy = computed(() => saving.value || markingReady.value || loading.value || blocked.value);
 
 function reload() {
     if (saving.value || loading.value) return;
@@ -73,6 +75,34 @@ async function mutate(method, url, data = {}) {
 const assign = (user, role) => mutate('post', route('tenant.ttx.sessions.participants.store', state.value.session.id), { user_id: user, role });
 const remove = (participant) => mutate('delete', route('tenant.ttx.sessions.participants.destroy', [state.value.session.id, participant.assignment_id]));
 
+async function markReady() {
+    if (busy.value || !state.value.permissions.can_mark_ready) return;
+    markingReady.value = true;
+    error.value = '';
+    notice.value = '';
+    try {
+        const response = await axios.post(
+            route('tenant.ttx.sessions.ready', state.value.session.id),
+            {},
+            { headers: { Accept: 'application/json' } },
+        );
+        state.value = response.data;
+        blocked.value = false;
+        notice.value = 'Sesi siap dan telah diserahkan kepada fasilitator.';
+    } catch (failure) {
+        const code = failure.response?.status;
+        const messages = {
+            403: 'Akses ditolak. Hak akses Anda mungkin telah berubah. Muat ulang untuk memeriksa.',
+            409: 'Status sesi telah berubah. Muat ulang sebelum melanjutkan.',
+            422: 'Sesi belum memenuhi seluruh persyaratan kesiapan. Muat ulang untuk melihat kondisi terbaru.',
+        };
+        error.value = messages[code] ?? 'Sesi belum dapat ditandai siap. Muat ulang sebelum mencoba lagi.';
+        blocked.value = true;
+    } finally {
+        markingReady.value = false;
+    }
+}
+
 const statusMeta = {
     draft: { label: 'Draft', class: 'badge chip-brand' },
     ready: { label: 'Siap', class: 'badge badge-ok' },
@@ -92,11 +122,10 @@ const formatDate = (value) => {
 
 const checklist = computed(() => [
     { key: 'has_exercise_snapshot', label: 'Skenario latihan tersimpan' },
-    { key: 'has_inject', label: 'Minimal satu inject tersedia' },
-    { key: 'exactly_one_facilitator', label: 'Tepat satu fasilitator' },
-    { key: 'has_participants', label: 'Minimal satu peserta selain fasilitator' },
+    { key: 'has_facilitator', label: 'Tepat satu fasilitator' },
+    { key: 'has_non_facilitator_participant', label: 'Minimal satu peserta selain fasilitator' },
+    { key: 'has_injects', label: 'Minimal satu inject tersedia' },
     { key: 'all_injects_pending', label: 'Semua inject berstatus pending' },
-    { key: 'not_started', label: 'Sesi belum dimulai' },
 ]);
 </script>
 
@@ -185,7 +214,7 @@ const checklist = computed(() => [
                 </section>
 
                 <!-- Checklist kesiapan (server-derived) -->
-                <section class="self-start p-6">
+                <section class="card self-start p-5 sm:p-6">
                     <h2 class="font-display text-lg font-bold t-ink">Checklist Kesiapan</h2>
                     <p class="mb-4 mt-1 text-sm t-muted">Diperbarui setelah perubahan tersimpan.</p>
 
@@ -206,20 +235,61 @@ const checklist = computed(() => [
                             <span :class="state.readiness[item.key] ? 't-ink' : 't-muted'"><span class="sr-only">{{ state.readiness[item.key] ? 'Terpenuhi:' : 'Belum terpenuhi:' }}</span> {{ item.label }}</span>
                         </li>
                     </ul>
+
+                    <div v-if="state.session.status === 'draft'" class="mt-6 border-t pt-5" style="border-color: var(--line)">
+                        <p class="mb-4 text-sm t-muted">Status siap hanya dapat diberikan setelah seluruh pemeriksaan server terpenuhi.</p>
+                        <button
+                            type="button"
+                            class="btn btn-primary w-full justify-center"
+                            :disabled="busy || !state.permissions.can_mark_ready"
+                            @click="markReady"
+                        >
+                            <svg v-if="!markingReady" class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            {{ markingReady ? 'Menandai siap...' : 'Tandai Siap' }}
+                        </button>
+                        <p v-if="!state.permissions.can_mark_ready" class="mt-3 text-sm t-muted">Lengkapi item yang belum terpenuhi untuk melanjutkan.</p>
+                    </div>
                 </section>
             </div>
 
-            <!-- Aksi -->
-            <div class="flex justify-end">
+            <!-- Serah terima fasilitator -->
+            <section v-if="state.session.status === 'ready'" class="card overflow-hidden">
+                <div class="grid gap-5 p-5 sm:p-6 md:grid-cols-[auto,1fr,auto] md:items-center">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl" style="background: var(--ok-bg); color: var(--ok)">
+                        <svg class="h-6 w-6" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 class="font-display text-xl font-bold t-ink">Sesi Siap</h2>
+                        <p class="mt-1 text-sm t-muted">Persiapan selesai. {{ state.facilitator?.name ?? 'Fasilitator yang ditetapkan' }} memulai latihan melalui konsol fasilitator.</p>
+                    </div>
+                    <Link
+                        v-if="state.permissions.can_open_console"
+                        :href="route('tenant.ttx.sessions.console', state.session.id)"
+                        class="btn btn-primary justify-center md:justify-self-end"
+                    >
+                        <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        Buka Console
+                    </Link>
+                    <p v-else class="text-sm t-muted md:max-w-xs md:text-right">Fasilitator yang ditetapkan akan melanjutkan sesi dari akunnya.</p>
+                </div>
+            </section>
+
+            <div v-else-if="state.session.status !== 'draft'" class="flex justify-end">
                 <Link
-                    v-if="state.can_open_console"
+                    v-if="state.permissions.can_open_console"
                     :href="route('tenant.ttx.sessions.console', state.session.id)"
                     class="btn btn-primary"
                 >
                     <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    Buka Konsol Fasilitator
+                    Buka Console
                 </Link>
             </div>
         </div>
