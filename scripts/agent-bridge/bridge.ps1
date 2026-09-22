@@ -252,8 +252,6 @@ function Get-WatchdogFailureSignature {
         $clean -match '(?i)\baccess is denied\b' -or
         $clean -match '(?i)\b(?:command|task|test|build)\b.*\bfailed\b' -or
         $clean -match '(?i)\bexception\b' -or
-        $clean -match '(?i)\btimed out\b' -or
-        $clean -match '(?i)\btimeout\b' -or
         $clean -match '(?i)\bconnection refused\b' -or
         $clean -match '(?i)\bnot a valid\b' -or
         $clean -match '(?i)\binvalid (?:option|argument|command)\b'
@@ -278,7 +276,9 @@ function Invoke-WatchdogSelfTest {
         [pscustomobject]@{ Line = 'diff --git a/a b/a'; ExpectSignature = $false; Name = 'git diff header' },
         [pscustomobject]@{ Line = 'Error: Permission denied: shell'; ExpectSignature = $true; Name = 'real shell permission denial' },
         [pscustomobject]@{ Line = 'git : error: invalid option: --bad'; ExpectSignature = $true; Name = 'real git diagnostic' },
-        [pscustomobject]@{ Line = 'Task build failed'; ExpectSignature = $true; Name = 'real task failure' }
+        [pscustomobject]@{ Line = 'Task build failed'; ExpectSignature = $true; Name = 'real task failure' },
+        [pscustomobject]@{ Line = 'Timeout: 5000ms'; ExpectSignature = $false; Name = 'test assertion timeout is not an agent loop' },
+        [pscustomobject]@{ Line = 'Test timed out after 5000ms'; ExpectSignature = $false; Name = 'test timeout is not an agent loop' }
     )
 
     $failures = @()
@@ -539,6 +539,9 @@ At the end return the required structured report.
     $lastProgressAt = $startedAt
     $lastOutputLength = 0
     $failureCounts = @{}
+    $currentCommandId = 0
+    $seenFailuresInCurrentCommand = @{}
+    $seenFailuresWithoutCommandInDelta = @{}
     $watchdogReason = ""
     $timedOut = $false
 
@@ -552,10 +555,206 @@ At the end return the required structured report.
             $lastOutputLength = $snapshot.Length
             $lastProgressAt = $now
 
+            $seenFailuresWithoutCommandInDelta = @{}
+
             foreach ($line in ($delta -split "\r?\n")) {
+                $cleanLine = (Remove-Ansi ([string]$line)).Trim()
+
+                # A new worker shell/tool attempt begins here. Repeated diagnostics emitted by
+                # one long-running command (for example several Playwright test failures)
+                # must count only once for that command.
+                if ($cleanLine -match '^\$\s' -or $cleanLine -match '^(?:✗|×)\s.+\sfailed        }
+
+        if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
+            break
+        }
+
+        if (($now - $startedAt).TotalSeconds -ge $hardTimeoutSeconds) {
+            $watchdogReason = "Hard timeout after $taskTimeoutMinutes minutes."
+            $timedOut = $true
+            break
+        }
+
+        if (($now - $lastProgressAt).TotalSeconds -ge $noProgressSeconds) {
+            $watchdogReason = "No meaningful worker output for $($Config.watchdogNoProgressMinutes) minutes."
+            break
+        }
+
+        if ($null -ne $completed) {
+            break
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason) -and $job.State -eq "Running") {
+        Write-BridgeLog "Watchdog stopping task '$($Task.task_id)': $watchdogReason"
+        Stop-Job -Job $job -ErrorAction SilentlyContinue
+    }
+
+    $output = @(Receive-Job -Job $job -ErrorAction SilentlyContinue) | Out-String
+    Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
+        $output += [Environment]::NewLine + "WATCHDOG: $watchdogReason"
+    }
+
+    $headAfter = (& git -C $worktree rev-parse HEAD).Trim()
+    $gitStatus = @(& git -C $worktree status --short 2>&1) | Out-String
+    $diffStat = @(& git -C $worktree diff --stat 2>&1) | Out-String
+    $diffCheck = @(& git -C $worktree diff --check 2>&1) | Out-String
+    $diffPatch = @(& git -C $worktree diff --no-ext-diff --no-color 2>&1) | Out-String
+    $stagedDiffPatch = @(& git -C $worktree diff --cached --no-ext-diff --no-color 2>&1) | Out-String
+    $untrackedEvidence = Get-UntrackedEvidence $worktree
+
+    $status = "REPORT"
+
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
+        $status = "BLOCKED"
+    }
+    elseif ($headBefore -ne $headAfter) {
+        $status = "NEEDS_REVIEW"
+        $output += [Environment]::NewLine + "SAFETY: HEAD changed during task execution."
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($stagedDiffPatch)) {
+        $status = "NEEDS_REVIEW"
+        $output += [Environment]::NewLine + "SAFETY: staged changes detected."
+    }
+    elseif ($output -match '(?im)^STATUS:\s*NEEDS_APPROVAL\b' -or
+            $output -match '(?im)^RISK:\s*RED\b') {
+        $status = "NEEDS_APPROVAL"
+    }
+    elseif ($Task.risk -eq "YELLOW" -or
+            $output -match '(?im)^STATUS:\s*NEEDS_REVIEW\b') {
+        $status = "NEEDS_REVIEW"
+    }
+
+    return [pscustomobject]@{
+        Status = $status
+        Output = $output.Trim()
+        GitStatus = $gitStatus.Trim()
+        DiffStat = $diffStat.Trim()
+        DiffCheck = $diffCheck.Trim()
+        DiffPatch = $diffPatch.Trim()
+        StagedDiffPatch = $stagedDiffPatch.Trim()
+        UntrackedEvidence = $untrackedEvidence.Trim()
+        HeadBefore = $headBefore
+        HeadAfter = $headAfter
+        TimedOut = $timedOut
+        WatchdogReason = $watchdogReason
+        TaskTimeoutMinutes = $taskTimeoutMinutes
+    }
+}
+
+function Mark-Processed {
+    param($State, [string]$TaskId)
+
+    $items = @($State.processedTaskIds)
+    if ($items -notcontains $TaskId) {
+        $items += $TaskId
+    }
+
+    $State.processedTaskIds = $items
+    Save-State $State
+}
+
+if ($SelfTest) {
+    Invoke-WatchdogSelfTest
+    exit 0
+}
+
+$config = Load-JsonFile $ConfigPath
+Assert-Preflight $config
+$state = Load-State
+
+Write-BridgeLog "Agent Bridge v1 started for $($config.repo) issue #$($config.issue)."
+
+do {
+    try {
+        $task = Get-NextTask $config $state
+
+        if ($null -eq $task) {
+            if ($Once) {
+                Write-BridgeLog "No READY task found."
+                break
+            }
+
+            Start-Sleep -Seconds ([int]$config.pollSeconds)
+            continue
+        }
+
+        Write-BridgeLog "Found task '$($task.task_id)' risk=$($task.risk)."
+
+        try {
+            Assert-TaskSafe $task $config
+        }
+        catch {
+            $message = $_.Exception.Message
+            $blockedMetadata = [ordered]@{
+                task_id = [string]$task.task_id
+                status = "BLOCKED"
+                risk = [string]$task.risk
+            } | ConvertTo-Json -Compress
+
+            $blockedBody = @"
+<!-- $ReportMarker
+$blockedMetadata
+-->
+Bridge refused to execute this task:
+
+~~~text
+$message
+~~~
+"@
+            Post-IssueComment $config $blockedBody
+            Mark-Processed $state ([string]$task.task_id)
+            break
+        }
+
+        $result = Invoke-OpenCodeTask $task $config
+        $reportBody = New-ReportBody $task $result.Status $result.Output $result.GitStatus $result.DiffStat $result.DiffCheck $result.DiffPatch $result.StagedDiffPatch $result.UntrackedEvidence $result.HeadBefore $result.HeadAfter $result.TimedOut $result.WatchdogReason $result.TaskTimeoutMinutes
+
+        Post-IssueComment $config $reportBody
+        Mark-Processed $state ([string]$task.task_id)
+
+        Write-BridgeLog "Task '$($task.task_id)' finished with status $($result.Status)."
+
+        if ($Once -or $result.Status -ne "REPORT") {
+            break
+        }
+    }
+    catch {
+        Write-BridgeLog "Bridge error: $($_.Exception.Message)"
+
+        if ($Once) {
+            throw
+        }
+
+        Start-Sleep -Seconds ([int]$config.pollSeconds)
+    }
+}
+while ($true)
+) {
+                    $currentCommandId++
+                    $seenFailuresInCurrentCommand = @{}
+                }
+
                 $signature = Get-WatchdogFailureSignature $line
                 if ($null -eq $signature) {
                     continue
+                }
+
+                if ($currentCommandId -gt 0) {
+                    if ($seenFailuresInCurrentCommand.ContainsKey($signature)) {
+                        continue
+                    }
+                    $seenFailuresInCurrentCommand[$signature] = $true
+                }
+                else {
+                    # Before the first visible command boundary, cap identical diagnostics
+                    # to one count per polling delta.
+                    if ($seenFailuresWithoutCommandInDelta.ContainsKey($signature)) {
+                        continue
+                    }
+                    $seenFailuresWithoutCommandInDelta[$signature] = $true
                 }
 
                 if (-not $failureCounts.ContainsKey($signature)) {
@@ -564,7 +763,7 @@ At the end return the required structured report.
 
                 $failureCounts[$signature] = [int]$failureCounts[$signature] + 1
                 if ([int]$failureCounts[$signature] -ge $repeatThreshold) {
-                    $watchdogReason = "Repeated failure signature detected $repeatThreshold times: $signature"
+                    $watchdogReason = "Repeated failure signature across $repeatThreshold worker attempts: $signature"
                     break
                 }
             }
