@@ -5,6 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $BridgeDir = $PSScriptRoot
+$BridgeScript = Join-Path $BridgeDir "bridge.ps1"
 $ConfigExample = Join-Path $BridgeDir "config.example.json"
 $ConfigLocal = Join-Path $BridgeDir "config.local.json"
 
@@ -14,6 +15,27 @@ $GlobalAgentDir = Join-Path $HOME ".config\opencode\agents"
 $GlobalAgentTarget = Join-Path $GlobalAgentDir "bridge-worker.md"
 
 Write-Host "Agent Bridge v1 preflight"
+
+if (-not (Test-Path $BridgeScript)) {
+    throw "Missing bridge script: $BridgeScript"
+}
+
+$tokens = $null
+$parseErrors = $null
+[void][System.Management.Automation.Language.Parser]::ParseFile(
+    $BridgeScript,
+    [ref]$tokens,
+    [ref]$parseErrors
+)
+
+if (@($parseErrors).Count -gt 0) {
+    $details = @($parseErrors | ForEach-Object {
+        "line $($_.Extent.StartLineNumber): $($_.Message)"
+    }) -join "; "
+
+    throw "bridge.ps1 syntax validation failed: $details"
+}
+Write-Host "[OK] bridge.ps1 syntax"
 
 $null = Get-Command git -ErrorAction Stop
 Write-Host "[OK] git"
@@ -91,5 +113,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host ""
 Write-Host "Review config.local.json before running the bridge."
+Write-Host "Then validate the watchdog classifier with:"
+Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\agent-bridge\bridge.ps1 -SelfTest"
 Write-Host "Then test once with:"
 Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\agent-bridge\bridge.ps1 -Once"
