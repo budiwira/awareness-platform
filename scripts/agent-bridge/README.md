@@ -139,6 +139,21 @@ and includes:
 
 The bridge itself never commits or merges feature work.
 
+
+## Watchdog v1.1
+
+The bridge protects against stuck or looping workers:
+
+- default hard timeout: 30 minutes
+- trusted task may request `timeout_minutes`, capped by `maxTaskMinutesCap` (default 45)
+- no worker output for 10 minutes: BLOCKED
+- identical failure-like output repeated 5 times: BLOCKED
+- BLOCKED reports include the worker output tail plus git evidence
+- the continuous runner stops after BLOCKED / NEEDS_REVIEW / NEEDS_APPROVAL
+- watchdog never auto-switches to Codex
+
+Escalation remains review-gated: focused MiMo correction, then free fallback if needed, then Codex only for justified difficult/security-critical work.
+
 ## Worker Routing
 
 Default:
