@@ -57,6 +57,11 @@ Rules:
 - Prefer the smallest safe change.
 - Inspect existing implementation before editing.
 - Run only the focused validation requested by the task.
+- Shell discipline is strict: run only a single bare allowlisted command per tool call.
+- Never add shell pipes, redirection, command chaining, subshells, PowerShell cmdlets, command wrappers, or helper suffixes such as `| Measure-Object`, `; echo`, `&&`, `||`, `2>&1`, `Select-String`, or `Format-Table`.
+- Do not use code-mode/tool-discovery as a workaround to invoke shell commands.
+- If an allowlisted command is denied once, do not retry it in another form. Stop that validation attempt and return STATUS: NEEDS_REVIEW with the exact denied command/error.
+- Git evidence (`git status`, `git diff --stat`, `git diff --check`, working-tree diff, staged diff, untracked evidence) is collected by the bridge after the worker exits; do not repeatedly re-run git evidence commands unless the approved task explicitly requires one for functional validation.
 - Do not claim completion if requested tests did not run successfully.
 - Use plain ASCII punctuation in the final report so Windows PowerShell/GitHub transport remains stable.
 
