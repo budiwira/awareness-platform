@@ -237,7 +237,27 @@ function Get-WatchdogFailureSignature {
         return $null
     }
 
-    if ($clean -notmatch '(?i)(error|failed|failure|exception|permission denied|not valid|invalid|timeout|timed out|cannot|refused|denied|retry|loop)') {
+    # Do not classify source/diff/command-echo lines as failures. Identifiers such as
+    # accessDeniedError can legitimately contain words like "denied" many times.
+    if ($clean -match '^(?:\+|-|@@|diff --git\b|index\s|---\s|\+\+\+\s|\$\s|>\s|<\s)') {
+        return $null
+    }
+
+    $isDiagnostic =
+        $clean -match '(?i)^(?:error|fatal):' -or
+        $clean -match '(?i)^.+?:\s*(?:error|fatal):' -or
+        $clean -match '(?i)^(?:✗|×)\s' -or
+        $clean -match '(?i)\bpermission denied\b' -or
+        $clean -match '(?i)\baccess is denied\b' -or
+        $clean -match '(?i)\b(?:command|task|test|build)\b.*\bfailed\b' -or
+        $clean -match '(?i)\bexception\b' -or
+        $clean -match '(?i)\btimed out\b' -or
+        $clean -match '(?i)\btimeout\b' -or
+        $clean -match '(?i)\bconnection refused\b' -or
+        $clean -match '(?i)\bnot a valid\b' -or
+        $clean -match '(?i)\binvalid (?:option|argument|command)\b'
+
+    if (-not $isDiagnostic) {
         return $null
     }
 
