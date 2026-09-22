@@ -25,11 +25,32 @@ class TtxSessionController extends Controller
         return redirect()->route('tenant.ttx.sessions.show', $session);
     }
 
+    public function index(Request $request, TtxSessionService $service)
+    {
+        Gate::authorize('viewAny', TtxSession::class);
+
+        $sessions = $service->index($request->user());
+
+        return Inertia::render('Tenant/Ttx/Sessions/Index', [
+            'sessions' => $sessions,
+        ]);
+    }
+
     public function show(Request $request, TtxSession $session, TtxSessionService $service)
     {
         Gate::authorize('view', $session);
 
         return response()->json($service->readModel($request->user(), $session));
+    }
+
+    public function prepare(Request $request, TtxSession $session, TtxSessionService $service)
+    {
+        Gate::authorize('prepare', $session);
+
+        return Inertia::render(
+            'Tenant/Ttx/Sessions/Prepare',
+            $service->preparationReadModel($request->user(), $session)
+        );
     }
 
     public function assign(Request $request, TtxSession $session, TtxSessionService $service)

@@ -271,6 +271,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
             Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
             Route::post('/ttx/exercises/{exercise}/sessions', [TenantTtxSessionController::class, 'store'])->name('ttx.sessions.store');
+            // TTX Session Preparation (P1): Tenant Admin sessions index + dedicated preparation page
+            Route::get('/ttx/sessions', [TenantTtxSessionController::class, 'index'])->name('ttx.sessions.index');
+            Route::get('/ttx/sessions/{session}/prepare', [TenantTtxSessionController::class, 'prepare'])->name('ttx.sessions.prepare');
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');

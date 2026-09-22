@@ -8,6 +8,17 @@ use App\Models\User;
 
 class TtxSessionPolicy
 {
+    /**
+     * Collection-level authorization for the Tenant Admin sessions index.
+     * Active, Tenant Admin, non-null tenant only.
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->is_active
+            && $user->isTenantAdmin()
+            && $user->tenant_id !== null;
+    }
+
     public function create(User $user): bool
     {
         return $user->is_active && $user->role === UserRole::TenantAdmin && $user->tenant_id !== null;

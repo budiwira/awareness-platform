@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\Audit\Audit;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class TtxSessionService
@@ -66,6 +67,104 @@ class TtxSessionService
 
             return $assignment;
         });
+    }
+
+    /**
+     * Safe list projection for the Tenant Admin sessions index.
+     * Newest created first. Never exposes snapshots, injects, or responses.
+     */
+    public function index(User $actor): array
+    {
+        abort_unless($actor->is_active && $actor->isTenantAdmin() && $actor->tenant_id !== null, 403);
+
+        return TtxSession::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->with(['participants.user:id,name'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (TtxSession $session) {
+                $facilitator = $session->participants
+                    ->firstWhere('session_role', TtxSessionRole::Facilitator);
+
+                return [
+                    'id' => $session->id,
+                    'title' => $session->title,
+                    'status' => $session->status->value,
+                    'scheduled_at' => $session->scheduled_at?->toISOString(),
+                    'facilitator_name' => $facilitator?->user?->name,
+                    'participant_count' => $session->participants->count(),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Dedicated, read-only preparation read model.
+     *
+     * Returns an explicit allowlisted payload only. It never exposes
+     * exercise_snapshot, inject_snapshot, inject content, future injects,
+     * responses, facilitator notes, or any runtime-sensitive data.
+     */
+    public function preparationReadModel(User $actor, TtxSession $session): array
+    {
+        abort_unless($actor->is_active && $actor->isTenantAdmin() && $actor->tenant_id === $session->tenant_id, 403);
+
+        $session->loadMissing(['participants.user:id,name', 'injects']);
+
+        $facilitators = $session->participants->where('session_role', TtxSessionRole::Facilitator);
+        $facilitator = $facilitators->first();
+
+        // Historical exercise title: extract ONLY the exact scalar field required.
+        // Never serialize the snapshot object/array itself.
+        $exerciseTitle = null;
+        $snapshot = $session->exercise_snapshot;
+        if (is_array($snapshot) && isset($snapshot['title']) && is_string($snapshot['title'])) {
+            $exerciseTitle = $snapshot['title'];
+        }
+
+        $injects = $session->injects;
+        $allPending = $injects->isNotEmpty()
+            && $injects->every(fn ($inject) => $inject->status === TtxSessionInjectStatus::Pending);
+
+        $readiness = [
+            'has_exercise_snapshot' => ! empty($snapshot),
+            'has_inject' => $injects->isNotEmpty(),
+            'exactly_one_facilitator' => $facilitators->count() === 1,
+            'has_participants' => $session->participants->isNotEmpty(),
+            'all_injects_pending' => $allPending,
+            'not_started' => $session->started_at === null,
+        ];
+        $readiness['ready'] = ! in_array(false, $readiness, true);
+
+        return [
+            'session' => [
+                'id' => $session->id,
+                'title' => $session->title,
+                'status' => $session->status->value,
+                'scheduled_at' => $session->scheduled_at?->toISOString(),
+            ],
+            'exercise_title' => $exerciseTitle,
+            'inject_count' => $injects->count(),
+            'facilitator' => $facilitator ? [
+                'name' => $facilitator->user?->name,
+                'role' => $facilitator->session_role->value,
+            ] : null,
+            'facilitator_count' => $facilitators->count(),
+            'participants' => $session->participants
+                ->map(fn ($p) => [
+                    'id' => $p->user_id,
+                    'name' => $p->user?->name,
+                    'role' => $p->session_role->value,
+                ])
+                ->values()
+                ->all(),
+            'readiness' => $readiness,
+            // Reflects the SAME semantics as TtxSessionPolicy::facilitate for the
+            // current actor. Tenant Admin is NOT automatically allowed.
+            'can_open_console' => Gate::forUser($actor)->allows('facilitate', $session),
+        ];
     }
 
     public function markReady(User $actor, TtxSession $session): TtxSession
