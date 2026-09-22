@@ -147,7 +147,7 @@ The bridge protects against stuck or looping workers:
 - default hard timeout: 30 minutes
 - trusted task may request `timeout_minutes`, capped by `maxTaskMinutesCap` (default 45)
 - no worker output for 10 minutes: BLOCKED
-- identical failure-like output repeated 5 times: BLOCKED
+- identical diagnostic failure output repeated 5 times: BLOCKED; source/diff/command-echo lines are ignored to avoid false positives from identifiers such as `accessDeniedError`
 - BLOCKED reports include the worker output tail plus git evidence
 - the continuous runner stops after BLOCKED / NEEDS_REVIEW / NEEDS_APPROVAL
 - watchdog never auto-switches to Codex
