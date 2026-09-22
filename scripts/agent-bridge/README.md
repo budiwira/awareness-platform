@@ -116,7 +116,7 @@ ChatGPT posts a GitHub issue comment containing:
     }
     -->
 
-The bridge executes each task_id once.
+The bridge executes each task_id once. It accepts task comments only from GitHub logins listed in `trustedTaskAuthors` in the local config, and it also skips task IDs that already have a bridge report on GitHub.
 
 ## Report Format
 
@@ -132,6 +132,10 @@ and includes:
 - git status --short
 - git diff --stat
 - git diff --check
+- actual unstaged `git diff`
+- staged diff evidence
+- bounded contents for untracked text files
+- HEAD before/after execution
 
 The bridge itself never commits or merges feature work.
 
@@ -151,6 +155,7 @@ escalation outside this local bridge when repeated focused attempts fail, diffic
 - No local OpenCode port is exposed publicly.
 - GitHub is the only shared control plane.
 - No secrets belong in issue comments or reports.
+- Only trusted GitHub task authors may enqueue executable tasks.
 - The bridge uses the user's existing GitHub CLI authentication.
 - The bridge does not install packages or providers.
 - Keep laptop disk encryption, Windows login, and GitHub account MFA enabled.
