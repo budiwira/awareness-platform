@@ -202,6 +202,51 @@ function Assert-TaskSafe {
     if (($status.Count -gt 0) -and (-not $allowDirty)) {
         throw "Worktree is dirty but task does not explicitly allow dirty state."
     }
+
+    if ($Task.PSObject.Properties.Name.Contains("timeout_minutes")) {
+        $requestedTimeout = [int]$Task.timeout_minutes
+        if ($requestedTimeout -lt 1) {
+            throw "timeout_minutes must be at least 1."
+        }
+
+        if ($requestedTimeout -gt [int]$Config.maxTaskMinutesCap) {
+            throw "timeout_minutes exceeds configured cap of $($Config.maxTaskMinutesCap) minutes."
+        }
+    }
+}
+
+function Get-TaskTimeoutMinutes {
+    param($Task, $Config)
+
+    if ($Task.PSObject.Properties.Name.Contains("timeout_minutes")) {
+        return [int]$Task.timeout_minutes
+    }
+
+    return [int]$Config.maxTaskMinutes
+}
+
+function Get-WatchdogFailureSignature {
+    param([string]$Line)
+
+    if ([string]::IsNullOrWhiteSpace($Line)) {
+        return $null
+    }
+
+    $clean = (Remove-Ansi $Line).Trim()
+    if ($clean.Length -lt 8) {
+        return $null
+    }
+
+    if ($clean -notmatch '(?i)(error|failed|failure|exception|permission denied|not valid|invalid|timeout|timed out|cannot|refused|denied|retry|loop)') {
+        return $null
+    }
+
+    $clean = [regex]::Replace($clean, '\s+', ' ')
+    if ($clean.Length -gt 240) {
+        $clean = $clean.Substring(0, 240)
+    }
+
+    return $clean.ToLowerInvariant()
 }
 
 function Remove-Ansi {
@@ -316,7 +361,9 @@ function New-ReportBody {
         [string]$UntrackedEvidence,
         [string]$HeadBefore,
         [string]$HeadAfter,
-        [bool]$TimedOut
+        [bool]$TimedOut,
+        [string]$WatchdogReason,
+        [int]$TaskTimeoutMinutes
     )
 
     $safeOutput = Limit-Text (Remove-Ansi $OpenCodeOutput) 18000 "OpenCode output"
@@ -330,6 +377,8 @@ function New-ReportBody {
         risk = [string]$Task.risk
         branch = [string]$Task.branch
         timed_out = $TimedOut
+        watchdog_reason = $WatchdogReason
+        task_timeout_minutes = $TaskTimeoutMinutes
         head_before = $HeadBefore
         head_after = $HeadAfter
         completed_at = (Get-Date).ToUniversalTime().ToString("o")
@@ -381,6 +430,7 @@ function Invoke-OpenCodeTask {
     param($Task, $Config)
 
     $worktree = [string]$Task.worktree
+    $taskTimeoutMinutes = Get-TaskTimeoutMinutes $Task $Config
 
     $wrappedPrompt = @"
 AGENT BRIDGE V1 APPROVED TASK
@@ -388,6 +438,7 @@ AGENT BRIDGE V1 APPROVED TASK
 Task ID: $($Task.task_id)
 Declared risk: $($Task.risk)
 Branch: $($Task.branch)
+Timeout: $taskTimeoutMinutes minutes
 
 Follow the bridge-worker rules exactly.
 Do not commit, stage, push, switch branches, install dependencies, or make architecture decisions.
@@ -402,7 +453,7 @@ At the end return the required structured report.
     $model = [string]$Config.model
     $cli = [string]$Config.openCodeCli
 
-    Write-BridgeLog "Running task '$($Task.task_id)' in $worktree"
+    Write-BridgeLog "Running task '$($Task.task_id)' in $worktree (timeout=$taskTimeoutMinutes minutes)"
 
     $headBefore = (& git -C $worktree rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) {
@@ -429,16 +480,77 @@ At the end return the required structured report.
         exit $LASTEXITCODE
     } -ArgumentList $worktree, $cli, $agent, $model, $wrappedPrompt
 
-    $timeoutSeconds = [int]$Config.maxTaskMinutes * 60
-    $completed = Wait-Job -Job $job -Timeout $timeoutSeconds
-    $timedOut = $null -eq $completed
+    $pollSeconds = [Math]::Max(2, [int]$Config.watchdogPollSeconds)
+    $noProgressSeconds = [Math]::Max(60, [int]$Config.watchdogNoProgressMinutes * 60)
+    $repeatThreshold = [Math]::Max(3, [int]$Config.watchdogRepeatThreshold)
+    $hardTimeoutSeconds = $taskTimeoutMinutes * 60
 
-    if ($timedOut) {
+    $startedAt = [DateTime]::UtcNow
+    $lastProgressAt = $startedAt
+    $lastOutputLength = 0
+    $failureCounts = @{}
+    $watchdogReason = ""
+    $timedOut = $false
+
+    while ($job.State -eq "Running") {
+        $completed = Wait-Job -Job $job -Timeout $pollSeconds
+        $now = [DateTime]::UtcNow
+
+        $snapshot = @(Receive-Job -Job $job -Keep -ErrorAction SilentlyContinue) | Out-String
+        if ($snapshot.Length -gt $lastOutputLength) {
+            $delta = $snapshot.Substring($lastOutputLength)
+            $lastOutputLength = $snapshot.Length
+            $lastProgressAt = $now
+
+            foreach ($line in ($delta -split "\r?\n")) {
+                $signature = Get-WatchdogFailureSignature $line
+                if ($null -eq $signature) {
+                    continue
+                }
+
+                if (-not $failureCounts.ContainsKey($signature)) {
+                    $failureCounts[$signature] = 0
+                }
+
+                $failureCounts[$signature] = [int]$failureCounts[$signature] + 1
+                if ([int]$failureCounts[$signature] -ge $repeatThreshold) {
+                    $watchdogReason = "Repeated failure signature detected $repeatThreshold times: $signature"
+                    break
+                }
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
+            break
+        }
+
+        if (($now - $startedAt).TotalSeconds -ge $hardTimeoutSeconds) {
+            $watchdogReason = "Hard timeout after $taskTimeoutMinutes minutes."
+            $timedOut = $true
+            break
+        }
+
+        if (($now - $lastProgressAt).TotalSeconds -ge $noProgressSeconds) {
+            $watchdogReason = "No meaningful worker output for $($Config.watchdogNoProgressMinutes) minutes."
+            break
+        }
+
+        if ($null -ne $completed) {
+            break
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason) -and $job.State -eq "Running") {
+        Write-BridgeLog "Watchdog stopping task '$($Task.task_id)': $watchdogReason"
         Stop-Job -Job $job -ErrorAction SilentlyContinue
     }
 
     $output = @(Receive-Job -Job $job -ErrorAction SilentlyContinue) | Out-String
     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
+        $output += [Environment]::NewLine + "WATCHDOG: $watchdogReason"
+    }
 
     $headAfter = (& git -C $worktree rev-parse HEAD).Trim()
     $gitStatus = @(& git -C $worktree status --short 2>&1) | Out-String
@@ -450,9 +562,8 @@ At the end return the required structured report.
 
     $status = "REPORT"
 
-    if ($timedOut) {
+    if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
         $status = "BLOCKED"
-        $output += [Environment]::NewLine + "Agent Bridge timeout after $($Config.maxTaskMinutes) minutes."
     }
     elseif ($headBefore -ne $headAfter) {
         $status = "NEEDS_REVIEW"
@@ -483,6 +594,8 @@ At the end return the required structured report.
         HeadBefore = $headBefore
         HeadAfter = $headAfter
         TimedOut = $timedOut
+        WatchdogReason = $watchdogReason
+        TaskTimeoutMinutes = $taskTimeoutMinutes
     }
 }
 
@@ -547,7 +660,7 @@ $message
         }
 
         $result = Invoke-OpenCodeTask $task $config
-        $reportBody = New-ReportBody $task $result.Status $result.Output $result.GitStatus $result.DiffStat $result.DiffCheck $result.DiffPatch $result.StagedDiffPatch $result.UntrackedEvidence $result.HeadBefore $result.HeadAfter $result.TimedOut
+        $reportBody = New-ReportBody $task $result.Status $result.Output $result.GitStatus $result.DiffStat $result.DiffCheck $result.DiffPatch $result.StagedDiffPatch $result.UntrackedEvidence $result.HeadBefore $result.HeadAfter $result.TimedOut $result.WatchdogReason $result.TaskTimeoutMinutes
 
         Post-IssueComment $config $reportBody
         Mark-Processed $state ([string]$task.task_id)
