@@ -289,6 +289,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('tenant')->name('tenant.')->group(function () {
         Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
+        Route::delete('/ttx/sessions/{session}/participants/{participant}', [TenantTtxSessionController::class, 'remove'])->whereNumber('participant')->name('ttx.sessions.participants.destroy');
         Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
         Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
         Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');

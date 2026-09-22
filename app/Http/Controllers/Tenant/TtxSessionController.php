@@ -60,7 +60,19 @@ class TtxSessionController extends Controller
         $participant = User::whereKey($data['user_id'])->firstOrFail();
         $service->assignParticipant($request->user(), $session, $participant, TtxSessionRole::from($data['role']));
 
+        if ($request->expectsJson()) {
+            return response()->json($service->preparationReadModel($request->user(), $session->fresh()));
+        }
+
         return back();
+    }
+
+    public function remove(Request $request, TtxSession $session, int $participant, TtxSessionService $service)
+    {
+        Gate::authorize('prepare', $session);
+        $service->removeParticipant($request->user(), $session, $participant);
+
+        return response()->json($service->preparationReadModel($request->user(), $session->fresh()));
     }
 
     public function ready(TtxSession $session, TtxSessionService $service)

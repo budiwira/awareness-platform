@@ -57,6 +57,8 @@ class TtxSessionService
         return DB::transaction(function () use ($session, $participant, $role) {
             $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
             abort_unless(in_array($lockedSession->status, [TtxSessionStatus::Draft, TtxSessionStatus::Ready], true), 409);
+            abort_if($lockedSession->participants()->where('user_id', $participant->id)->exists(), 409, 'Pengguna sudah terdaftar pada sesi ini.');
+            abort_if($role === TtxSessionRole::Facilitator && $lockedSession->participants()->where('session_role', $role)->exists(), 409, 'Sesi sudah memiliki fasilitator.');
             $assignment = TtxSessionParticipant::create([
                 'tenant_id' => $lockedSession->tenant_id,
                 'session_id' => $lockedSession->id,
@@ -67,6 +69,42 @@ class TtxSessionService
 
             return $assignment;
         });
+    }
+
+    public function removeParticipant(User $actor, TtxSession $session, int $participantId): void
+    {
+        $this->assertPreparationActor($actor, $session);
+
+        DB::transaction(function () use ($actor, $session, $participantId) {
+            $session = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertPreparationActor($actor, $session);
+            $participant = $session->participants()->where('tenant_id', $session->tenant_id)->findOrFail($participantId);
+            $session->load('participants', 'injects');
+            abort_unless($this->canRemoveParticipant($session, $participant), 409, 'Peserta tidak dapat dihapus karena status atau kesiapan sesi.');
+
+            $participant->delete();
+            Audit::log('ttx.session_participant_removed', $participant, [
+                'session_id' => $session->id,
+                'user_id' => $participant->user_id,
+                'role' => $participant->session_role->value,
+            ]);
+        });
+    }
+
+    private function canRemoveParticipant(TtxSession $session, TtxSessionParticipant $participant): bool
+    {
+        if ($session->status === TtxSessionStatus::Draft) {
+            return true;
+        }
+
+        return $session->status === TtxSessionStatus::Ready
+            && $participant->session_role !== TtxSessionRole::Facilitator
+            && $session->participants->where('session_role', TtxSessionRole::Facilitator)->count() === 1
+            && $session->participants->where('session_role', '!=', TtxSessionRole::Facilitator)->count() > 1
+            && ! empty($session->exercise_snapshot)
+            && $session->injects->isNotEmpty()
+            && $session->injects->every(fn ($inject) => $inject->status === TtxSessionInjectStatus::Pending)
+            && $session->started_at === null;
     }
 
     /**
@@ -132,7 +170,7 @@ class TtxSessionService
             'has_exercise_snapshot' => ! empty($snapshot),
             'has_inject' => $injects->isNotEmpty(),
             'exactly_one_facilitator' => $facilitators->count() === 1,
-            'has_participants' => $session->participants->isNotEmpty(),
+            'has_participants' => $session->participants->where('session_role', '!=', TtxSessionRole::Facilitator)->isNotEmpty(),
             'all_injects_pending' => $allPending,
             'not_started' => $session->started_at === null,
         ];
@@ -148,6 +186,8 @@ class TtxSessionService
             'exercise_title' => $exerciseTitle,
             'inject_count' => $injects->count(),
             'facilitator' => $facilitator ? [
+                'assignment_id' => $facilitator->id,
+                'can_remove' => $this->canRemoveParticipant($session, $facilitator),
                 'name' => $facilitator->user?->name,
                 'role' => $facilitator->session_role->value,
             ] : null,
@@ -155,12 +195,30 @@ class TtxSessionService
             'participants' => $session->participants
                 ->map(fn ($p) => [
                     'id' => $p->user_id,
+                    'assignment_id' => $p->id,
+                    'can_remove' => $this->canRemoveParticipant($session, $p),
                     'name' => $p->user?->name,
                     'role' => $p->session_role->value,
                 ])
                 ->values()
                 ->all(),
             'readiness' => $readiness,
+            'can_assign' => Gate::forUser($actor)->allows('assign', $session),
+            'can_assign_facilitator' => Gate::forUser($actor)->allows('assign', $session) && $facilitator === null,
+            'assignable_users' => User::query()
+                ->where('tenant_id', $session->tenant_id)
+                ->where('is_active', true)
+                ->whereNotIn('id', $session->participants->pluck('user_id'))
+                ->orderBy('name')->orderBy('id')->get(['id', 'name'])
+                ->map(fn ($user) => ['id' => $user->id, 'name' => $user->name])->all(),
+            'role_options' => [
+                ['value' => 'facilitator', 'label' => 'Fasilitator'],
+                ['value' => 'security', 'label' => 'Keamanan'],
+                ['value' => 'it_operations', 'label' => 'Operasional TI'],
+                ['value' => 'people_hr', 'label' => 'SDM'],
+                ['value' => 'communications', 'label' => 'Komunikasi'],
+                ['value' => 'management', 'label' => 'Manajemen'],
+            ],
             // Reflects the SAME semantics as TtxSessionPolicy::facilitate for the
             // current actor. Tenant Admin is NOT automatically allowed.
             'can_open_console' => Gate::forUser($actor)->allows('facilitate', $session),
