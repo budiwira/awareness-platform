@@ -49,13 +49,34 @@ Write-Host "[OK] Installed global OpenCode agent: $GlobalAgentTarget"
 
 $config = Get-Content -Raw $ConfigLocal | ConvertFrom-Json
 $templateConfig = Get-Content -Raw $ConfigExample | ConvertFrom-Json
+$configChanged = $false
 
-if (-not $config.PSObject.Properties.Name.Contains("trustedTaskAuthors")) {
-    $config | Add-Member -NotePropertyName trustedTaskAuthors -NotePropertyValue @($templateConfig.trustedTaskAuthors)
+$requiredConfigKeys = @(
+    "trustedTaskAuthors",
+    "maxTaskMinutesCap",
+    "watchdogPollSeconds",
+    "watchdogNoProgressMinutes",
+    "watchdogRepeatThreshold"
+)
+
+foreach ($key in $requiredConfigKeys) {
+    if (-not $config.PSObject.Properties.Name.Contains($key)) {
+        $config | Add-Member -NotePropertyName $key -NotePropertyValue $templateConfig.$key
+        $configChanged = $true
+        Write-Host "[OK] Added $key to local config"
+    }
+}
+
+if ([int]$config.maxTaskMinutes -eq 90) {
+    $config.maxTaskMinutes = [int]$templateConfig.maxTaskMinutes
+    $configChanged = $true
+    Write-Host "[OK] Updated maxTaskMinutes to watchdog default: $($config.maxTaskMinutes)"
+}
+
+if ($configChanged) {
     $json = $config | ConvertTo-Json -Depth 10
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($ConfigLocal, $json + [Environment]::NewLine, $utf8NoBom)
-    Write-Host "[OK] Added trustedTaskAuthors to local config"
 }
 
 if (-not (Test-Path $config.openCodeCli)) {
