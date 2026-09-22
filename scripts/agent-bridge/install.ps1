@@ -48,6 +48,15 @@ Copy-Item $AgentSource $GlobalAgentTarget -Force
 Write-Host "[OK] Installed global OpenCode agent: $GlobalAgentTarget"
 
 $config = Get-Content -Raw $ConfigLocal | ConvertFrom-Json
+$templateConfig = Get-Content -Raw $ConfigExample | ConvertFrom-Json
+
+if (-not $config.PSObject.Properties.Name.Contains("trustedTaskAuthors")) {
+    $config | Add-Member -NotePropertyName trustedTaskAuthors -NotePropertyValue @($templateConfig.trustedTaskAuthors)
+    $json = $config | ConvertTo-Json -Depth 10
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($ConfigLocal, $json + [Environment]::NewLine, $utf8NoBom)
+    Write-Host "[OK] Added trustedTaskAuthors to local config"
+}
 
 if (-not (Test-Path $config.openCodeCli)) {
     throw "OpenCode CLI not found at configured path: $($config.openCodeCli)"
