@@ -1,0 +1,10 @@
+{
+  "repo": "budiwira/awareness-platform",
+  "issue": 67,
+  "pollSeconds": 30,
+  "allowedWorktreeRoot": "C:\\Users\\budii\\awareness-lab.worktrees",
+  "openCodeCli": "C:\\Users\\budii\\AppData\\Roaming\\ai.opencode.desktop\\cli\\2.0.11\\opencode-cli.exe",
+  "agent": "bridge-worker",
+  "model": "opencode/mimo-v2.5-free",
+  "maxTaskMinutes": 90
+}
