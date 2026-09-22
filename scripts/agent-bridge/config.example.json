@@ -6,8 +6,12 @@
   "openCodeCli": "C:\\Users\\budii\\AppData\\Roaming\\ai.opencode.desktop\\cli\\2.0.11\\opencode-cli.exe",
   "agent": "bridge-worker",
   "model": "opencode/mimo-v2.5-free",
-  "maxTaskMinutes": 90,
+  "maxTaskMinutes": 30,
   "trustedTaskAuthors": [
     "budiwira"
-  ]
+  ],
+  "maxTaskMinutesCap": 45,
+  "watchdogPollSeconds": 5,
+  "watchdogNoProgressMinutes": 10,
+  "watchdogRepeatThreshold": 5
 }
