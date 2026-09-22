@@ -148,7 +148,9 @@ Before restarting the continuous runner after a bridge update, validate the watc
 powershell -ExecutionPolicy Bypass -File .\scripts\agent-bridge\bridge.ps1 -SelfTest
 ```
 
-Expected result: `Watchdog self-test passed (7 cases).`
+Expected result: `Watchdog self-test passed (9 cases).`
+
+Repeated test assertion timeouts are not treated as agent-loop signatures. The repeated-failure watchdog now counts a matching diagnostic at most once per worker command attempt; multiple failures emitted by one long-running test command do not trip the loop detector. Hard task timeout and no-progress watchdogs remain independent safeguards.
 
 The worker must use one bare allowlisted shell command per tool call. Pipes, redirection, chaining, PowerShell helper cmdlets, command wrappers, and tool-discovery workarounds are forbidden. If an allowlisted command is denied once, the worker must stop that validation attempt and return `NEEDS_REVIEW` instead of retrying alternate shell forms. The bridge already collects git evidence after worker exit, so repeated git evidence commands are unnecessary.
 
