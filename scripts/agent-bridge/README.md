@@ -140,6 +140,18 @@ and includes:
 The bridge itself never commits or merges feature work.
 
 
+## Watchdog self-test and shell discipline
+
+Before restarting the continuous runner after a bridge update, validate the watchdog classifier locally:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\agent-bridge\bridge.ps1 -SelfTest
+```
+
+Expected result: `Watchdog self-test passed (7 cases).`
+
+The worker must use one bare allowlisted shell command per tool call. Pipes, redirection, chaining, PowerShell helper cmdlets, command wrappers, and tool-discovery workarounds are forbidden. If an allowlisted command is denied once, the worker must stop that validation attempt and return `NEEDS_REVIEW` instead of retrying alternate shell forms. The bridge already collects git evidence after worker exit, so repeated git evidence commands are unnecessary.
+
 ## Watchdog v1.1
 
 The bridge protects against stuck or looping workers:
