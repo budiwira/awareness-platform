@@ -1,6 +1,7 @@
 param(
     [string]$ConfigPath = (Join-Path $PSScriptRoot "config.local.json"),
-    [switch]$Once
+    [switch]$Once,
+    [switch]$SelfTest
 )
 
 $ErrorActionPreference = "Stop"
@@ -269,6 +270,34 @@ function Get-WatchdogFailureSignature {
     return $clean.ToLowerInvariant()
 }
 
+function Invoke-WatchdogSelfTest {
+    $cases = @(
+        [pscustomobject]@{ Line = '+const accessDeniedError = ref(null);'; ExpectSignature = $false; Name = 'source addition with denied identifier' },
+        [pscustomobject]@{ Line = '-accessDeniedError.value = null;'; ExpectSignature = $false; Name = 'source removal with denied identifier' },
+        [pscustomobject]@{ Line = '$ git diff -- resources/js/example.vue'; ExpectSignature = $false; Name = 'command echo' },
+        [pscustomobject]@{ Line = 'diff --git a/a b/a'; ExpectSignature = $false; Name = 'git diff header' },
+        [pscustomobject]@{ Line = 'Error: Permission denied: shell'; ExpectSignature = $true; Name = 'real shell permission denial' },
+        [pscustomobject]@{ Line = 'git : error: invalid option: --bad'; ExpectSignature = $true; Name = 'real git diagnostic' },
+        [pscustomobject]@{ Line = 'Task build failed'; ExpectSignature = $true; Name = 'real task failure' }
+    )
+
+    $failures = @()
+    foreach ($case in $cases) {
+        $signature = Get-WatchdogFailureSignature ([string]$case.Line)
+        $actual = $null -ne $signature
+
+        if ($actual -ne [bool]$case.ExpectSignature) {
+            $failures += "$($case.Name): expected signature=$($case.ExpectSignature), actual=$actual, line='$($case.Line)'"
+        }
+    }
+
+    if ($failures.Count -gt 0) {
+        throw ('Watchdog self-test failed: ' + ($failures -join ' | '))
+    }
+
+    Write-BridgeLog "Watchdog self-test passed ($($cases.Count) cases)."
+}
+
 function Remove-Ansi {
     param([string]$Text)
 
@@ -462,6 +491,7 @@ Timeout: $taskTimeoutMinutes minutes
 
 Follow the bridge-worker rules exactly.
 Do not commit, stage, push, switch branches, install dependencies, or make architecture decisions.
+Shell commands must be single bare allowlisted commands only. Never use pipes, redirection, command chaining, PowerShell cmdlets, wrappers, or tool-discovery workarounds. If an allowlisted shell command is denied once, do not retry it in another form; report NEEDS_REVIEW instead. The bridge itself collects git evidence after worker exit.
 
 APPROVED TASK:
 $($Task.prompt)
@@ -629,6 +659,11 @@ function Mark-Processed {
 
     $State.processedTaskIds = $items
     Save-State $State
+}
+
+if ($SelfTest) {
+    Invoke-WatchdogSelfTest
+    exit 0
 }
 
 $config = Load-JsonFile $ConfigPath
