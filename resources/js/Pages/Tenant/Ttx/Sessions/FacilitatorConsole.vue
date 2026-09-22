@@ -31,6 +31,14 @@ const selectedInjectId = ref(null);
 
 // Response editor ref
 const editorRef = ref(null);
+// Key that increments on every session refresh, forcing ResponseEditor to
+// re-mount so its internal draft state resets to the authoritative server value.
+const refreshKey = ref(0);
+// v-if toggle: briefly set to false to force ResponseEditor DOM destruction,
+// then back to true in nextTick to force recreation. More reliable than :key
+// alone because Vue's scheduler may batch key updates without triggering
+// component destruction in certain timing scenarios.
+const editorMounted = ref(true);
 
 // --- Unsaved changes modal ---
 const showUnsavedModal = ref(false);
@@ -190,6 +198,17 @@ const fetchSession = async (isRefresh = false) => {
         const { data } = await axios.get(route('tenant.ttx.sessions.show', props.sessionId));
         session.value = data;
 
+        // Bump key so ResponseEditor re-mounts with fresh server state.
+        // The re-mount triggers the immediate watcher inside ResponseEditor,
+        // which correctly syncs the local draft with the authoritative server
+        // response. No explicit resetDraft() call needed here — the watcher
+        // handles it, and calling resetDraft() AFTER the watcher would clear
+        // the correctly-populated draft back to empty (the exact defect that
+        // was fixed in TTX2-D3-B1).
+        if (isRefresh) {
+            refreshKey.value++;
+        }
+
         // Auto-select: prefer current active inject, else first inject
         if (selectedInjectId.value === null) {
             const active = data.injects?.find((i) => i.status === 'active');
@@ -242,6 +261,18 @@ const handleUnsavedDiscard = () => {
     showUnsavedModal.value = false;
     const action = pendingAction.value;
     pendingAction.value = null;
+
+    // Force ResponseEditor to fully destroy and recreate with fresh (empty)
+    // state. The v-if toggle (false → true) guarantees Vue removes the old
+    // DOM subtree and creates a new one, unlike :key which may be batched
+    // in the same render cycle. We use setTimeout (macrotask) instead of
+    // nextTick (microtask) so Vue completes the removal render before we
+    // set the flag back to true in a separate render cycle.
+    editorMounted.value = false;
+    setTimeout(() => {
+        editorMounted.value = true;
+        refreshKey.value++;
+    }, 0);
 
     if (action?.type === 'select') {
         selectedInjectId.value = action.injectId;
@@ -536,7 +567,8 @@ onMounted(() => fetchSession());
 
                                     <!-- ACTIVE: editable response editor -->
                                     <ResponseEditor
-                                        v-if="selectedInject.status === 'active'"
+                                        v-if="selectedInject.status === 'active' && editorMounted"
+                                        :key="`resp-${refreshKey}-${selectedInject.id}`"
                                         ref="editorRef"
                                         inject-status="active"
                                         :response="selectedInject.response"

@@ -140,6 +140,15 @@ const clearErrors = () => {
     generalError.value = null;
 };
 
+const resetDraft = () => {
+    serverSnapshot.value = null;
+    currentRevision.value = null;
+    draft.value = emptyDraft();
+    conflictError.value = null;
+    validationErrors.value = null;
+    generalError.value = null;
+};
+
 defineExpose({
     isDirty,
     serverSnapshot,
@@ -148,6 +157,7 @@ defineExpose({
     setValidationError,
     setGeneralError,
     clearErrors,
+    resetDraft,
 });
 </script>
 
