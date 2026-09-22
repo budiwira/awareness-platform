@@ -82,6 +82,7 @@ const isCurrent = (inject) => inject.order === props.currentInjectOrder;
     text-align: left;
     cursor: pointer;
     transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    min-width: 0;
 }
 
 .timeline-btn:hover {
@@ -140,6 +141,7 @@ const isCurrent = (inject) => inject.order === props.currentInjectOrder;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

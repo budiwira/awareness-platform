@@ -28,7 +28,8 @@ const isActive = computed(() => props.injectStatus === 'active');
 // --- Server conflict state ---
 const conflictError = ref(null);     // 409 conflict message
 const validationErrors = ref(null);  // 422 validation error bag
-const generalError = ref(null);      // other errors (403, etc.)
+const generalError = ref(null);      // other errors (5xx, etc.)
+const accessDeniedError = ref(null); // 403 access denied
 
 function emptyDraft() {
     return {
@@ -51,6 +52,7 @@ watch(
         conflictError.value = null;
         validationErrors.value = null;
         generalError.value = null;
+        accessDeniedError.value = null;
 
         if (resp) {
             draft.value = {
@@ -134,10 +136,18 @@ const setGeneralError = (msg) => {
     validationErrors.value = null;
 };
 
+const setAccessDeniedError = (msg) => {
+    accessDeniedError.value = msg;
+    conflictError.value = null;
+    validationErrors.value = null;
+    generalError.value = null;
+};
+
 const clearErrors = () => {
     conflictError.value = null;
     validationErrors.value = null;
     generalError.value = null;
+    accessDeniedError.value = null;
 };
 
 const resetDraft = () => {
@@ -147,6 +157,7 @@ const resetDraft = () => {
     conflictError.value = null;
     validationErrors.value = null;
     generalError.value = null;
+    accessDeniedError.value = null;
 };
 
 defineExpose({
@@ -156,6 +167,7 @@ defineExpose({
     setConflictError,
     setValidationError,
     setGeneralError,
+    setAccessDeniedError,
     clearErrors,
     resetDraft,
 });
@@ -182,7 +194,7 @@ defineExpose({
             </BaseButton>
         </BaseAlert>
 
-        <!-- General error (403, lifecycle, etc.) -->
+        <!-- General error (lifecycle, etc.) -->
         <BaseAlert
             v-if="generalError"
             variant="danger"
@@ -190,6 +202,16 @@ defineExpose({
             class="mb-4"
         >
             <p>{{ generalError }}</p>
+        </BaseAlert>
+
+        <!-- Access denied (403 mutation) -->
+        <BaseAlert
+            v-if="accessDeniedError"
+            variant="danger"
+            title="Akses ditolak"
+            class="mb-4"
+        >
+            <p>{{ accessDeniedError }}</p>
         </BaseAlert>
 
         <!-- Validation error (422 lifecycle: inject no longer active, etc.) -->
@@ -325,6 +347,7 @@ defineExpose({
     display: flex;
     flex-direction: column;
     gap: var(--sp-4);
+    min-width: 0;
 }
 
 .response-field {
@@ -362,5 +385,7 @@ defineExpose({
     border-radius: var(--r-lg);
     font-size: 0.875rem;
     color: var(--muted);
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 </style>

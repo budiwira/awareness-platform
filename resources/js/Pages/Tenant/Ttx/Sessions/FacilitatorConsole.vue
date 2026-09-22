@@ -27,6 +27,7 @@ const saving = ref(false);
 const starting = ref(false);
 const advancing = ref(false);
 const error = ref(null);
+const accessDeniedError = ref(null);
 const selectedInjectId = ref(null);
 
 // Response editor ref
@@ -117,7 +118,7 @@ const handleStart = async () => {
         const status = err.response?.status;
         const msg = err.response?.data?.message ?? 'Gagal memulai exercise.';
         if (status === 403) {
-            error.value = 'Anda tidak memiliki akses untuk memulai sesi ini.';
+            accessDeniedError.value = 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
         } else if (status === 409 || status === 422) {
             // State conflict or validation: refresh to get authoritative state
             toast.error(msg);
@@ -173,7 +174,7 @@ const handleAdvance = async () => {
         const status = err.response?.status;
         const msg = err.response?.data?.message ?? 'Gagal melanjutkan inject.';
         if (status === 403) {
-            error.value = 'Anda tidak memiliki akses untuk mengubah sesi ini.';
+            accessDeniedError.value = 'Anda tidak memiliki izin untuk melakukan tindakan ini.';
         } else if (status === 409 || status === 422) {
             toast.error(msg);
             await fetchSession(true);
@@ -193,6 +194,7 @@ const fetchSession = async (isRefresh = false) => {
         loading.value = true;
     }
     error.value = null;
+    accessDeniedError.value = null;
 
     try {
         const { data } = await axios.get(route('tenant.ttx.sessions.show', props.sessionId));
@@ -201,7 +203,7 @@ const fetchSession = async (isRefresh = false) => {
         // Bump key so ResponseEditor re-mounts with fresh server state.
         // The re-mount triggers the immediate watcher inside ResponseEditor,
         // which correctly syncs the local draft with the authoritative server
-        // response. No explicit resetDraft() call needed here — the watcher
+        // response. No explicit resetDraft() call needed here -- the watcher
         // handles it, and calling resetDraft() AFTER the watcher would clear
         // the correctly-populated draft back to empty (the exact defect that
         // was fixed in TTX2-D3-B1).
@@ -263,7 +265,7 @@ const handleUnsavedDiscard = () => {
     pendingAction.value = null;
 
     // Force ResponseEditor to fully destroy and recreate with fresh (empty)
-    // state. The v-if toggle (false → true) guarantees Vue removes the old
+    // state. The v-if toggle (false -> true) guarantees Vue removes the old
     // DOM subtree and creates a new one, unlike :key which may be batched
     // in the same render cycle. We use setTimeout (macrotask) instead of
     // nextTick (microtask) so Vue completes the removal render before we
@@ -366,8 +368,8 @@ const handleSaveError = (err) => {
             toast.error('Status injeksi atau sesi mungkin telah berubah. Periksa pesan di atas.');
         }
     } else if (status === 403) {
-        editorRef.value?.setGeneralError(
-            'Anda tidak memiliki akses untuk mengubah response ini.',
+        editorRef.value?.setAccessDeniedError(
+            'Anda tidak memiliki izin untuk melakukan tindakan ini.',
         );
     } else {
         editorRef.value?.setGeneralError(
@@ -462,6 +464,16 @@ onMounted(() => fetchSession());
                     Refresh
                 </BaseButton>
             </div>
+
+            <!-- Access denied state (mutation 403) -->
+            <BaseAlert
+                v-if="accessDeniedError"
+                variant="danger"
+                title="Akses ditolak"
+                class="mb-6"
+            >
+                {{ accessDeniedError }}
+            </BaseAlert>
 
             <!-- DRAFT state: informational banner -->
             <BaseAlert
@@ -708,10 +720,15 @@ onMounted(() => fetchSession());
 }
 
 /* Grid layout */
+.console-main {
+    min-width: 0;
+}
+
 .console-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--sp-6);
+    min-width: 0;
 }
 
 @media (min-width: 1024px) {
@@ -733,6 +750,8 @@ onMounted(() => fetchSession());
     border: 1px solid var(--line);
     border-radius: var(--r-card);
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    min-width: 0;
 }
 
 .inject-card-head {
@@ -741,6 +760,7 @@ onMounted(() => fetchSession());
     justify-content: space-between;
     gap: var(--sp-4);
     padding: var(--sp-5) var(--sp-6);
+    min-width: 0;
 }
 
 .inject-card-order {
@@ -757,10 +777,13 @@ onMounted(() => fetchSession());
     font-weight: 700;
     color: var(--ink);
     margin: 0;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .inject-card-body {
     padding: 0 var(--sp-6) var(--sp-5);
+    min-width: 0;
 }
 
 .inject-card-divider {
@@ -772,6 +795,7 @@ onMounted(() => fetchSession());
 /* Response section */
 .inject-response {
     padding: var(--sp-5) var(--sp-6);
+    min-width: 0;
 }
 
 .inject-response-title {
@@ -779,6 +803,7 @@ onMounted(() => fetchSession());
     font-weight: 600;
     color: var(--ink);
     margin: 0 0 var(--sp-4);
+    overflow-wrap: anywhere;
 }
 
 .response-fields {
@@ -806,6 +831,8 @@ onMounted(() => fetchSession());
     color: var(--ink);
     line-height: 1.6;
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 .response-meta {
@@ -816,6 +843,7 @@ onMounted(() => fetchSession());
     border-top: 1px solid var(--line);
     font-size: 0.75rem;
     color: var(--muted);
+    min-width: 0;
 }
 
 .response-locked {
@@ -829,6 +857,8 @@ onMounted(() => fetchSession());
     font-size: 0.875rem;
     color: var(--muted);
     margin-top: var(--sp-4);
+    overflow-wrap: anywhere;
+    min-width: 0;
 }
 
 /* Advance section */
@@ -844,6 +874,7 @@ onMounted(() => fetchSession());
     font-size: 0.8125rem;
     color: var(--warn);
     line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 /* Unsaved modal */
@@ -856,6 +887,7 @@ onMounted(() => fetchSession());
     font-weight: 700;
     color: var(--ink);
     margin: 0 0 var(--sp-2);
+    overflow-wrap: anywhere;
 }
 
 .unsaved-modal-message {
@@ -863,14 +895,32 @@ onMounted(() => fetchSession());
     color: var(--muted);
     margin: 0 0 var(--sp-6);
     line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .unsaved-modal-actions {
     display: flex;
     gap: var(--sp-3);
     justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
+
+.unsaved-modal :deep(.base-btn--danger) {
+    background: #7f1239;
+    border-color: #7f1239;
+    color: #ffffff;
+}
+
+.unsaved-modal :deep(.base-btn--danger > span) {
+    color: #ffffff;
+}
+
+.unsaved-modal :deep(.base-btn--danger:hover:not(:disabled)) {
+    background: #701a32;
+    border-color: #701a32;
+    color: #ffffff;
+}
 /* Skeleton */
 .skeleton {
     background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
