@@ -32,10 +32,12 @@ class TtxSessionController extends Controller
                     'status' => $status,
                     'role' => $assignment->session_role->value,
                     'action_label' => $facilitator
-                        ? 'Buka Konsol Fasilitator'
+                        ? (in_array($status, ['debrief', 'completed'], true) ? 'Buka Debrief' : 'Buka Konsol Fasilitator')
                         : $this->participantActionLabel($status),
                     'action_url' => route(
-                        $facilitator ? 'tenant.ttx.sessions.console' : 'tenant.ttx.sessions.workspace',
+                        $facilitator
+                            ? (in_array($status, ['debrief', 'completed'], true) ? 'tenant.ttx.sessions.debrief' : 'tenant.ttx.sessions.console')
+                            : 'tenant.ttx.sessions.workspace',
                         $assignment->session->id
                     ),
                 ];

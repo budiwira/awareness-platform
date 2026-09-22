@@ -511,7 +511,10 @@ onMounted(() => fetchSession());
                 title="Exercise telah memasuki fase debrief."
                 class="mb-6"
             >
-                Evaluation dan action items akan tersedia pada fase berikutnya. Timeline dan response yang sudah terkunci dapat ditinjau.
+                <p>Timeline dan response sudah terkunci. Lanjutkan ke evaluasi kualitatif dan After-Action Summary.</p>
+                <Link :href="route('tenant.ttx.sessions.debrief', props.sessionId)" class="inline-flex mt-3">
+                    <BaseButton variant="primary">Buka Debrief</BaseButton>
+                </Link>
             </BaseAlert>
 
             <!-- COMPLETED banner -->
@@ -521,7 +524,10 @@ onMounted(() => fetchSession());
                 title="Exercise telah selesai."
                 class="mb-6"
             >
-                Sesi ini sudah selesai dan tidak dapat diubah lagi.
+                <p>Sesi ini sudah selesai dan tidak dapat diubah lagi.</p>
+                <Link :href="route('tenant.ttx.sessions.debrief', props.sessionId)" class="inline-flex mt-3">
+                    <BaseButton variant="secondary">Lihat Debrief</BaseButton>
+                </Link>
             </BaseAlert>
 
             <!-- Two-column layout -->

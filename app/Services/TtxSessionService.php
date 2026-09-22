@@ -5,8 +5,11 @@ namespace App\Services;
 use App\Enums\TtxSessionInjectStatus;
 use App\Enums\TtxSessionRole;
 use App\Enums\TtxSessionStatus;
+use App\Models\TtxActionItem;
+use App\Models\TtxAfterActionSummary;
 use App\Models\TtxExercise;
 use App\Models\TtxSession;
+use App\Models\TtxSessionEvaluation;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
@@ -19,6 +22,22 @@ use Illuminate\Validation\ValidationException;
 
 class TtxSessionService
 {
+    public const EVALUATION_DIMENSIONS = [
+        'detection_triage' => ['code' => 'EX-1', 'label' => 'Detection & Triage'],
+        'escalation_ownership' => ['code' => 'EX-2', 'label' => 'Escalation & Ownership'],
+        'containment_decision' => ['code' => 'EX-3', 'label' => 'Containment Decision'],
+        'cross_functional_coordination' => ['code' => 'EX-4', 'label' => 'Cross-functional Coordination'],
+        'incident_communication' => ['code' => 'EX-5', 'label' => 'Incident Communication'],
+        'recovery_improvement' => ['code' => 'EX-6', 'label' => 'Recovery & Improvement'],
+    ];
+
+    public const EVALUATION_RATINGS = [
+        'needs_improvement' => 'Perlu Perbaikan',
+        'developing' => 'Berkembang',
+        'effective' => 'Efektif',
+        'strong' => 'Kuat',
+    ];
+
     public function create(User $actor, TtxExercise $exercise, string $title, ?\DateTimeInterface $scheduledAt = null): TtxSession
     {
         abort_unless($actor->is_active && $actor->isTenantAdmin() && $actor->tenant_id === $exercise->tenant_id, 403);
@@ -392,7 +411,7 @@ class TtxSessionService
             ->all();
         $responses = TtxSessionResponse::whereIn('session_inject_id', $responseableIds)->get()->keyBy('session_inject_id');
 
-        return [
+        $payload = [
             'id' => $session->id,
             'title' => $session->title,
             'status' => $session->status->value,
@@ -422,6 +441,194 @@ class TtxSessionService
                 return $payload;
             })->values(),
         ];
+
+        if (! $facilitator && $session->status === TtxSessionStatus::Completed) {
+            $summary = $session->afterActionSummary()->first();
+            $payload['outcome'] = $summary ? [
+                'overall_summary' => $summary->overall_summary,
+                'strengths' => $summary->strengths,
+                'improvement_areas' => $summary->improvement_areas,
+                'key_lessons' => $summary->key_lessons,
+            ] : null;
+        }
+
+        return $payload;
+    }
+
+    public function debriefReadModel(User $actor, TtxSession $session): array
+    {
+        $this->assertDebriefActor($actor, $session);
+        abort_unless(in_array($session->status, [TtxSessionStatus::Debrief, TtxSessionStatus::Completed], true), 409);
+
+        $evaluation = $session->evaluations()->get()->keyBy('dimension');
+        $summary = $session->afterActionSummary()->first();
+        $dimensions = [];
+        foreach (self::EVALUATION_DIMENSIONS as $dimension => $definition) {
+            $entry = $evaluation->get($dimension);
+            $dimensions[] = [
+                'dimension' => $dimension,
+                ...$definition,
+                'rating' => $entry?->rating,
+                'evidence' => $entry?->evidence,
+            ];
+        }
+        $ratingOptions = [];
+        foreach (self::EVALUATION_RATINGS as $value => $label) {
+            $ratingOptions[] = ['value' => $value, 'label' => $label];
+        }
+
+        return [
+            'session' => $this->readModel($actor, $session),
+            'dimensions' => $dimensions,
+            'rating_options' => $ratingOptions,
+            'action_items' => $session->actionItems()->get()->map(fn (TtxActionItem $item) => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'owner' => $item->owner,
+                'priority' => $item->priority,
+                'due_date' => $item->due_date?->format('Y-m-d'),
+                'status' => $item->status,
+            ])->all(),
+            'after_action_summary' => $summary ? [
+                'overall_summary' => $summary->overall_summary,
+                'strengths' => $summary->strengths,
+                'improvement_areas' => $summary->improvement_areas,
+                'key_lessons' => $summary->key_lessons,
+            ] : null,
+            'editable' => $session->status === TtxSessionStatus::Debrief,
+        ];
+    }
+
+    public function updateEvaluation(User $actor, TtxSession $session, array $entries): void
+    {
+        $this->assertMutableDebrief($actor, $session);
+
+        DB::transaction(function () use ($actor, $session, $entries) {
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertMutableDebrief($actor, $lockedSession);
+
+            foreach ($entries as $entry) {
+                $evaluation = TtxSessionEvaluation::query()
+                    ->where('session_id', $lockedSession->id)
+                    ->where('dimension', $entry['dimension'])
+                    ->first() ?? new TtxSessionEvaluation;
+                $evaluation->forceFill([
+                    'tenant_id' => $lockedSession->tenant_id,
+                    'session_id' => $lockedSession->id,
+                    'dimension' => $entry['dimension'],
+                    'rating' => $entry['rating'],
+                    'evidence' => $entry['evidence'] ?? null,
+                    'updated_by' => $actor->id,
+                ])->save();
+            }
+
+            Audit::log('ttx.evaluation_updated', $lockedSession, [
+                'dimensions' => collect($entries)->pluck('dimension')->values()->all(),
+            ]);
+        });
+    }
+
+    public function createActionItem(User $actor, TtxSession $session, array $data): TtxActionItem
+    {
+        $this->assertMutableDebrief($actor, $session);
+
+        return DB::transaction(function () use ($actor, $session, $data) {
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertMutableDebrief($actor, $lockedSession);
+            $item = TtxActionItem::forceCreate([
+                'tenant_id' => $lockedSession->tenant_id,
+                'session_id' => $lockedSession->id,
+                ...$data,
+                'status' => $data['status'] ?? 'open',
+                'created_by' => $actor->id,
+                'updated_by' => $actor->id,
+            ]);
+            Audit::log('ttx.action_item_created', $item, ['session_id' => $lockedSession->id]);
+
+            return $item;
+        });
+    }
+
+    public function updateActionItem(User $actor, TtxSession $session, TtxActionItem $item, array $data): TtxActionItem
+    {
+        $this->assertMutableDebrief($actor, $session);
+        abort_unless($item->session_id === $session->id && $item->tenant_id === $session->tenant_id, 404);
+
+        return DB::transaction(function () use ($actor, $session, $item, $data) {
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertMutableDebrief($actor, $lockedSession);
+            $lockedItem = TtxActionItem::query()
+                ->where('session_id', $lockedSession->id)
+                ->lockForUpdate()
+                ->findOrFail($item->id);
+            $wasCompleted = $lockedItem->status === 'completed';
+            $lockedItem->forceFill([...$data, 'updated_by' => $actor->id])->save();
+            $action = ! $wasCompleted && $lockedItem->status === 'completed'
+                ? 'ttx.action_item_completed'
+                : 'ttx.action_item_updated';
+            Audit::log($action, $lockedItem, ['session_id' => $lockedSession->id]);
+
+            return $lockedItem->fresh();
+        });
+    }
+
+    public function updateAfterActionSummary(User $actor, TtxSession $session, array $data): TtxAfterActionSummary
+    {
+        $this->assertMutableDebrief($actor, $session);
+
+        return DB::transaction(function () use ($actor, $session, $data) {
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertMutableDebrief($actor, $lockedSession);
+            $summary = TtxAfterActionSummary::query()
+                ->where('session_id', $lockedSession->id)
+                ->first() ?? new TtxAfterActionSummary;
+            $summary->forceFill([
+                'tenant_id' => $lockedSession->tenant_id,
+                'session_id' => $lockedSession->id,
+                ...$data,
+                'updated_by' => $actor->id,
+            ])->save();
+            Audit::log('ttx.aar_updated', $lockedSession);
+
+            return $summary;
+        });
+    }
+
+    public function complete(User $actor, TtxSession $session): TtxSession
+    {
+        $this->assertMutableDebrief($actor, $session);
+
+        return DB::transaction(function () use ($actor, $session) {
+            $lockedSession = TtxSession::query()->lockForUpdate()->findOrFail($session->id);
+            $this->assertMutableDebrief($actor, $lockedSession);
+
+            $ratedDimensions = $lockedSession->evaluations()
+                ->whereIn('dimension', array_keys(self::EVALUATION_DIMENSIONS))
+                ->whereIn('rating', array_keys(self::EVALUATION_RATINGS))
+                ->distinct()
+                ->count('dimension');
+            if ($ratedDimensions !== count(self::EVALUATION_DIMENSIONS)) {
+                throw ValidationException::withMessages([
+                    'evaluation' => 'Lengkapi rating untuk seluruh enam dimensi evaluasi sebelum menyelesaikan sesi.',
+                ]);
+            }
+
+            $summary = $lockedSession->afterActionSummary()->first();
+            if (! $summary || collect(['overall_summary', 'strengths', 'improvement_areas', 'key_lessons'])
+                ->contains(fn (string $field) => trim((string) $summary->{$field}) === '')) {
+                throw ValidationException::withMessages([
+                    'after_action_summary' => 'Lengkapi seluruh bagian After-Action Summary sebelum menyelesaikan sesi.',
+                ]);
+            }
+
+            $lockedSession->update([
+                'status' => TtxSessionStatus::Completed,
+                'completed_at' => now(),
+            ]);
+            Audit::log('ttx.session_completed', $lockedSession);
+
+            return $lockedSession->fresh();
+        });
     }
 
     /**
@@ -615,6 +822,21 @@ class TtxSessionService
             ->where('user_id', $actor->id)
             ->where('session_role', TtxSessionRole::Facilitator)
             ->exists(), 403);
+    }
+
+    private function assertDebriefActor(User $actor, TtxSession $session): void
+    {
+        $this->assertRuntimeActor($actor, $session);
+    }
+
+    private function assertMutableDebrief(User $actor, TtxSession $session): void
+    {
+        $this->assertDebriefActor($actor, $session);
+        if ($session->status !== TtxSessionStatus::Debrief) {
+            throw ValidationException::withMessages([
+                'session' => 'Debrief hanya dapat diubah saat sesi berstatus debrief.',
+            ]);
+        }
     }
 
     private function exerciseSnapshot(TtxExercise $exercise): array

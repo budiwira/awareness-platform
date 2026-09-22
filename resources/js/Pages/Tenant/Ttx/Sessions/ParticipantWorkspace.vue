@@ -226,8 +226,23 @@ onMounted(() => fetchSession());
             </BaseAlert>
 
             <BaseAlert v-else-if="isCompleted" variant="success" title="Exercise telah selesai">
-                Timeline yang telah dirilis tetap tersedia dalam mode baca-saja.
+                Timeline yang telah dirilis tetap tersedia dalam mode baca-saja. Ringkasan akhir yang disetujui fasilitator ditampilkan di bawah.
             </BaseAlert>
+
+            <section v-if="isCompleted && session.outcome" class="content-card outcome-card">
+                <div class="content-heading">
+                    <div>
+                        <p class="workspace-eyebrow">Hasil Akhir</p>
+                        <h2 class="font-display text-xl font-bold t-ink">After-Action Summary</h2>
+                    </div>
+                </div>
+                <div class="outcome-grid">
+                    <div><h3>Ringkasan Keseluruhan</h3><p>{{ session.outcome.overall_summary }}</p></div>
+                    <div><h3>Kekuatan</h3><p>{{ session.outcome.strengths }}</p></div>
+                    <div><h3>Area Perbaikan</h3><p>{{ session.outcome.improvement_areas }}</p></div>
+                    <div><h3>Pelajaran Utama</h3><p>{{ session.outcome.key_lessons }}</p></div>
+                </div>
+            </section>
 
             <div v-if="sortedInjects.length" class="workspace-grid">
                 <aside class="workspace-timeline">
@@ -422,6 +437,16 @@ onMounted(() => fetchSession());
     font-weight: 700;
 }
 
+.outcome-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5);
+    margin-top: var(--sp-5);
+}
+
+.outcome-grid h3 { margin: 0 0 var(--sp-2); color: var(--ink); font-size: .875rem; font-weight: 700; }
+.outcome-grid p { margin: 0; color: var(--muted); line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+
 @media (max-width: 768px) {
     .workspace-hero {
         flex-direction: column;
@@ -439,5 +464,7 @@ onMounted(() => fetchSession());
     .workspace-hero {
         padding: var(--sp-4);
     }
+
+    .outcome-grid { grid-template-columns: minmax(0, 1fr); }
 }
 </style>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -26,6 +27,9 @@ use Illuminate\Support\Carbon;
  * @property-read TtxExercise $exercise
  * @property-read Collection<int, TtxSessionParticipant> $participants
  * @property-read Collection<int, TtxSessionInject> $injects
+ * @property-read Collection<int, TtxSessionEvaluation> $evaluations
+ * @property-read Collection<int, TtxActionItem> $actionItems
+ * @property-read TtxAfterActionSummary|null $afterActionSummary
  */
 class TtxSession extends Model
 {
@@ -70,5 +74,23 @@ class TtxSession extends Model
     public function injects(): HasMany
     {
         return $this->hasMany(TtxSessionInject::class, 'session_id')->orderBy('order');
+    }
+
+    /** @return HasMany<TtxSessionEvaluation, $this> */
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(TtxSessionEvaluation::class, 'session_id');
+    }
+
+    /** @return HasMany<TtxActionItem, $this> */
+    public function actionItems(): HasMany
+    {
+        return $this->hasMany(TtxActionItem::class, 'session_id')->orderBy('id');
+    }
+
+    /** @return HasOne<TtxAfterActionSummary, $this> */
+    public function afterActionSummary(): HasOne
+    {
+        return $this->hasOne(TtxAfterActionSummary::class, 'session_id');
     }
 }

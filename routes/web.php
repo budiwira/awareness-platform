@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ttx/sessions/{session}/console', [TenantTtxSessionController::class, 'console'])->name('tenant.ttx.sessions.console');
     // Assigned non-facilitator participant workspace (Inertia page, not JSON).
     Route::get('/ttx/sessions/{session}/workspace', [TenantTtxSessionController::class, 'workspace'])->name('tenant.ttx.sessions.workspace');
+    Route::get('/ttx/sessions/{session}/debrief', [TenantTtxSessionController::class, 'debrief'])->name('tenant.ttx.sessions.debrief');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -298,6 +299,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
         Route::post('/ttx/sessions/{session}/responses', [TenantTtxSessionController::class, 'storeResponse'])->name('ttx.sessions.responses.store');
         Route::put('/ttx/sessions/{session}/responses/{response}', [TenantTtxSessionController::class, 'updateResponse'])->name('ttx.sessions.responses.update');
+        Route::put('/ttx/sessions/{session}/evaluation', [TenantTtxSessionController::class, 'updateEvaluation'])->name('ttx.sessions.evaluation.update');
+        Route::post('/ttx/sessions/{session}/action-items', [TenantTtxSessionController::class, 'storeActionItem'])->name('ttx.sessions.action-items.store');
+        Route::put('/ttx/sessions/{session}/action-items/{actionItem}', [TenantTtxSessionController::class, 'updateActionItem'])->name('ttx.sessions.action-items.update');
+        Route::put('/ttx/sessions/{session}/after-action-summary', [TenantTtxSessionController::class, 'updateAfterActionSummary'])->name('ttx.sessions.aar.update');
+        Route::post('/ttx/sessions/{session}/complete', [TenantTtxSessionController::class, 'complete'])->name('ttx.sessions.complete');
     });
 
     Route::middleware('can:access-user-dashboard')
