@@ -58,7 +58,7 @@ function Get-IssueComments {
     param($Config)
 
     $endpoint = "repos/$($Config.repo)/issues/$($Config.issue)/comments?per_page=100"
-    $raw = & gh api $endpoint
+    $raw = & gh api --paginate --slurp $endpoint
     if ($LASTEXITCODE -ne 0) {
         throw "Unable to read GitHub issue comments."
     }
@@ -67,7 +67,14 @@ function Get-IssueComments {
         return @()
     }
 
-    return ($raw -join [Environment]::NewLine) | ConvertFrom-Json
+    $pages = ($raw -join [Environment]::NewLine) | ConvertFrom-Json
+    $comments = @()
+
+    foreach ($page in @($pages)) {
+        $comments += @($page)
+    }
+
+    return $comments
 }
 
 function Parse-BridgeTask {
@@ -88,17 +95,55 @@ function Parse-BridgeTask {
     }
 }
 
+function Parse-BridgeReport {
+    param([string]$Body)
+
+    $pattern = '(?s)<!--\s*AGENT_BRIDGE_REPORT_V1\s*(\{.*?\})\s*-->'
+    $match = [regex]::Match($Body, $pattern)
+
+    if (-not $match.Success) {
+        return $null
+    }
+
+    try {
+        return $match.Groups[1].Value | ConvertFrom-Json
+    }
+    catch {
+        return $null
+    }
+}
+
 function Get-NextTask {
     param($Config, $State)
 
     $processed = @($State.processedTaskIds)
     $comments = @(Get-IssueComments $Config)
+    $reportedTaskIds = @()
+
+    foreach ($comment in $comments) {
+        $report = Parse-BridgeReport ([string]$comment.body)
+        if ($null -ne $report -and -not [string]::IsNullOrWhiteSpace([string]$report.task_id)) {
+            $reportedTaskIds += [string]$report.task_id
+        }
+    }
+
+    $trustedAuthors = @($Config.trustedTaskAuthors)
+    if ($trustedAuthors.Count -eq 0) {
+        throw "No trustedTaskAuthors configured."
+    }
 
     foreach ($comment in ($comments | Sort-Object id)) {
+        $author = [string]$comment.user.login
+        if ($trustedAuthors -notcontains $author) {
+            continue
+        }
+
         $task = Parse-BridgeTask ([string]$comment.body)
         if ($null -eq $task) { continue }
         if ($task.status -ne "READY") { continue }
         if ($processed -contains [string]$task.task_id) { continue }
+        if ($reportedTaskIds -contains [string]$task.task_id) { continue }
+
         return $task
     }
 
@@ -159,6 +204,87 @@ function Assert-TaskSafe {
     }
 }
 
+function Remove-Ansi {
+    param([string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) {
+        return ""
+    }
+
+    return [regex]::Replace($Text, [char]27 + '\[[0-?]*[ -/]*[@-~]', '')
+}
+
+function Limit-Text {
+    param(
+        [string]$Text,
+        [int]$MaxLength,
+        [string]$Label
+    )
+
+    if ($null -eq $Text) {
+        return ""
+    }
+
+    if ($Text.Length -le $MaxLength) {
+        return $Text
+    }
+
+    return "... $Label truncated by Agent Bridge ..." + [Environment]::NewLine + $Text.Substring($Text.Length - $MaxLength)
+}
+
+function Get-UntrackedEvidence {
+    param(
+        [string]$Worktree,
+        [int]$MaxTotalLength = 10000,
+        [int]$MaxFileBytes = 20000
+    )
+
+    $files = @(& git -C $Worktree ls-files --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0 -or $files.Count -eq 0) {
+        return ""
+    }
+
+    $builder = New-Object System.Text.StringBuilder
+
+    foreach ($relative in $files) {
+        if ([string]::IsNullOrWhiteSpace([string]$relative)) {
+            continue
+        }
+
+        $fullPath = Join-Path $Worktree $relative
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            continue
+        }
+
+        $info = Get-Item -LiteralPath $fullPath
+        [void]$builder.AppendLine("UNTRACKED: $relative")
+
+        if ($info.Length -gt $MaxFileBytes) {
+            [void]$builder.AppendLine("[skipped: file larger than $MaxFileBytes bytes]")
+            [void]$builder.AppendLine()
+            continue
+        }
+
+        $bytes = [System.IO.File]::ReadAllBytes($fullPath)
+        if ($bytes -contains 0) {
+            [void]$builder.AppendLine("[skipped: binary file]")
+            [void]$builder.AppendLine()
+            continue
+        }
+
+        $text = [System.Text.Encoding]::UTF8.GetString($bytes)
+        [void]$builder.AppendLine($text)
+        [void]$builder.AppendLine()
+
+        if ($builder.Length -ge $MaxTotalLength) {
+            [void]$builder.AppendLine("[untracked evidence truncated]")
+            break
+        }
+    }
+
+    return Limit-Text $builder.ToString() $MaxTotalLength "untracked evidence"
+}
+
 function Post-IssueComment {
     param($Config, [string]$Body)
 
@@ -185,13 +311,18 @@ function New-ReportBody {
         [string]$GitStatus,
         [string]$DiffStat,
         [string]$DiffCheck,
+        [string]$DiffPatch,
+        [string]$StagedDiffPatch,
+        [string]$UntrackedEvidence,
+        [string]$HeadBefore,
+        [string]$HeadAfter,
         [bool]$TimedOut
     )
 
-    $safeOutput = $OpenCodeOutput
-    if ($safeOutput.Length -gt 30000) {
-        $safeOutput = "... output truncated by Agent Bridge ..." + [Environment]::NewLine + $safeOutput.Substring($safeOutput.Length - 30000)
-    }
+    $safeOutput = Limit-Text (Remove-Ansi $OpenCodeOutput) 18000 "OpenCode output"
+    $safeDiff = Limit-Text $DiffPatch 22000 "working-tree diff"
+    $safeStagedDiff = Limit-Text $StagedDiffPatch 7000 "staged diff"
+    $safeUntracked = Limit-Text $UntrackedEvidence 9000 "untracked evidence"
 
     $metadata = [ordered]@{
         task_id = [string]$Task.task_id
@@ -199,6 +330,8 @@ function New-ReportBody {
         risk = [string]$Task.risk
         branch = [string]$Task.branch
         timed_out = $TimedOut
+        head_before = $HeadBefore
+        head_after = $HeadAfter
         completed_at = (Get-Date).ToUniversalTime().ToString("o")
     } | ConvertTo-Json -Compress
 
@@ -225,6 +358,21 @@ $DiffStat
 ### git diff --check
 ~~~text
 $DiffCheck
+~~~
+
+### git diff
+~~~diff
+$safeDiff
+~~~
+
+### git diff --cached
+~~~diff
+$safeStagedDiff
+~~~
+
+### untracked file evidence
+~~~text
+$safeUntracked
 ~~~
 "@
 }
@@ -256,10 +404,20 @@ At the end return the required structured report.
 
     Write-BridgeLog "Running task '$($Task.task_id)' in $worktree"
 
+    $headBefore = (& git -C $worktree rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to read HEAD before task execution."
+    }
+
     $job = Start-Job -ScriptBlock {
         param($WorkingDirectory, $Cli, $Agent, $Model, $Prompt)
 
         Set-Location $WorkingDirectory
+
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [Console]::OutputEncoding = $utf8NoBom
+        $OutputEncoding = $utf8NoBom
+        $env:NO_COLOR = "1"
 
         if ([string]::IsNullOrWhiteSpace($Model)) {
             & $Cli run --agent $Agent $Prompt 2>&1
@@ -282,15 +440,27 @@ At the end return the required structured report.
     $output = @(Receive-Job -Job $job -ErrorAction SilentlyContinue) | Out-String
     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
 
+    $headAfter = (& git -C $worktree rev-parse HEAD).Trim()
     $gitStatus = @(& git -C $worktree status --short 2>&1) | Out-String
     $diffStat = @(& git -C $worktree diff --stat 2>&1) | Out-String
     $diffCheck = @(& git -C $worktree diff --check 2>&1) | Out-String
+    $diffPatch = @(& git -C $worktree diff --no-ext-diff --no-color 2>&1) | Out-String
+    $stagedDiffPatch = @(& git -C $worktree diff --cached --no-ext-diff --no-color 2>&1) | Out-String
+    $untrackedEvidence = Get-UntrackedEvidence $worktree
 
     $status = "REPORT"
 
     if ($timedOut) {
         $status = "BLOCKED"
         $output += [Environment]::NewLine + "Agent Bridge timeout after $($Config.maxTaskMinutes) minutes."
+    }
+    elseif ($headBefore -ne $headAfter) {
+        $status = "NEEDS_REVIEW"
+        $output += [Environment]::NewLine + "SAFETY: HEAD changed during task execution."
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($stagedDiffPatch)) {
+        $status = "NEEDS_REVIEW"
+        $output += [Environment]::NewLine + "SAFETY: staged changes detected."
     }
     elseif ($output -match '(?im)^STATUS:\s*NEEDS_APPROVAL\b' -or
             $output -match '(?im)^RISK:\s*RED\b') {
@@ -307,6 +477,11 @@ At the end return the required structured report.
         GitStatus = $gitStatus.Trim()
         DiffStat = $diffStat.Trim()
         DiffCheck = $diffCheck.Trim()
+        DiffPatch = $diffPatch.Trim()
+        StagedDiffPatch = $stagedDiffPatch.Trim()
+        UntrackedEvidence = $untrackedEvidence.Trim()
+        HeadBefore = $headBefore
+        HeadAfter = $headAfter
         TimedOut = $timedOut
     }
 }
@@ -368,18 +543,18 @@ $message
 "@
             Post-IssueComment $config $blockedBody
             Mark-Processed $state ([string]$task.task_id)
-            continue
+            break
         }
 
         $result = Invoke-OpenCodeTask $task $config
-        $reportBody = New-ReportBody $task $result.Status $result.Output $result.GitStatus $result.DiffStat $result.DiffCheck $result.TimedOut
+        $reportBody = New-ReportBody $task $result.Status $result.Output $result.GitStatus $result.DiffStat $result.DiffCheck $result.DiffPatch $result.StagedDiffPatch $result.UntrackedEvidence $result.HeadBefore $result.HeadAfter $result.TimedOut
 
         Post-IssueComment $config $reportBody
         Mark-Processed $state ([string]$task.task_id)
 
         Write-BridgeLog "Task '$($task.task_id)' finished with status $($result.Status)."
 
-        if ($Once) {
+        if ($Once -or $result.Status -ne "REPORT") {
             break
         }
     }
