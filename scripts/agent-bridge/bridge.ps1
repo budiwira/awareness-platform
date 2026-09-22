@@ -164,7 +164,9 @@ function Post-IssueComment {
 
     $temp = [IO.Path]::GetTempFileName()
     try {
-        @{ body = $Body } | ConvertTo-Json -Depth 5 | Set-Content -Encoding UTF8 -Path $temp
+        $json = @{ body = $Body } | ConvertTo-Json -Depth 5
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($temp, $json, $utf8NoBom)
         & gh api --method POST "repos/$($Config.repo)/issues/$($Config.issue)/comments" --input $temp *> $null
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to post bridge report to GitHub."
