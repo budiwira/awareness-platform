@@ -560,10 +560,43 @@ At the end return the required structured report.
             foreach ($line in ($delta -split "\r?\n")) {
                 $cleanLine = (Remove-Ansi ([string]$line)).Trim()
 
-                # A new worker shell/tool attempt begins here. Repeated diagnostics emitted by
-                # one long-running command (for example several Playwright test failures)
-                # must count only once for that command.
-                if ($cleanLine -match '^\$\s' -or $cleanLine -match '^(?:✗|×)\s.+\sfailed        }
+                # Start a new worker attempt when OpenCode prints a shell command or
+                # a tool-call failure marker. Repeated diagnostics emitted inside one
+                # long-running command count only once for that command.
+                if ($cleanLine -match '^\$\s' -or $cleanLine -match '^(?:✗|×)\s.+\sfailed$') {
+                    $currentCommandId++
+                    $seenFailuresInCurrentCommand = @{}
+                }
+
+                $signature = Get-WatchdogFailureSignature $line
+                if ($null -eq $signature) {
+                    continue
+                }
+
+                if ($currentCommandId -gt 0) {
+                    if ($seenFailuresInCurrentCommand.ContainsKey($signature)) {
+                        continue
+                    }
+                    $seenFailuresInCurrentCommand[$signature] = $true
+                }
+                else {
+                    if ($seenFailuresWithoutCommandInDelta.ContainsKey($signature)) {
+                        continue
+                    }
+                    $seenFailuresWithoutCommandInDelta[$signature] = $true
+                }
+
+                if (-not $failureCounts.ContainsKey($signature)) {
+                    $failureCounts[$signature] = 0
+                }
+
+                $failureCounts[$signature] = [int]$failureCounts[$signature] + 1
+                if ([int]$failureCounts[$signature] -ge $repeatThreshold) {
+                    $watchdogReason = "Repeated failure signature across $repeatThreshold worker attempts: $signature"
+                    break
+                }
+            }
+        }
 
         if (-not [string]::IsNullOrWhiteSpace($watchdogReason)) {
             break
@@ -584,7 +617,6 @@ At the end return the required structured report.
             break
         }
     }
-
     if (-not [string]::IsNullOrWhiteSpace($watchdogReason) -and $job.State -eq "Running") {
         Write-BridgeLog "Watchdog stopping task '$($Task.task_id)': $watchdogReason"
         Stop-Job -Job $job -ErrorAction SilentlyContinue
