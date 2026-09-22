@@ -58,6 +58,7 @@ Rules:
 - Inspect existing implementation before editing.
 - Run only the focused validation requested by the task.
 - Do not claim completion if requested tests did not run successfully.
+- Use plain ASCII punctuation in the final report so Windows PowerShell/GitHub transport remains stable.
 
 Required final report:
 
