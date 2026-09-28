@@ -49,10 +49,10 @@ Kolom Hasil: **PASS / FAIL**. Jika FAIL, catat bug di tabel Bug Log.
 | C1 | Buat user baru | Muncul di daftar Users | |
 | C2 | Import CSV user | User terbuat; formula CSV dinetralkan | |
 | C3 | Tugaskan modul ke user | User menerima notifikasi (bell) | |
-| C4 | TTX: buat playbook & runbook | Muncul di halaman TTX | |
-| C5 | TTX: buat exercise + tim + anggota | Stepper & kartu tim tampil | |
-| C6 | TTX: advance fase + tambah inject | Fase berpindah; inject bertambah | |
-| C7 | TTX: evaluasi (skor + AAR) | Exercise completed; skor tersimpan | |
+| C4 | TTX: pilih skenario dan Playbook untuk sesi | Sesi baru membuka Prepare dengan snapshot konteks | |
+| C5 | TTX: siapkan tim, peserta, Primary/Support | Readiness menunjukkan cakupan fase relevan; hanya pembuat sesi dapat mengubah draft | |
+| C6 | TTX: tandai Ready, mulai, lalu lanjutkan inject | Facilitator Console menampilkan status tim; inject berikutnya dirilis, respons sebelumnya terkunci | |
+| C7 | TTX: isi Debrief dan AAR lalu finalisasi | Capability relevan memiliki rating, Evidence, Finding; Result baca-saja dan mutasi ditolak | |
 | C8 | Reports + Download CSV | File terbuka benar di Excel (UTF-8) | |
 | C9 | Billing: ganti plan | Plan aktif berubah | |
 | C10 | Billing: downgrade di bawah jumlah user | Ditolak dengan pesan error | |
@@ -67,6 +67,8 @@ Kolom Hasil: **PASS / FAIL**. Jika FAIL, catat bug di tabel Bug Log.
 | D5 | CTF flag benar | Solved + poin bertambah | |
 | D6 | My Score | Ring + breakdown 5 komponen tampil | |
 | D7 | Notifikasi: tandai semua dibaca | Bell jadi 0 | |
+| D8 | Tabletop: jawab inject aktif dan perbarui respons tim | Empat field V2 tersimpan; revisi naik; inject mendatang dan respons tim lain tidak terlihat | |
+| D9 | Tabletop: buka Result selesai | Hanya ringkasan peserta dan respons tim sendiri tampil | |
 
 ## E. Keamanan & Multi-Tenancy
 | ID | Skenario | Ekspektasi | Hasil |
