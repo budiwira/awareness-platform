@@ -5,7 +5,9 @@ use App\Models\TtxExercise;
 use App\Models\TtxInject;
 use App\Models\TtxSession;
 use App\Models\TtxSessionInject;
+use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
+use App\Models\TtxSessionTeam;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -46,8 +48,19 @@ function createTtxResponseFixture(): array
     ]);
 
     $submitter = User::factory()->create(['tenant_id' => $tenant->id]);
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $submitter->id,
+        'team_id' => $team->id,
+    ]);
 
-    return [$tenant, $creator, $exercise, $session, $inject, $sessionInject, $submitter];
+    return [$tenant, $creator, $exercise, $session, $inject, $sessionInject, $submitter, $team];
 }
 
 function ttx_response_rls_pdo(): PDO
@@ -91,13 +104,14 @@ test('a valid same-tenant response can be persisted', function () {
         ->and($response->fresh()->sessionInject->id)->toBe($sessionInject->id);
 });
 
-test('only one response can exist for a session inject', function () {
-    [, , , , , $sessionInject, $submitter] = createTtxResponseFixture();
+test('only one response can exist for a session inject and team', function () {
+    [, , , , , $sessionInject, $submitter, $team] = createTtxResponseFixture();
 
     TtxSessionResponse::forceCreate([
         'tenant_id' => $sessionInject->tenant_id,
         'session_id' => $sessionInject->session_id,
         'session_inject_id' => $sessionInject->id,
+        'session_team_id' => $team->id,
         'decision' => 'First response',
         'revision' => 1,
         'submitted_by' => $submitter->id,
@@ -108,6 +122,7 @@ test('only one response can exist for a session inject', function () {
         'tenant_id' => $sessionInject->tenant_id,
         'session_id' => $sessionInject->session_id,
         'session_inject_id' => $sessionInject->id,
+        'session_team_id' => $team->id,
         'decision' => 'Second response',
         'revision' => 1,
         'submitted_by' => $submitter->id,
@@ -387,6 +402,7 @@ test('PostgreSQL RLS isolates response rows by tenant', function () {
 
     try {
         $pdo->exec("SELECT set_config('app.tenant_id', '{$tenantA->id}', false)");
+        $pdo->exec("SELECT set_config('app.role', 'tenant_admin', false)");
 
         $visible = array_map('intval', $pdo->query('SELECT id FROM ttx_session_responses ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
         expect($visible)->toContain($responseA->id)->not->toContain($responseB->id);
@@ -408,6 +424,7 @@ test('sensitive ownership and integrity fields cannot be overwritten through mas
     expect($response->getFillable())->not->toContain('tenant_id')
         ->and($response->getFillable())->not->toContain('session_id')
         ->and($response->getFillable())->not->toContain('session_inject_id')
+        ->and($response->getFillable())->not->toContain('session_team_id')
         ->and($response->getFillable())->not->toContain('submitted_by')
         ->and($response->getFillable())->not->toContain('submitted_at')
         ->and($response->getFillable())->not->toContain('last_edited_by')

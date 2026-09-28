@@ -56,9 +56,11 @@ test('assigned participant discovers own session with participant workspace acti
             ->where('sessions.0', [
                 'id' => $session->id,
                 'title' => 'Sesi Milik Saya',
+                'scenario' => 'Exercise Sesi Milik Saya',
                 'status' => 'in_progress',
-                'role' => 'security',
-                'action_label' => 'Buka Workspace',
+                'team_name' => null,
+                'facilitator_name' => $admin->name,
+                'action_label' => 'Lanjutkan Exercise',
                 'action_url' => route('tenant.ttx.sessions.workspace', $session),
             ]));
 });
@@ -83,7 +85,7 @@ test('discovery excludes unassigned and cross-tenant sessions', function () {
             ->has('sessions', 0));
 });
 
-test('facilitator discovery points to console and never participant workspace', function () {
+test('legacy learner facilitator assignment does not grant facilitator console access', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
@@ -95,11 +97,11 @@ test('facilitator discovery points to console and never participant workspace', 
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->has('sessions', 1)
-            ->where('sessions.0.action_label', 'Buka Konsol Fasilitator')
-            ->where('sessions.0.action_url', route('tenant.ttx.sessions.console', $session)));
+            ->where('sessions.0.action_label', 'Buka Briefing')
+            ->where('sessions.0.action_url', route('tenant.ttx.sessions.workspace', $session)));
 
     expect($response->getContent())
-        ->not->toContain(route('tenant.ttx.sessions.workspace', $session));
+        ->not->toContain(route('tenant.ttx.sessions.console', $session));
 });
 
 test('learner cannot enumerate another users assignments or sensitive runtime data', function () {
@@ -118,7 +120,7 @@ test('learner cannot enumerate another users assignments or sensitive runtime da
         ->assertInertia(fn (Assert $page) => $page
             ->has('sessions', 1)
             ->where('sessions.0.title', 'Sesi Pengguna Aktif')
-            ->where('sessions.0.action_label', 'Lihat Workspace')
+            ->where('sessions.0.action_label', 'Exercise Menunggu Review')
             ->missing('sessions.0.tenant_id')
             ->missing('sessions.0.injects')
             ->missing('sessions.0.responses')

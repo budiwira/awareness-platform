@@ -11,10 +11,12 @@ use Illuminate\Support\Carbon;
  * @property string $tenant_id
  * @property int $session_id
  * @property int $session_inject_id
+ * @property int|null $session_team_id
  * @property string $decision
  * @property string|null $rationale
  * @property string|null $owner
  * @property string|null $immediate_actions
+ * @property string|null $coordination_handoff
  * @property string|null $escalation
  * @property string|null $unknowns
  * @property string|null $notes
@@ -27,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read TtxSession $session
  * @property-read TtxSessionInject $sessionInject
+ * @property-read TtxSessionTeam|null $sessionTeam
  * @property-read User $submittedBy
  * @property-read User|null $lastEditedBy
  */
@@ -37,6 +40,7 @@ class TtxSessionResponse extends Model
         'rationale',
         'owner',
         'immediate_actions',
+        'coordination_handoff',
         'escalation',
         'unknowns',
         'notes',
@@ -56,6 +60,11 @@ class TtxSessionResponse extends Model
     public function sessionInject(): BelongsTo
     {
         return $this->belongsTo(TtxSessionInject::class, 'session_inject_id');
+    }
+
+    public function sessionTeam(): BelongsTo
+    {
+        return $this->belongsTo(TtxSessionTeam::class, 'session_team_id');
     }
 
     public function submittedBy(): BelongsTo

@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $dimension
  * @property string $rating
  * @property string|null $evidence
+ * @property string|null $finding
  * @property int $updated_by
  */
 class TtxSessionEvaluation extends Model
 {
-    protected $fillable = ['rating', 'evidence'];
+    protected $fillable = ['rating', 'evidence', 'finding'];
 
     public function session(): BelongsTo
     {

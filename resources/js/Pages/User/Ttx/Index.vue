@@ -1,60 +1,86 @@
 <script setup>
-import { Head, Link } from '@inertiajs/vue3';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import BaseBadge from '@/Components/BaseBadge.vue';
-import EmptyState from '@/Components/EmptyState.vue';
+import { Head, Link } from "@inertiajs/vue3";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import BaseBadge from "@/Components/BaseBadge.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 
 defineProps({
     sessions: { type: Array, required: true },
 });
 
 const statusConfig = {
-    draft: { label: 'Draft', variant: 'neutral' },
-    ready: { label: 'Siap', variant: 'info' },
-    in_progress: { label: 'Berlangsung', variant: 'warning' },
-    debrief: { label: 'Debrief', variant: 'brand' },
-    completed: { label: 'Selesai', variant: 'success' },
-};
-
-const roleLabels = {
-    facilitator: 'Fasilitator',
-    security: 'Keamanan',
-    it_operations: 'Operasional TI',
-    people_hr: 'SDM',
-    communications: 'Komunikasi',
-    management: 'Manajemen',
+    draft: { label: "Draft", variant: "neutral" },
+    ready: { label: "Siap", variant: "info" },
+    in_progress: { label: "Berlangsung", variant: "warning" },
+    debrief: { label: "Debrief", variant: "brand" },
+    completed: { label: "Selesai", variant: "success" },
 };
 </script>
 
 <template>
     <Head title="Tabletop" />
 
-    <AppLayout title="Tabletop Saya">
+    <AppLayout title="Exercise Room">
         <div class="tabletop-page fade-in">
             <header class="tabletop-hero">
                 <p class="tabletop-eyebrow">Tabletop Exercise</p>
-                <h1 class="font-display text-2xl font-bold t-ink sm:text-3xl">Sesi Tabletop Saya</h1>
+                <h1 class="font-display text-2xl font-bold t-ink sm:text-3xl">
+                    Exercise Room
+                </h1>
                 <p class="tabletop-description">
-                    Buka sesi yang ditugaskan kepada Anda untuk mengikuti exercise atau meninjau timeline yang telah dirilis.
+                    Buka sesi yang ditugaskan kepada Anda untuk mengikuti
+                    exercise atau meninjau timeline yang telah dirilis.
                 </p>
             </header>
 
             <div v-if="sessions.length" class="session-list" role="list">
-                <article v-for="session in sessions" :key="session.id" class="session-card" role="listitem">
+                <article
+                    v-for="session in sessions"
+                    :key="session.id"
+                    class="session-card"
+                    role="listitem"
+                >
                     <div class="session-content">
                         <div class="session-heading">
-                            <h2 class="font-display text-lg font-semibold t-ink">{{ session.title }}</h2>
-                            <BaseBadge :variant="statusConfig[session.status]?.variant ?? 'neutral'">
-                                {{ statusConfig[session.status]?.label ?? session.status }}
+                            <h2
+                                class="font-display text-lg font-semibold t-ink"
+                            >
+                                {{ session.title }}
+                            </h2>
+                            <BaseBadge
+                                :variant="
+                                    statusConfig[session.status]?.variant ??
+                                    'neutral'
+                                "
+                            >
+                                {{
+                                    statusConfig[session.status]?.label ??
+                                    session.status
+                                }}
                             </BaseBadge>
                         </div>
-                        <p class="session-role">Peran sesi: {{ roleLabels[session.role] ?? session.role }}</p>
+                        <p class="session-role">{{ session.scenario }}</p>
+                        <p class="session-role">
+                            Tim: {{ session.team_name ?? "Belum ditetapkan" }} ·
+                            Fasilitator: {{ session.facilitator_name }}
+                        </p>
                     </div>
 
                     <Link :href="session.action_url" class="session-action">
                         <span>{{ session.action_label }}</span>
-                        <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6l6 6-6 6" />
+                        <svg
+                            class="h-4 w-4"
+                            aria-hidden="true"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M5 12h14m-6-6l6 6-6 6"
+                            />
                         </svg>
                     </Link>
                 </article>
@@ -63,7 +89,7 @@ const roleLabels = {
             <EmptyState
                 v-else
                 title="Belum ada sesi Tabletop"
-                message="Sesi akan muncul di sini setelah Anda ditambahkan sebagai peserta atau fasilitator."
+                message="Exercise akan muncul setelah Anda ditugaskan pada tim dan session siap."
             />
         </div>
     </AppLayout>
@@ -79,9 +105,8 @@ const roleLabels = {
 .tabletop-hero {
     padding: var(--sp-6);
     border: 1px solid var(--line);
-    border-radius: var(--r-2xl);
+    border-radius: var(--r-lg);
     background: var(--surface);
-    box-shadow: var(--shadow-sm);
 }
 
 .tabletop-eyebrow {
@@ -149,12 +174,14 @@ const roleLabels = {
     color: var(--white);
     font-size: 0.875rem;
     font-weight: 600;
-    transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease), box-shadow var(--dur) var(--ease);
+    transition:
+        background var(--dur) var(--ease),
+        transform var(--dur-fast) var(--ease),
+        box-shadow var(--dur) var(--ease);
 }
 
 .session-action:hover {
     background: var(--brand-strong);
-    box-shadow: var(--glow);
 }
 
 .session-action:focus-visible {

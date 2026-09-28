@@ -11,6 +11,7 @@ use App\Http\Controllers\Platform\PackageController as PlatformPackageController
 use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\Platform\TrainingModuleController as PlatformModuleController;
+use App\Http\Controllers\Platform\TtxScenarioController as PlatformTtxScenarioController;
 use App\Http\Controllers\Platform\UserAccessController as PlatformUserAccessController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
 use App\Http\Controllers\PlatformReportController;
@@ -62,6 +63,8 @@ Route::middleware('auth')->group(function () {
     // Assigned non-facilitator participant workspace (Inertia page, not JSON).
     Route::get('/ttx/sessions/{session}/workspace', [TenantTtxSessionController::class, 'workspace'])->name('tenant.ttx.sessions.workspace');
     Route::get('/ttx/sessions/{session}/debrief', [TenantTtxSessionController::class, 'debrief'])->name('tenant.ttx.sessions.debrief');
+    Route::get('/ttx/sessions/{session}/result', [TenantTtxSessionController::class, 'result'])->name('tenant.ttx.sessions.result');
+    Route::get('/ttx/sessions/{session}/participant-result', [TenantTtxSessionController::class, 'participantResult'])->name('tenant.ttx.sessions.participant-result');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -83,6 +86,7 @@ Route::middleware('auth')->group(function () {
         ->name('platform.')
         ->group(function () {
             Route::get('/dashboard', [PlatformReportController::class, 'dashboard'])->name('dashboard');
+            Route::get('/ttx/scenarios', [PlatformTtxScenarioController::class, 'index'])->name('ttx.scenarios.index');
 
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
@@ -294,6 +298,12 @@ Route::middleware('auth')->group(function () {
     Route::prefix('tenant')->name('tenant.')->group(function () {
         Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
         Route::delete('/ttx/sessions/{session}/participants/{participant}', [TenantTtxSessionController::class, 'remove'])->whereNumber('participant')->name('ttx.sessions.participants.destroy');
+        Route::post('/ttx/sessions/{session}/teams', [TenantTtxSessionController::class, 'storeTeam'])->name('ttx.sessions.teams.store');
+        Route::delete('/ttx/sessions/{session}/teams/{team}', [TenantTtxSessionController::class, 'removeTeam'])->whereNumber('team')->name('ttx.sessions.teams.destroy');
+        Route::put('/ttx/sessions/{session}/teams/{team}/responsibilities', [TenantTtxSessionController::class, 'updateTeamResponsibilities'])->whereNumber('team')->name('ttx.sessions.teams.responsibilities.update');
+        Route::post('/ttx/sessions/{session}/responsibility-assignments', [TenantTtxSessionController::class, 'storeResponsibilityAssignment'])->name('ttx.sessions.responsibility-assignments.store');
+        Route::put('/ttx/sessions/{session}/responsibility-assignments/{assignment}', [TenantTtxSessionController::class, 'updateResponsibilityAssignment'])->whereNumber('assignment')->name('ttx.sessions.responsibility-assignments.update');
+        Route::delete('/ttx/sessions/{session}/responsibility-assignments/{assignment}', [TenantTtxSessionController::class, 'removeResponsibilityAssignment'])->whereNumber('assignment')->name('ttx.sessions.responsibility-assignments.destroy');
         Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
         Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
         Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');

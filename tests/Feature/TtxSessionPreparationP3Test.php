@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\TtxSessionInjectStatus;
-use App\Enums\TtxSessionRole;
 use App\Enums\TtxSessionStatus;
 use App\Models\AuditLog;
 use App\Models\Tenant;
@@ -15,13 +14,14 @@ function preparationP3Fixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = $admin;
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
     $exercise = TtxExercise::create([
         'tenant_id' => $tenant->id,
         'title' => 'Latihan persiapan P3',
         'scenario' => 'Skenario rahasia P3',
     ]);
+    $exercise = attachTtxTestPlaybook($exercise);
     TtxInject::create([
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
@@ -31,8 +31,9 @@ function preparationP3Fixture(): array
     ]);
     $service = app(TtxSessionService::class);
     $session = $service->create($admin, $exercise, 'Sesi persiapan P3');
-    $service->assignParticipant($admin, $session, $facilitator, TtxSessionRole::Facilitator);
-    $service->assignParticipant($admin, $session, $participant, TtxSessionRole::Security);
+    $team = $service->createTeam($admin, $session, 'Security / SOC');
+    $service->updateTeamResponsibilities($admin, $session, $team->id, 'Validasi alert dan koordinasikan respons insiden.');
+    $service->assignParticipant($admin, $session, $participant, $team);
 
     return [$tenant, $admin, $facilitator, $participant, $session, $service];
 }
@@ -51,7 +52,7 @@ test('p3 valid draft session becomes ready and returns authoritative preparation
         ->assertJsonPath('session.status', 'ready')
         ->assertJsonPath('readiness.can_mark_ready', false)
         ->assertJsonPath('permissions.can_mark_ready', false)
-        ->assertJsonPath('permissions.can_open_console', false)
+        ->assertJsonPath('permissions.can_open_console', true)
         ->assertJsonMissingPath('exercise_snapshot')
         ->assertJsonMissingPath('injects')
         ->assertJsonMissingPath('responses');
@@ -68,8 +69,8 @@ test('p3 mark ready blocks each missing readiness prerequisite without partial m
 
     match ($invalid) {
         'snapshot' => $session->update(['exercise_snapshot' => []]),
-        'facilitator' => $session->participants()->where('session_role', TtxSessionRole::Facilitator)->delete(),
-        'participant' => $session->participants()->where('session_role', '!=', TtxSessionRole::Facilitator)->delete(),
+        'teams' => tap($session->participants()->delete(), fn () => $session->teams()->delete()),
+        'participant' => $session->participants()->delete(),
         'injects' => $session->injects()->delete(),
         'inject_state' => $session->injects()->update(['status' => TtxSessionInjectStatus::Active]),
     };
@@ -80,7 +81,7 @@ test('p3 mark ready blocks each missing readiness prerequisite without partial m
 
     expect($session->fresh()->status)->toBe(TtxSessionStatus::Draft)
         ->and(AuditLog::where('action', 'ttx.session_ready')->where('subject_id', (string) $session->id)->exists())->toBeFalse();
-})->with(['snapshot', 'facilitator', 'participant', 'injects', 'inject_state']);
+})->with(['snapshot', 'teams', 'participant', 'injects', 'inject_state']);
 
 test('p3 unauthorized actors cannot mark a session ready', function (string $actorType) {
     [$tenant, $admin, , $participant, $session] = preparationP3Fixture();
@@ -127,8 +128,9 @@ test('p3 preparation read model exposes authoritative readiness and permissions'
     ])->and($payload['permissions'])->toMatchArray([
         'can_manage_roster' => true,
         'can_mark_ready' => true,
-        'can_open_console' => false,
-    ])->and(json_encode($payload))->not->toContain('Skenario rahasia P3', 'Inject rahasia P3', 'Konten masa depan P3');
+        'can_open_console' => true,
+    ])->and($payload['exercise_context']['scenario'])->toBe('Skenario rahasia P3')
+        ->and(json_encode($payload))->not->toContain('Inject rahasia P3', 'Konten masa depan P3');
 
     $session->injects()->update(['status' => TtxSessionInjectStatus::Locked]);
     $invalid = $service->preparationReadModel($admin, $session->fresh());
@@ -136,12 +138,8 @@ test('p3 preparation read model exposes authoritative readiness and permissions'
         ->and($invalid['readiness']['can_mark_ready'])->toBeFalse()
         ->and($invalid['permissions']['can_mark_ready'])->toBeFalse();
 
-    $facilitatorAdmin = User::factory()->tenantAdmin()->create(['tenant_id' => $session->tenant_id]);
-    $session->participants()->where('user_id', $facilitator->id)->update(['user_id' => $facilitatorAdmin->id]);
-    $facilitatorPayload = $service->preparationReadModel($facilitatorAdmin, $session->fresh());
-    expect($facilitatorPayload['permissions']['can_open_console'])
-        ->toBe(Gate::forUser($facilitatorAdmin)->allows('facilitate', $session->fresh()))
-        ->toBeTrue();
+    $otherAdmin = User::factory()->tenantAdmin()->create(['tenant_id' => $session->tenant_id]);
+    expect(Gate::forUser($otherAdmin)->allows('facilitate', $session->fresh()))->toBeFalse();
 });
 
 test('p3 readiness flags identify the authoritative missing prerequisite', function (string $invalid, string $field) {
@@ -149,8 +147,8 @@ test('p3 readiness flags identify the authoritative missing prerequisite', funct
 
     match ($invalid) {
         'snapshot' => $session->update(['exercise_snapshot' => []]),
-        'facilitator' => $session->participants()->where('session_role', TtxSessionRole::Facilitator)->delete(),
-        'participant' => $session->participants()->where('session_role', '!=', TtxSessionRole::Facilitator)->delete(),
+        'teams' => tap($session->participants()->delete(), fn () => $session->teams()->delete()),
+        'participant' => $session->participants()->delete(),
         'injects' => $session->injects()->delete(),
         'inject_state' => $session->injects()->update(['status' => TtxSessionInjectStatus::Active]),
     };
@@ -162,7 +160,7 @@ test('p3 readiness flags identify the authoritative missing prerequisite', funct
         ->and($payload['permissions']['can_mark_ready'])->toBeFalse();
 })->with([
     ['snapshot', 'has_exercise_snapshot'],
-    ['facilitator', 'has_facilitator'],
+    ['teams', 'has_teams'],
     ['participant', 'has_non_facilitator_participant'],
     ['injects', 'has_injects'],
     ['inject_state', 'all_injects_pending'],

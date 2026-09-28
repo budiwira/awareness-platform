@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property string $scenario
  * @property string $objectives
  * @property string $scope
+ * @property array<int, string>|null $capability_codes
+ * @property int $injects_count
  * @property int|null $playbook_id
  * @property int|null $runbook_id
  * @property string $phase
@@ -33,7 +35,11 @@ class TtxExercise extends Model
 {
     protected $fillable = ['tenant_id', 'title', 'scenario', 'objectives', 'scope', 'playbook_id', 'runbook_id', 'phase', 'scheduled_at', 'aar_notes', 'corrective_actions'];
 
-    protected $casts = ['scheduled_at' => 'datetime', 'corrective_actions' => 'array'];
+    protected $casts = [
+        'scheduled_at' => 'datetime',
+        'corrective_actions' => 'array',
+        'capability_codes' => 'array',
+    ];
 
     public function playbook(): BelongsTo
     {

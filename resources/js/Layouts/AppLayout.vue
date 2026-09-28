@@ -122,6 +122,7 @@ const menus = computed(() => {
                 { label: 'Modul Training', route: 'platform.modules.index' },
                 { label: 'Case Studies', route: 'platform.cases.index' },
                 { label: 'CTF', route: 'platform.ctf.index' },
+                { label: 'Tabletop Scenarios', route: 'platform.ttx.scenarios.index' },
             ]},
         ];
     }
@@ -135,7 +136,7 @@ const menus = computed(() => {
             ]},
             { section: 'Simulasi', items: [
                 { label: 'Phishing', route: 'tenant.phishing.index', locked: !entitlements?.features?.includes('phishing') },
-                { label: 'Tabletop', route: 'tenant.ttx.exercises.index', locked: !entitlements?.features?.includes('ttx') },
+                { label: 'Tabletop — Sessions', route: 'tenant.ttx.sessions.index', locked: !entitlements?.features?.includes('ttx') },
             ]},
             { section: 'Analitik', items: [
                 { label: 'Laporan', route: 'tenant.reports' },
@@ -152,7 +153,7 @@ const menus = computed(() => {
             { label: 'Training', route: 'user.training.index' },
             { label: 'Case Studies', route: 'user.cases.index', locked: !entitlements?.features?.includes('case_studies') },
             { label: 'CTF', route: 'user.ctf.index', locked: !entitlements?.features?.includes('ctf') },
-            { label: 'Tabletop', route: 'user.ttx.index', locked: !entitlements?.features?.includes('ttx') },
+            { label: 'Tabletop — My Exercises', route: 'user.ttx.index', locked: !entitlements?.features?.includes('ttx') },
         ]},
         { section: 'Progress', items: [
             { label: 'Skor Saya', route: 'user.score' },

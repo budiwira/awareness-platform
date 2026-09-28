@@ -16,7 +16,7 @@ function consoleRouteFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $exercise = TtxExercise::create([
@@ -37,7 +37,7 @@ function consoleRouteFixture(): array
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
         'title' => 'Console test session',
-        'created_by' => $admin->id,
+        'created_by' => $facilitator->id,
         'status' => TtxSessionStatus::InProgress,
         'started_at' => now(),
         'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
@@ -78,6 +78,21 @@ test('assigned active facilitator can access console route', function () {
     $this->actingAs($facilitator)
         ->get(route('tenant.ttx.sessions.console', $session))
         ->assertOk();
+});
+
+test('facilitator console renders official response read only', function () {
+    $source = file_get_contents(resource_path('js/Pages/Tenant/Ttx/Sessions/FacilitatorConsole.vue'));
+
+    expect($source)
+        ->toContain('Respons Tim')
+        ->toMatch('/tim sudah\s+merespons/')
+        ->toContain('Belum merespons')
+        ->toMatch('/Jika dilanjutkan, injeksi ini akan\s+dikunci\./')
+        ->toContain('Koordinasi / Handoff', 'Responsibility Ownership', 'Objectives')
+        ->not->toContain('<ResponseEditor')
+        ->not->toContain('Simpan Respons')
+        ->not->toContain('tenant.ttx.sessions.responses.store')
+        ->not->toContain('tenant.ttx.sessions.responses.update');
 });
 
 // ─── NEGATIVE: Role-based ─────────────────────────────────

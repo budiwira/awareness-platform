@@ -9,6 +9,7 @@ use App\Models\TtxInject;
 use App\Models\TtxSession;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
+use App\Models\TtxSessionTeam;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -217,6 +218,8 @@ test('new execution tables isolate tenants through PostgreSQL RLS', function () 
         'created_by' => $creatorB->id,
         'exercise_snapshot' => ['title' => 'RLS exercise B'],
     ]);
+    $teamA = TtxSessionTeam::on('pgsql_owner')->forceCreate(['tenant_id' => $tenantA->id, 'session_id' => $sessionA->id, 'name' => 'SOC A']);
+    $teamB = TtxSessionTeam::on('pgsql_owner')->forceCreate(['tenant_id' => $tenantB->id, 'session_id' => $sessionB->id, 'name' => 'SOC B']);
     $pdo = ttx_rls_pdo();
 
     try {
@@ -224,9 +227,12 @@ test('new execution tables isolate tenants through PostgreSQL RLS', function () 
 
         $visible = array_map('intval', $pdo->query('SELECT id FROM ttx_sessions ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
         expect($visible)->toContain($sessionA->id)->not->toContain($sessionB->id);
+        $visibleTeams = array_map('intval', $pdo->query('SELECT id FROM ttx_session_teams ORDER BY id')->fetchAll(PDO::FETCH_COLUMN));
+        expect($visibleTeams)->toContain($teamA->id)->not->toContain($teamB->id);
         expect((int) $pdo->query('SELECT COUNT(*) FROM ttx_session_participants')->fetchColumn())->toBe(0);
         expect((int) $pdo->query('SELECT COUNT(*) FROM ttx_session_injects')->fetchColumn())->toBe(0);
     } finally {
+        TtxSessionTeam::on('pgsql_owner')->whereIn('id', [$teamA->id, $teamB->id])->delete();
         TtxSession::on('pgsql_owner')->whereIn('id', [$sessionA->id, $sessionB->id])->delete();
         TtxExercise::on('pgsql_owner')->whereIn('id', [$exerciseA->id, $exerciseB->id])->delete();
         User::on('pgsql_owner')->whereIn('id', [$creatorA->id, $creatorB->id])->forceDelete();

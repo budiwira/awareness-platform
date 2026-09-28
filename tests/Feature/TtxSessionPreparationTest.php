@@ -1,12 +1,12 @@
 <?php
 
-use App\Enums\TtxSessionRole;
 use App\Enums\TtxSessionStatus;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
 use App\Models\TtxInject;
 use App\Models\TtxSession;
 use App\Models\User;
+use App\Services\TenantEntitlement;
 use App\Services\TtxSessionService;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -27,6 +27,7 @@ function ttxPreparationFixture(): array
         'objectives' => 'Uji koordinasi',
         'scope' => 'Lintas divisi',
     ]);
+    $exercise = attachTtxTestPlaybook($exercise);
     TtxInject::create([
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
@@ -85,6 +86,7 @@ test('sessions index returns only current tenant sessions', function () {
         'objectives' => 'y',
         'scope' => 'z',
     ]);
+    $otherExercise = attachTtxTestPlaybook($otherExercise);
     TtxInject::create([
         'tenant_id' => $otherTenant->id,
         'exercise_id' => $otherExercise->id,
@@ -93,6 +95,21 @@ test('sessions index returns only current tenant sessions', function () {
         'description' => 'd',
     ]);
     $otherSession = app(TtxSessionService::class)->create($otherAdmin, $otherExercise, 'Sesi Tenant Lain');
+
+    $this->actingAs($admin)
+        ->get(route('tenant.ttx.sessions.index'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('sessions', 1)
+            ->where('sessions.0.id', $ownSession->id)
+            ->where('sessions', fn ($sessions) => collect($sessions)->pluck('id')->doesntContain($otherSession->id))
+        );
+});
+
+test('sessions index excludes sessions owned by another tenant admin', function () {
+    [$tenant, $admin, $exercise, $ownSession] = ttxPreparationFixture();
+    $otherAdmin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
+    $otherSession = app(TtxSessionService::class)->create($otherAdmin, $exercise, 'Session Admin Lain');
 
     $this->actingAs($admin)
         ->get(route('tenant.ttx.sessions.index'))
@@ -115,6 +132,7 @@ test('sessions index is ordered newest created first', function () {
         'objectives' => 'Uji koordinasi',
         'scope' => 'Lintas divisi',
     ]);
+    $exercise = attachTtxTestPlaybook($exercise);
 
     $older = TtxSession::forceCreate([
         'tenant_id' => $tenant->id,
@@ -149,7 +167,10 @@ test('sessions index is ordered newest created first', function () {
 test('sessions index exposes only the safe list projection', function () {
     [$tenant, $admin, , $session] = ttxPreparationFixture();
 
-    $allowed = ['id', 'title', 'status', 'scheduled_at', 'facilitator_name', 'participant_count'];
+    $allowed = [
+        'id', 'title', 'scenario', 'status', 'scheduled_at', 'facilitator_name',
+        'participant_count', 'team_count', 'action_label', 'action_url',
+    ];
 
     $this->actingAs($admin)
         ->get(route('tenant.ttx.sessions.index'))
@@ -166,6 +187,61 @@ test('sessions index exposes only the safe list projection', function () {
                 expect($row)->not->toHaveKey('responses');
             }
         });
+});
+
+test('session creation redirects to the Inertia preparation page rather than runtime JSON', function () {
+    [$tenant, $admin, $exercise] = ttxPreparationFixture();
+    $this->mock(TenantEntitlement::class)
+        ->shouldReceive('hasFeature')
+        ->once()
+        ->andReturnTrue();
+    app(TenantEntitlement::class)->shouldReceive('getEntitledFeatures')->andReturn(['ttx']);
+    app(TenantEntitlement::class)->shouldReceive('getEntitledModuleIds')->andReturn([]);
+
+    $response = $this->actingAs($admin)->post(route('tenant.ttx.sessions.store', $exercise), [
+        'playbook_id' => $exercise->playbook_id,
+        'title' => 'Session dari UI',
+        'scheduled_at' => '2026-10-01 09:00:00',
+    ]);
+
+    $created = TtxSession::query()->where('title', 'Session dari UI')->sole();
+    $response->assertRedirect(route('tenant.ttx.sessions.prepare', $created));
+    expect($response->headers->get('Location'))->not->toBe(route('tenant.ttx.sessions.show', $created));
+});
+
+test('sessions index CTA routes are Inertia pages and never the runtime JSON endpoint', function () {
+    [$tenant, $admin, $exercise, $draft] = ttxPreparationFixture();
+    $service = app(TtxSessionService::class);
+    $expected = [
+        'draft' => ['Siapkan Session', 'tenant.ttx.sessions.prepare'],
+        'ready' => ['Buka Facilitator Console', 'tenant.ttx.sessions.console'],
+        'in_progress' => ['Lanjutkan Exercise', 'tenant.ttx.sessions.console'],
+        'debrief' => ['Buka Debrief', 'tenant.ttx.sessions.debrief'],
+        'completed' => ['Lihat Hasil', 'tenant.ttx.sessions.result'],
+    ];
+
+    foreach ($expected as $status => [, $routeName]) {
+        $session = $status === 'draft'
+            ? $draft
+            : $service->create($admin, $exercise, "Session {$status}");
+        $session->forceFill(['status' => $status])->save();
+    }
+
+    $rows = collect($service->index($admin))->keyBy('status');
+    foreach ($expected as $status => [$label, $routeName]) {
+        $row = $rows->get($status);
+        expect($row['action_label'])->toBe($label)
+            ->and($row['action_url'])->toBe(route($routeName, $row['id']))
+            ->and($row['action_url'])->not->toBe(route('tenant.ttx.sessions.show', $row['id']));
+
+        $this->actingAs($admin)->get($row['action_url'])->assertOk()->assertInertia();
+    }
+
+    $this->actingAs($admin)
+        ->getJson(route('tenant.ttx.sessions.show', $draft))
+        ->assertOk()
+        ->assertJsonPath('id', $draft->id)
+        ->assertHeader('content-type', 'application/json');
 });
 
 test('tenant admin can open preparation for own session without participant membership', function () {
@@ -209,8 +285,8 @@ test('preparation payload is a minimal allowlisted shape without snapshots or fu
     [$tenant, $admin, , $session] = ttxPreparationFixture();
 
     $allowedTop = [
-        'session', 'exercise_title', 'inject_count', 'facilitator',
-        'facilitator_count', 'participants', 'readiness', 'can_open_console',
+        'session', 'exercise_title', 'exercise_context', 'capabilities', 'playbook', 'inject_count', 'facilitator',
+        'teams', 'participants', 'readiness', 'can_open_console',
     ];
 
     $this->actingAs($admin)
@@ -232,25 +308,23 @@ test('preparation payload is a minimal allowlisted shape without snapshots or fu
             expect(array_keys($props['session']))->toEqualCanonicalizing(['id', 'title', 'status', 'scheduled_at']);
 
             $encoded = json_encode($props);
-            expect($encoded)->not->toContain('Skenario rahasia');
+            expect($props['exercise_context']['scenario'])->toBe('Skenario rahasia');
+            expect(array_keys($props['exercise_context']))->toEqualCanonicalizing(['title', 'scenario', 'objectives', 'scope', 'capability_codes']);
             expect($encoded)->not->toContain('Deskripsi inject rahasia');
         });
 });
 
-test('can_open_console is false for a tenant admin who is not the facilitator', function () {
+test('creator tenant admin can open the facilitator console automatically', function () {
     [$tenant, $admin, , $session] = ttxPreparationFixture();
 
     $this->actingAs($admin)
         ->get(route('tenant.ttx.sessions.prepare', $session))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->where('can_open_console', false));
+        ->assertInertia(fn (Assert $page) => $page->where('can_open_console', true));
 });
 
-test('can_open_console matches the facilitate policy for an admin who is also facilitator', function () {
+test('can_open_console matches the creator facilitator policy', function () {
     [$tenant, $admin, , $session] = ttxPreparationFixture();
-
-    // Admin is legitimately a facilitator of the session.
-    app(TtxSessionService::class)->assignParticipant($admin, $session, $admin, TtxSessionRole::Facilitator);
 
     $expected = Gate::forUser($admin->fresh())->allows('facilitate', $session->fresh());
     expect($expected)->toBeTrue();

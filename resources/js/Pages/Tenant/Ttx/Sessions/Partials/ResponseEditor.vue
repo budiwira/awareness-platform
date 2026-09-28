@@ -1,165 +1,191 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import BaseInput from '@/Components/BaseInput.vue';
-import BaseTextarea from '@/Components/BaseTextarea.vue';
-import BaseButton from '@/Components/BaseButton.vue';
-import BaseAlert from '@/Components/BaseAlert.vue';
-import Modal from '@/Components/Modal.vue';
+import { computed, ref, watch } from "vue";
+import BaseTextarea from "@/Components/BaseTextarea.vue";
+import BaseButton from "@/Components/BaseButton.vue";
+import BaseAlert from "@/Components/BaseAlert.vue";
 
 const props = defineProps({
-    /** @type {'active'|'locked'|'pending'} */
     injectStatus: { type: String, required: true },
-    /** @type {{ id: number, decision: string, rationale: string|null, owner: string|null, immediate_actions: string|null, escalation: string|null, unknowns: string|null, notes: string|null, revision: number, submitted_at: string, locked_at: string|null } | null} */
     response: { type: Object, default: null },
     injectId: { type: Number, required: true },
+    contractVersion: { type: Number, default: 1 },
+    teamName: { type: String, default: "Tim Anda" },
     saving: { type: Boolean, default: false },
+    saveMessage: { type: String, default: null },
+    lastSavedAt: { type: String, default: null },
 });
-
-const emit = defineEmits(['save', 'discard']);
-
-// --- Draft state ---
+const emit = defineEmits(["save", "discard"]);
 const draft = ref(emptyDraft());
 const serverSnapshot = ref(null);
 const currentRevision = ref(null);
-const isCreate = computed(() => !serverSnapshot.value);
-const isLocked = computed(() => props.injectStatus === 'locked');
-const isActive = computed(() => props.injectStatus === 'active');
-
-// --- Server conflict state ---
-const conflictError = ref(null);     // 409 conflict message
-const validationErrors = ref(null);  // 422 validation error bag
-const generalError = ref(null);      // other errors (5xx, etc.)
-const accessDeniedError = ref(null); // 403 access denied
+const editing = ref(true);
+const conflictError = ref(null);
+const validationErrors = ref(null);
+const generalError = ref(null);
+const accessDeniedError = ref(null);
 
 function emptyDraft() {
     return {
-        decision: '',
-        rationale: '',
-        owner: '',
-        immediate_actions: '',
-        escalation: '',
-        unknowns: '',
-        notes: '',
+        decision: "",
+        rationale: "",
+        owner: "",
+        immediate_actions: "",
+        coordination_handoff: "",
+        escalation: "",
+        unknowns: "",
+        notes: "",
     };
 }
+const isV2 = computed(() => props.contractVersion >= 2);
+const isCreate = computed(() => !serverSnapshot.value);
+const isLocked = computed(() => props.injectStatus === "locked");
+const isActive = computed(() => props.injectStatus === "active");
+const editableFields = computed(() =>
+    isV2.value
+        ? [
+              "decision",
+              "rationale",
+              "immediate_actions",
+              "coordination_handoff",
+              "escalation",
+              "unknowns",
+              "notes",
+          ]
+        : [
+              "decision",
+              "rationale",
+              "owner",
+              "immediate_actions",
+              "escalation",
+              "unknowns",
+              "notes",
+          ],
+);
 
-// --- Sync draft with response prop ---
 watch(
     () => props.response,
-    (resp) => {
-        serverSnapshot.value = resp ? { ...resp } : null;
-        currentRevision.value = resp?.revision ?? null;
+    (response) => {
+        serverSnapshot.value = response ? { ...response } : null;
+        currentRevision.value = response?.revision ?? null;
+        draft.value = response
+            ? Object.fromEntries(
+                  Object.keys(emptyDraft()).map((key) => [
+                      key,
+                      response[key] ?? "",
+                  ]),
+              )
+            : emptyDraft();
+        editing.value = !response;
         conflictError.value = null;
         validationErrors.value = null;
         generalError.value = null;
         accessDeniedError.value = null;
-
-        if (resp) {
-            draft.value = {
-                decision: resp.decision ?? '',
-                rationale: resp.rationale ?? '',
-                owner: resp.owner ?? '',
-                immediate_actions: resp.immediate_actions ?? '',
-                escalation: resp.escalation ?? '',
-                unknowns: resp.unknowns ?? '',
-                notes: resp.notes ?? '',
-            };
-        } else {
-            draft.value = emptyDraft();
-        }
     },
     { immediate: true },
 );
 
-// --- Dirty state ---
 const isDirty = computed(() => {
-    if (!serverSnapshot.value) {
-        // For new response, dirty if decision is non-empty
-        return draft.value.decision.trim() !== '';
-    }
-    const fields = ['decision', 'rationale', 'owner', 'immediate_actions', 'escalation', 'unknowns', 'notes'];
-    return fields.some((f) => {
-        const draftVal = (draft.value[f] ?? '').trim();
-        const serverVal = (serverSnapshot.value[f] ?? '').trim();
-        return draftVal !== serverVal;
-    });
+    if (!editing.value) return false;
+    if (!serverSnapshot.value)
+        return editableFields.value.some(
+            (field) => draft.value[field].trim() !== "",
+        );
+    return editableFields.value.some(
+        (field) =>
+            draft.value[field].trim() !==
+            (serverSnapshot.value[field] ?? "").trim(),
+    );
 });
-
-// --- Save enabled ---
-const decisionNotBlank = computed(() => draft.value.decision.trim().length > 0);
-const canSave = computed(() => {
-    if (props.saving) return false;
-    if (isLocked.value) return false;
-    if (!isActive.value) return false;
-    if (!decisionNotBlank.value) return false;
-    if (isCreate.value) return true;
-    return isDirty.value;
+const missingCoreFields = computed(() => {
+    const required = isV2.value
+        ? ["decision", "rationale", "immediate_actions", "coordination_handoff"]
+        : ["decision"];
+    const labels = {
+        decision: "Keputusan Tim",
+        rationale: "Alasan Keputusan",
+        immediate_actions: "Tindakan Segera",
+        coordination_handoff: "Koordinasi / Handoff",
+    };
+    return required
+        .filter((field) => !draft.value[field].trim())
+        .map((field) => labels[field]);
 });
+const canSave = computed(
+    () =>
+        !props.saving &&
+        isActive.value &&
+        !isLocked.value &&
+        missingCoreFields.value.length === 0 &&
+        (isCreate.value || isDirty.value),
+);
+const fieldErrors = computed(() =>
+    Object.fromEntries(
+        Object.entries(validationErrors.value ?? {}).map(([key, value]) => [
+            key,
+            Array.isArray(value) ? value[0] : value,
+        ]),
+    ),
+);
+const timestamp = computed(
+    () =>
+        props.lastSavedAt ??
+        serverSnapshot.value?.last_edited_at ??
+        serverSnapshot.value?.submitted_at ??
+        null,
+);
+const formattedTimestamp = computed(() =>
+    timestamp.value
+        ? new Intl.DateTimeFormat("id-ID", {
+              day: "numeric",
+              month: "short",
+              hour: "2-digit",
+              minute: "2-digit",
+          }).format(new Date(timestamp.value))
+        : null,
+);
 
-// --- Save handler ---
-const handleSave = () => {
-    if (!canSave.value) return;
-    emit('save', {
-        isCreate: isCreate.value,
-        draft: { ...draft.value },
-        expectedRevision: currentRevision.value,
-    });
-};
-
-// --- Field errors from 422 ---
-const fieldErrors = computed(() => {
-    if (!validationErrors.value) return {};
-    const errs = {};
-    if (validationErrors.value.session) errs.session = validationErrors.value.session;
-    if (validationErrors.value.inject) errs.inject = validationErrors.value.inject;
-    if (validationErrors.value.response) errs.response = validationErrors.value.response;
-    if (validationErrors.value.decision) errs.decision = validationErrors.value.decision;
-    return errs;
-});
-
-// --- Expose methods for parent to set error states ---
-const setConflictError = (msg) => {
-    conflictError.value = msg;
+function handleSave() {
+    if (canSave.value)
+        emit("save", {
+            isCreate: isCreate.value,
+            draft: { ...draft.value },
+            expectedRevision: currentRevision.value,
+        });
+}
+function setConflictError(message) {
+    conflictError.value = message;
     validationErrors.value = null;
     generalError.value = null;
-};
-
-const setValidationError = (bag) => {
-    validationErrors.value = bag;
+}
+function setValidationError(errors) {
+    validationErrors.value = errors;
     conflictError.value = null;
     generalError.value = null;
-};
-
-const setGeneralError = (msg) => {
-    generalError.value = msg;
+}
+function setGeneralError(message) {
+    generalError.value = message;
     conflictError.value = null;
     validationErrors.value = null;
-};
-
-const setAccessDeniedError = (msg) => {
-    accessDeniedError.value = msg;
+}
+function setAccessDeniedError(message) {
+    accessDeniedError.value = message;
     conflictError.value = null;
     validationErrors.value = null;
     generalError.value = null;
-};
-
-const clearErrors = () => {
+}
+function clearErrors() {
     conflictError.value = null;
     validationErrors.value = null;
     generalError.value = null;
     accessDeniedError.value = null;
-};
-
-const resetDraft = () => {
+}
+function resetDraft() {
     serverSnapshot.value = null;
     currentRevision.value = null;
     draft.value = emptyDraft();
-    conflictError.value = null;
-    validationErrors.value = null;
-    generalError.value = null;
-    accessDeniedError.value = null;
-};
-
+    editing.value = true;
+    clearErrors();
+}
 defineExpose({
     isDirty,
     serverSnapshot,
@@ -174,171 +200,242 @@ defineExpose({
 </script>
 
 <template>
-    <div class="response-editor" role="form" aria-label="Response Tim">
-        <!-- Conflict alert (409 stale update) -->
+    <div class="response-editor" role="form" aria-label="Respons Tim">
         <BaseAlert
             v-if="conflictError"
             variant="warning"
-            title="Konflik Versi"
-            class="mb-4"
+            title="Keputusan tim telah berubah"
+            aria-live="assertive"
         >
             <p>{{ conflictError }}</p>
-            <p class="mt-1">Perubahan lokal Anda belum dikirim.</p>
+            <p class="mt-1">Draf yang sedang Anda edit tidak dibuang.</p>
             <BaseButton
                 variant="secondary"
                 size="sm"
                 class="mt-3"
                 @click="$emit('discard', { reason: 'conflict-load-latest' })"
+                >Muat Versi Tim Terbaru</BaseButton
             >
-                Muat Versi Terbaru
-            </BaseButton>
         </BaseAlert>
-
-        <!-- General error (lifecycle, etc.) -->
         <BaseAlert
             v-if="generalError"
             variant="danger"
-            title="Gagal"
-            class="mb-4"
+            title="Keputusan belum dikirim"
+            >{{ generalError }}</BaseAlert
         >
-            <p>{{ generalError }}</p>
-        </BaseAlert>
-
-        <!-- Access denied (403 mutation) -->
         <BaseAlert
             v-if="accessDeniedError"
             variant="danger"
             title="Akses ditolak"
-            class="mb-4"
+            >{{ accessDeniedError }}</BaseAlert
         >
-            <p>{{ accessDeniedError }}</p>
-        </BaseAlert>
+        <BaseAlert
+            v-if="
+                fieldErrors.session ||
+                fieldErrors.inject ||
+                fieldErrors.response
+            "
+            variant="danger"
+            >{{
+                fieldErrors.session ||
+                fieldErrors.inject ||
+                fieldErrors.response
+            }}</BaseAlert
+        >
 
-        <!-- Validation error (422 lifecycle: inject no longer active, etc.) -->
-        <BaseAlert
-            v-if="fieldErrors.session"
-            variant="danger"
-            class="mb-4"
+        <section
+            v-if="serverSnapshot && !editing"
+            class="submitted-state"
+            aria-live="polite"
         >
-            {{ fieldErrors.session }}
-        </BaseAlert>
-        <BaseAlert
-            v-if="fieldErrors.inject"
-            variant="danger"
-            class="mb-4"
-        >
-            {{ fieldErrors.inject }}
-        </BaseAlert>
-        <BaseAlert
-            v-if="fieldErrors.response"
-            variant="danger"
-            class="mb-4"
-        >
-            {{ fieldErrors.response }}
-        </BaseAlert>
+            <p class="state-label">
+                {{ isLocked ? "KEPUTUSAN TERKUNCI" : "KEPUTUSAN DIKIRIM" }}
+            </p>
+            <h3>{{ teamName }} telah mengirim keputusan untuk situasi ini.</h3>
+            <p v-if="!isLocked" class="state-copy">
+                Keputusan masih dapat diperbarui sampai fasilitator melanjutkan
+                exercise.
+            </p>
+            <p
+                v-if="serverSnapshot.last_edited_by_name || formattedTimestamp"
+                class="attribution"
+            >
+                Terakhir diperbarui<span
+                    v-if="serverSnapshot.last_edited_by_name"
+                >
+                    oleh {{ serverSnapshot.last_edited_by_name }}</span
+                ><span v-if="formattedTimestamp">
+                    · {{ formattedTimestamp }}</span
+                >
+            </p>
+            <dl class="decision-review">
+                <div>
+                    <dt>Keputusan</dt>
+                    <dd>{{ serverSnapshot.decision }}</dd>
+                </div>
+                <div v-if="serverSnapshot.rationale">
+                    <dt>Alasan</dt>
+                    <dd>{{ serverSnapshot.rationale }}</dd>
+                </div>
+                <div v-if="serverSnapshot.immediate_actions">
+                    <dt>Tindakan Segera</dt>
+                    <dd>{{ serverSnapshot.immediate_actions }}</dd>
+                </div>
+                <div v-if="isV2 && serverSnapshot.coordination_handoff">
+                    <dt>Koordinasi / Handoff</dt>
+                    <dd>{{ serverSnapshot.coordination_handoff }}</dd>
+                </div>
+                <div v-if="!isV2 && serverSnapshot.owner">
+                    <dt>Penanggung Jawab</dt>
+                    <dd>{{ serverSnapshot.owner }}</dd>
+                </div>
+                <div v-if="serverSnapshot.escalation">
+                    <dt>Eskalasi</dt>
+                    <dd>{{ serverSnapshot.escalation }}</dd>
+                </div>
+                <div v-if="serverSnapshot.unknowns">
+                    <dt>Yang Belum Diketahui</dt>
+                    <dd>{{ serverSnapshot.unknowns }}</dd>
+                </div>
+                <div v-if="serverSnapshot.notes">
+                    <dt>Catatan Tim</dt>
+                    <dd>{{ serverSnapshot.notes }}</dd>
+                </div>
+            </dl>
+            <BaseButton
+                v-if="isActive"
+                variant="secondary"
+                @click="editing = true"
+                >Edit Keputusan Tim</BaseButton
+            >
+            <p class="waiting-copy">
+                {{
+                    isLocked
+                        ? "Keputusan ini bersifat baca-saja."
+                        : "Menunggu fasilitator merilis perkembangan berikutnya."
+                }}
+            </p>
+        </section>
 
-        <!-- Decision (required) -->
-        <div class="response-field">
-            <BaseInput
+        <section
+            v-else-if="isLocked && !serverSnapshot"
+            class="locked-note"
+            role="status"
+        >
+            Tim tidak mengirim keputusan untuk situasi ini. Situation update
+            telah terkunci.
+        </section>
+
+        <template v-else>
+            <BaseTextarea
                 v-model="draft.decision"
-                label="Keputusan *"
-                placeholder="Tuliskan keputusan tim untuk injeksi ini"
+                label="Keputusan Tim"
+                hint="Apa keputusan utama tim Anda?"
                 :error="fieldErrors.decision"
+                :rows="4"
                 :disabled="isLocked"
                 required
             />
-            <p v-if="!isLocked && !decisionNotBlank" class="response-hint">
-                Keputusan wajib diisi sebelum menyimpan.
-            </p>
-        </div>
-
-        <!-- Rationale -->
-        <div class="response-field">
             <BaseTextarea
                 v-model="draft.rationale"
-                label="Rationale"
-                placeholder="Jelaskan alasan di balik keputusan ini"
-                :rows="3"
+                :label="isV2 ? 'Alasan Keputusan' : 'Rationale'"
+                :hint="
+                    isV2
+                        ? 'Mengapa tim mengambil keputusan tersebut?'
+                        : 'Jelaskan alasan di balik keputusan ini.'
+                "
+                :error="fieldErrors.rationale"
+                :rows="4"
                 :disabled="isLocked"
+                :required="isV2"
             />
-        </div>
-
-        <!-- Owner -->
-        <div class="response-field">
-            <BaseInput
-                v-model="draft.owner"
-                label="Penanggung Jawab"
-                placeholder="Siapa yang bertanggung jawab atas eksekusi"
-                :disabled="isLocked"
-            />
-        </div>
-
-        <!-- Immediate Actions -->
-        <div class="response-field">
             <BaseTextarea
                 v-model="draft.immediate_actions"
                 label="Tindakan Segera"
-                placeholder="Langkah-langkah yang harus dilakukan segera"
-                :rows="3"
+                :hint="
+                    isV2
+                        ? 'Apa yang akan dilakukan sekarang?'
+                        : 'Langkah yang harus dilakukan segera.'
+                "
+                :error="fieldErrors.immediate_actions"
+                :rows="4"
                 :disabled="isLocked"
+                :required="isV2"
             />
-        </div>
-
-        <!-- Escalation -->
-        <div class="response-field">
             <BaseTextarea
-                v-model="draft.escalation"
-                label="Eskalasi"
-                placeholder="Kondisi atau ambang batas untuk eskalasi"
+                v-if="isV2"
+                v-model="draft.coordination_handoff"
+                label="Koordinasi / Handoff"
+                hint="Tim atau stakeholder mana yang perlu dilibatkan, dan apa yang dibutuhkan?"
+                :error="fieldErrors.coordination_handoff"
+                :rows="4"
+                :disabled="isLocked"
+                required
+            />
+            <BaseTextarea
+                v-else
+                v-model="draft.owner"
+                label="Penanggung Jawab"
+                hint="Siapa yang bertanggung jawab atas eksekusi?"
+                :error="fieldErrors.owner"
                 :rows="2"
                 :disabled="isLocked"
             />
-        </div>
-
-        <!-- Unknowns -->
-        <div class="response-field">
-            <BaseTextarea
-                v-model="draft.unknowns"
-                label="Yang Belum Diketahui"
-                placeholder="Informasi yang masih perlu diklarifikasi"
-                :rows="2"
-                :disabled="isLocked"
-            />
-        </div>
-
-        <!-- Notes (team response, NOT facilitator notes) -->
-        <div class="response-field">
-            <BaseTextarea
-                v-model="draft.notes"
-                label="Catatan Tim"
-                placeholder="Catatan tambahan dari tim"
-                :rows="2"
-                :disabled="isLocked"
-            />
-        </div>
-
-        <!-- Save button (only when active) -->
-        <div v-if="isActive" class="response-actions">
-            <BaseButton
-                variant="primary"
-                :loading="saving"
-                :disabled="!canSave"
-                @click="handleSave"
-            >
-                {{ saving ? 'Menyimpan...' : (isCreate ? 'Simpan Response' : 'Simpan Perubahan') }}
-            </BaseButton>
-            <span v-if="serverSnapshot" class="response-revision">
-                Revisi #{{ serverSnapshot.revision }}
-            </span>
-        </div>
-
-        <!-- Locked indicator -->
-        <div v-if="isLocked" class="response-locked">
-            <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            <span>Response terkunci dan tidak dapat diubah.</span>
-        </div>
+            <details class="secondary-fields">
+                <summary>Additional Context</summary>
+                <div class="secondary-content">
+                    <BaseTextarea
+                        v-model="draft.escalation"
+                        label="Eskalasi"
+                        :error="fieldErrors.escalation"
+                        :rows="3"
+                        :disabled="isLocked"
+                    /><BaseTextarea
+                        v-model="draft.unknowns"
+                        label="Yang Belum Diketahui"
+                        :error="fieldErrors.unknowns"
+                        :rows="3"
+                        :disabled="isLocked"
+                    /><BaseTextarea
+                        v-model="draft.notes"
+                        label="Catatan Tim"
+                        :error="fieldErrors.notes"
+                        :rows="3"
+                        :disabled="isLocked"
+                    />
+                </div>
+            </details>
+            <div v-if="isActive" class="response-actions">
+                <div>
+                    <p
+                        v-if="missingCoreFields.length"
+                        class="validation-summary"
+                        role="status"
+                    >
+                        Lengkapi: {{ missingCoreFields.join(", ") }}.
+                    </p>
+                    <p v-else-if="!isCreate && !isDirty" class="response-hint">
+                        Belum ada perubahan untuk dikirim.
+                    </p>
+                </div>
+                <BaseButton
+                    variant="primary"
+                    :loading="saving"
+                    :disabled="!canSave"
+                    @click="handleSave"
+                    >{{
+                        saving
+                            ? "Mengirim..."
+                            : isCreate
+                              ? "Kirim Keputusan Tim"
+                              : "Perbarui Keputusan Tim"
+                    }}</BaseButton
+                >
+            </div>
+            <div v-if="isLocked" class="locked-note">
+                Keputusan terkunci dan tidak dapat diubah.
+            </div>
+        </template>
     </div>
 </template>
 
@@ -346,46 +443,123 @@ defineExpose({
 .response-editor {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
+    gap: var(--sp-5);
     min-width: 0;
 }
-
-.response-field {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
+.response-editor :deep(textarea) {
+    min-height: 7rem;
+    border-radius: var(--r-lg);
+    line-height: 1.55;
+    overflow-wrap: anywhere;
 }
-
-.response-hint {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--muted);
+.response-editor :deep(textarea:focus) {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent);
 }
-
+.secondary-fields {
+    border-top: 1px solid var(--line);
+    padding-top: var(--sp-4);
+}
+.secondary-fields summary {
+    width: max-content;
+    max-width: 100%;
+    cursor: pointer;
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.secondary-fields summary:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+}
+.secondary-content {
+    display: grid;
+    gap: var(--sp-4);
+    margin-top: var(--sp-4);
+}
 .response-actions {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
+    justify-content: space-between;
     gap: var(--sp-4);
     padding-top: var(--sp-4);
     border-top: 1px solid var(--line);
 }
-
-.response-revision {
-    font-size: 0.75rem;
-    color: var(--muted);
+.validation-summary {
+    margin: 0;
+    color: var(--danger);
+    font-size: 0.8125rem;
 }
-
-.response-locked {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    padding: var(--sp-3) var(--sp-4);
-    background: var(--surface-2);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg);
-    font-size: 0.875rem;
+.response-hint,
+.waiting-copy,
+.state-copy,
+.attribution {
+    margin: 0;
     color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+.submitted-state {
+    padding: var(--sp-5);
+    border-left: 3px solid var(--ok);
+    background: var(--surface-2);
+}
+.state-label {
+    margin: 0;
+    color: var(--ok);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+.submitted-state h3 {
+    margin: var(--sp-2) 0;
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 700;
+}
+.attribution {
+    margin-top: var(--sp-2);
+}
+.decision-review {
+    display: grid;
+    gap: var(--sp-4);
+    margin: var(--sp-5) 0;
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--line);
+}
+.decision-review dt {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.decision-review dd {
+    margin-top: 0.3rem;
+    color: var(--ink);
+    line-height: 1.65;
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
-    min-width: 0;
+}
+.waiting-copy {
+    margin-top: var(--sp-3);
+}
+.locked-note {
+    padding: var(--sp-3);
+    border-left: 3px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+@media (max-width: 640px) {
+    .response-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .response-actions :deep(button) {
+        width: 100%;
+    }
+    .submitted-state {
+        padding: var(--sp-4);
+    }
 }
 </style>

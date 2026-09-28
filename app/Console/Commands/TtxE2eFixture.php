@@ -3,11 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Enums\TtxSessionInjectStatus;
-use App\Enums\TtxSessionRole;
 use App\Enums\UserRole;
 use App\Models\Tenant;
 use App\Models\TtxExercise;
 use App\Models\TtxInject;
+use App\Models\TtxPlaybook;
 use App\Models\User;
 use App\Services\TtxSessionService;
 use Illuminate\Console\Command;
@@ -64,18 +64,18 @@ class TtxE2eFixture extends Command
         $this->info("E2E tenant created: id={$tenant->id}");
 
         // ── E2E USERS ─────────────────────────────────────────────
-        // Facilitator (User role — gains runtime access via session_participants, not role)
+        // The session creator is the Tenant Admin facilitator.
         $facilitator = User::create([
             'name' => 'E2E Facilitator',
             'email' => 'facilitator@e2e.local',
             'password' => 'password',
-            'role' => UserRole::User,
+            'role' => UserRole::TenantAdmin,
             'tenant_id' => $tenant->id,
             'is_active' => true,
         ]);
         $this->info("Facilitator created: id={$facilitator->id}");
 
-        // Admin user (TenantAdmin — required by TtxSessionService::create)
+        // A second admin remains available for authorization checks.
         $admin = User::create([
             'name' => 'E2E Admin',
             'email' => 'admin@e2e.local',
@@ -98,12 +98,19 @@ class TtxE2eFixture extends Command
         $this->info("Participant created: id={$participant->id}");
 
         // ── EXERCISE + INJECTS ────────────────────────────────────
+        $playbook = TtxPlaybook::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'E2E Response Playbook',
+            'content' => 'Validate the incident and coordinate the response.',
+            'is_active' => true,
+        ]);
         $exercise = TtxExercise::create([
             'tenant_id' => $tenant->id,
             'title' => 'E2E Phishing Response',
             'scenario' => 'Simulated phishing attack targeting the organization.',
             'objectives' => 'Test incident response coordination.',
             'scope' => 'Organization-wide.',
+            'playbook_id' => $playbook->id,
             'phase' => 'planning',
         ]);
 
@@ -123,31 +130,34 @@ class TtxE2eFixture extends Command
         $service = app(TtxSessionService::class);
 
         // ── SESSION A: READY ──────────────────────────────────────
-        $readySession = $service->create($admin, $exercise, 'E2E Ready Session');
-        $service->assignParticipant($admin, $readySession, $facilitator, TtxSessionRole::Facilitator);
-        $service->assignParticipant($admin, $readySession, $participant, TtxSessionRole::Security);
-        $readySession = $service->markReady($admin, $readySession);
+        $readySession = $service->create($facilitator, $exercise, 'E2E Ready Session');
+        $readyTeam = $service->createTeam($facilitator, $readySession, 'Security');
+        $service->updateTeamResponsibilities($facilitator, $readySession, $readyTeam->id, 'Coordinate the security response.');
+        $service->assignParticipant($facilitator, $readySession, $participant, $readyTeam);
+        $readySession = $service->markReady($facilitator, $readySession);
         $this->info("Ready session created: id={$readySession->id}");
 
         // ── SESSION B: CONFLICT ───────────────────────────────────
         // State: in_progress, 1 active inject with an official response (revision 1)
         // Used by two browser contexts to produce a stale-revision 409.
-        $conflictSession = $service->create($admin, $exercise, 'E2E Conflict Session');
-        $service->assignParticipant($admin, $conflictSession, $facilitator, TtxSessionRole::Facilitator);
-        $service->assignParticipant($admin, $conflictSession, $participant, TtxSessionRole::Security);
-        $conflictSession = $service->markReady($admin, $conflictSession);
-        // start() requires assertRuntimeActor → facilitator participant
+        $conflictSession = $service->create($facilitator, $exercise, 'E2E Conflict Session');
+        $conflictTeam = $service->createTeam($facilitator, $conflictSession, 'Security');
+        $service->updateTeamResponsibilities($facilitator, $conflictSession, $conflictTeam->id, 'Coordinate the security response.');
+        $service->assignParticipant($facilitator, $conflictSession, $participant, $conflictTeam);
+        $conflictSession = $service->markReady($facilitator, $conflictSession);
+        // Only the creator Tenant Admin starts the session.
         $conflictSession = $service->start($facilitator, $conflictSession);
 
         $conflictActiveInject = $conflictSession->injects()
             ->where('status', TtxSessionInjectStatus::Active)
             ->first();
 
-        $service->storeResponse($facilitator, $conflictSession, $conflictActiveInject->id, [
+        $service->storeResponse($participant, $conflictSession, $conflictActiveInject->id, [
             'decision' => 'Contain the phishing email immediately.',
             'rationale' => 'Quick containment limits exposure.',
             'owner' => 'Security Team',
             'immediate_actions' => 'Block sender domain, notify users.',
+            'coordination_handoff' => 'Security coordinates with IT operations.',
             'escalation' => 'CISO',
             'unknowns' => 'Number of affected users.',
             'notes' => 'Initial response for E2E conflict test.',
@@ -157,11 +167,12 @@ class TtxE2eFixture extends Command
         // ── SESSION C: DIRTY ──────────────────────────────────────
         // State: in_progress, 1 locked inject (with response) + 1 active inject
         // Used to test dirty-state tracking when switching between injects.
-        $dirtySession = $service->create($admin, $exercise, 'E2E Dirty Session');
-        $service->assignParticipant($admin, $dirtySession, $facilitator, TtxSessionRole::Facilitator);
-        $service->assignParticipant($admin, $dirtySession, $participant, TtxSessionRole::Security);
-        $dirtySession = $service->markReady($admin, $dirtySession);
-        // start() requires assertRuntimeActor → facilitator participant
+        $dirtySession = $service->create($facilitator, $exercise, 'E2E Dirty Session');
+        $dirtyTeam = $service->createTeam($facilitator, $dirtySession, 'Security');
+        $service->updateTeamResponsibilities($facilitator, $dirtySession, $dirtyTeam->id, 'Coordinate the security response.');
+        $service->assignParticipant($facilitator, $dirtySession, $participant, $dirtyTeam);
+        $dirtySession = $service->markReady($facilitator, $dirtySession);
+        // Only the creator Tenant Admin starts the session.
         $dirtySession = $service->start($facilitator, $dirtySession);
 
         // First inject is active — create a response
@@ -169,11 +180,12 @@ class TtxE2eFixture extends Command
             ->where('status', TtxSessionInjectStatus::Active)
             ->first();
 
-        $service->storeResponse($facilitator, $dirtySession, $dirtyFirstInject->id, [
+        $service->storeResponse($participant, $dirtySession, $dirtyFirstInject->id, [
             'decision' => 'Escalate to management immediately.',
             'rationale' => 'Severity warrants escalation.',
             'owner' => 'Management',
             'immediate_actions' => 'Brief CISO and legal.',
+            'coordination_handoff' => 'Security coordinates with management.',
             'escalation' => 'Board',
             'unknowns' => 'Full scope of breach.',
             'notes' => 'Initial response for E2E dirty form test.',

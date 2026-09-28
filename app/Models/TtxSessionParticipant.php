@@ -17,10 +17,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read TtxSession $session
  * @property-read User $user
+ * @property-read TtxSessionTeam|null $team
  */
 class TtxSessionParticipant extends Model
 {
-    protected $fillable = ['tenant_id', 'session_id', 'user_id', 'session_role'];
+    protected $fillable = ['tenant_id', 'session_id', 'user_id', 'team_id', 'session_role'];
 
     protected $casts = [
         'session_role' => TtxSessionRole::class,
@@ -34,5 +35,10 @@ class TtxSessionParticipant extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(TtxSessionTeam::class, 'team_id');
     }
 }

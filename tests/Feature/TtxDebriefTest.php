@@ -8,11 +8,13 @@ use App\Models\TtxActionItem;
 use App\Models\TtxAfterActionSummary;
 use App\Models\TtxExercise;
 use App\Models\TtxInject;
+use App\Models\TtxPlaybook;
 use App\Models\TtxSession;
 use App\Models\TtxSessionEvaluation;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
+use App\Models\TtxSessionTeam;
 use App\Models\User;
 use App\Services\TtxSessionService;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -21,16 +23,25 @@ function ttxDebriefFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
     $exercise = TtxExercise::create([
         'tenant_id' => $tenant->id,
         'title' => 'Exercise debrief',
         'scenario' => 'Insiden untuk debrief',
     ]);
+    $playbook = TtxPlaybook::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Credential Compromise Response Playbook',
+        'description' => 'Panduan respons organisasi.',
+        'content' => "1. Detection & Validation\n2. Escalation & Ownership",
+        'is_active' => true,
+    ]);
+    $exercise->update(['playbook_id' => $playbook->id]);
     $inject = TtxInject::create([
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
+        'playbook_id' => $playbook->id,
         'order' => 1,
         'title' => 'Inject final',
         'description' => 'Situasi final',
@@ -39,11 +50,12 @@ function ttxDebriefFixture(): array
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
         'title' => 'Sesi debrief',
-        'created_by' => $admin->id,
+        'created_by' => $facilitator->id,
         'status' => TtxSessionStatus::Debrief,
         'started_at' => now()->subHour(),
         'debrief_started_at' => now(),
         'exercise_snapshot' => ['title' => $exercise->title],
+        'playbook_snapshot' => ['source_id' => $playbook->id, 'title' => $playbook->title, 'description' => $playbook->description, 'content' => $playbook->content],
     ]);
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
@@ -51,10 +63,17 @@ function ttxDebriefFixture(): array
         'user_id' => $facilitator->id,
         'session_role' => TtxSessionRole::Facilitator,
     ]);
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+        'responsibilities' => 'Validasi alert dan tentukan cakupan insiden.',
+    ]);
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
     $sessionInject = TtxSessionInject::forceCreate([
@@ -76,6 +95,7 @@ function ttxDebriefFixture(): array
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'session_inject_id' => $sessionInject->id,
+        'session_team_id' => $team->id,
         'decision' => 'Respons resmi tim',
         'notes' => 'Catatan respons',
         'revision' => 1,
@@ -311,6 +331,8 @@ test('participant completed payload exposes only the allowlisted final summary',
         ->json();
 
     expect($payload['outcome'])->toHaveKeys(['overall_summary', 'strengths', 'improvement_areas', 'key_lessons'])
+        ->and($payload['participant_team']['responsibilities'])->toContain('Validasi alert')
+        ->and($payload['playbook'])->not->toHaveKeys(['content', 'source_id'])
         ->and($payload['outcome'])->not->toHaveKeys(['evidence', 'rating', 'updated_by']);
     $json = json_encode($payload);
     expect($json)
@@ -318,6 +340,60 @@ test('participant completed payload exposes only the allowlisted final summary',
         ->not->toContain('Catatan internal rahasia')
         ->not->toContain('action_items')
         ->not->toContain('dimensions');
+});
+
+test('facilitator debrief compares playbook and team preparation with actual responses', function () {
+    $fixture = ttxDebriefFixture();
+
+    $payload = $this->actingAs($fixture['facilitator'])
+        ->getJson(route('tenant.ttx.sessions.debrief', $fixture['session']))
+        ->assertOk()
+        ->json();
+
+    expect($payload['session']['playbook']['title'])->toBe('Credential Compromise Response Playbook')
+        ->and($payload['session']['playbook']['content'])->toContain('Escalation & Ownership')
+        ->and($payload['session']['teams'][0]['responsibilities'])->toContain('Validasi alert')
+        ->and($payload['session']['injects'][0]['team_responses'][0]['response']['decision'])->toBe('Respons resmi tim');
+});
+
+test('completed session has dedicated facilitator and participant result pages', function () {
+    $fixture = ttxDebriefFixture();
+    $fixture['session']->update([
+        'status' => TtxSessionStatus::Completed,
+        'completed_at' => now(),
+    ]);
+
+    $this->actingAs($fixture['facilitator'])
+        ->get(route('tenant.ttx.sessions.result', $fixture['session']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Tenant/Ttx/Sessions/Debrief')
+            ->where('sessionId', $fixture['session']->id)
+            ->where('resultMode', true));
+
+    $this->actingAs($fixture['participant'])
+        ->get(route('tenant.ttx.sessions.participant-result', $fixture['session']))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Tenant/Ttx/Sessions/ParticipantWorkspace')
+            ->where('sessionId', $fixture['session']->id)
+            ->where('resultMode', true));
+
+    $this->actingAs($fixture['admin'])
+        ->get(route('tenant.ttx.sessions.result', $fixture['session']))
+        ->assertForbidden();
+});
+
+test('result pages reject sessions that are not completed', function () {
+    $fixture = ttxDebriefFixture();
+
+    $this->actingAs($fixture['facilitator'])
+        ->get(route('tenant.ttx.sessions.result', $fixture['session']))
+        ->assertStatus(409);
+
+    $this->actingAs($fixture['participant'])
+        ->get(route('tenant.ttx.sessions.participant-result', $fixture['session']))
+        ->assertStatus(409);
 });
 
 test('debrief tables enforce PostgreSQL tenant isolation', function () {
@@ -368,3 +444,38 @@ test('debrief ownership and tenant fields are guarded from mass assignment', fun
         ->and((new TtxAfterActionSummary)->getFillable())
         ->not->toContain('tenant_id', 'session_id', 'updated_by');
 });
+
+test('FINAL-C V1 keeps six required ratings nullable findings and canonical action capabilities', function () {
+    $fixture = ttxDebriefFixture();
+    $fixture['session']->forceFill(['exercise_snapshot' => ['title' => 'Legacy', 'capability_codes' => ['EX-1']], 'response_contract_version' => 1])->save();
+    $payload = $this->actingAs($fixture['facilitator'])->getJson(route('tenant.ttx.sessions.debrief', $fixture['session']))->assertOk()->json();
+    expect(collect($payload['dimensions'])->where('required', true))->toHaveCount(6);
+    $this->postJson(route('tenant.ttx.sessions.action-items.store', $fixture['session']), [
+        'title' => 'Legacy recovery action', 'owner' => 'IT Lead', 'priority' => 'medium', 'status' => 'open', 'capability_code' => 'EX-6',
+    ])->assertCreated()->assertJsonPath('category', null);
+    $this->putJson(route('tenant.ttx.sessions.evaluation.update', $fixture['session']), ['evaluations' => completeEvaluationPayload()])->assertOk();
+    $this->putJson(route('tenant.ttx.sessions.aar.update', $fixture['session']), completeAarPayload())->assertOk();
+    $this->postJson(route('tenant.ttx.sessions.complete', $fixture['session']))->assertOk();
+});
+
+test('FINAL-C all facilitator writes reject participants other admins platform and foreign admins', function (string $kind) {
+    $fixture = ttxDebriefFixture();
+    $actor = match ($kind) {
+        'participant' => $fixture['participant'],
+        'other_admin' => $fixture['admin'],
+        'platform' => User::factory()->superAdmin()->create(),
+        'foreign_admin' => User::factory()->tenantAdmin()->create(['tenant_id' => Tenant::factory()->create()->id]),
+    };
+    $item = TtxActionItem::forceCreate(['tenant_id' => $fixture['tenant']->id, 'session_id' => $fixture['session']->id, 'title' => 'Protected action', 'owner' => 'SOC', 'priority' => 'medium', 'status' => 'open', 'created_by' => $fixture['facilitator']->id, 'updated_by' => $fixture['facilitator']->id]);
+    $this->actingAs($actor);
+    foreach ([
+        ['put', 'evaluation.update', ['evaluations' => completeEvaluationPayload()]],
+        ['post', 'action-items.store', ['title' => 'Not allowed', 'owner' => 'SOC', 'priority' => 'medium', 'status' => 'open']],
+        ['put', 'aar.update', completeAarPayload()],
+        ['post', 'complete', []],
+    ] as [$verb, $route, $payload]) {
+        $this->{$verb.'Json'}(route('tenant.ttx.sessions.'.$route, $fixture['session']), $payload)->assertForbidden();
+    }
+    $this->putJson(route('tenant.ttx.sessions.action-items.update', [$fixture['session'], $item]), ['title' => 'Not allowed', 'owner' => 'SOC', 'priority' => 'medium', 'status' => 'open'])->assertForbidden();
+    expect($item->fresh()->title)->toBe('Protected action')->and($fixture['session']->evaluations()->count())->toBe(0);
+})->with(['participant', 'other_admin', 'platform', 'foreign_admin']);

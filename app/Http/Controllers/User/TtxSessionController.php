@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Enums\TtxSessionRole;
 use App\Http\Controllers\Controller;
 use App\Models\TtxSessionParticipant;
 use Illuminate\Http\Request;
@@ -19,27 +18,26 @@ class TtxSessionController extends Controller
         $sessions = TtxSessionParticipant::query()
             ->where('tenant_id', $user->tenant_id)
             ->where('user_id', $user->id)
-            ->with('session:id,title,status')
+            ->with(['team:id,name', 'session:id,title,status,exercise_snapshot,created_by', 'session.facilitator:id,name'])
             ->get()
             ->filter(fn (TtxSessionParticipant $assignment) => $assignment->session !== null)
+            ->filter(fn (TtxSessionParticipant $assignment) => $assignment->session->status->value !== 'draft')
             ->map(function (TtxSessionParticipant $assignment): array {
-                $facilitator = $assignment->session_role === TtxSessionRole::Facilitator;
                 $status = $assignment->session->status->value;
 
                 return [
                     'id' => $assignment->session->id,
                     'title' => $assignment->session->title,
+                    'scenario' => is_array($assignment->session->exercise_snapshot)
+                        ? ($assignment->session->exercise_snapshot['title'] ?? null)
+                        : null,
                     'status' => $status,
-                    'role' => $assignment->session_role->value,
-                    'action_label' => $facilitator
-                        ? (in_array($status, ['debrief', 'completed'], true) ? 'Buka Debrief' : 'Buka Konsol Fasilitator')
-                        : $this->participantActionLabel($status),
-                    'action_url' => route(
-                        $facilitator
-                            ? (in_array($status, ['debrief', 'completed'], true) ? 'tenant.ttx.sessions.debrief' : 'tenant.ttx.sessions.console')
-                            : 'tenant.ttx.sessions.workspace',
-                        $assignment->session->id
-                    ),
+                    'team_name' => $assignment->team?->name,
+                    'facilitator_name' => $assignment->session->facilitator?->name,
+                    'action_label' => $this->participantActionLabel($status),
+                    'action_url' => $status === 'completed'
+                        ? route('tenant.ttx.sessions.participant-result', $assignment->session->id)
+                        : route('tenant.ttx.sessions.workspace', $assignment->session->id),
                 ];
             })
             ->sortByDesc('id')
@@ -53,9 +51,10 @@ class TtxSessionController extends Controller
     private function participantActionLabel(string $status): string
     {
         return match ($status) {
-            'ready' => 'Menunggu / Buka Workspace',
-            'in_progress' => 'Buka Workspace',
-            'debrief', 'completed' => 'Lihat Workspace',
+            'ready' => 'Buka Briefing',
+            'in_progress' => 'Lanjutkan Exercise',
+            'debrief' => 'Exercise Menunggu Review',
+            'completed' => 'Lihat Hasil',
             default => 'Menunggu',
         };
     }

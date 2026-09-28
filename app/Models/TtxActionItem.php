@@ -15,12 +15,15 @@ use Illuminate\Support\Carbon;
  * @property string $priority
  * @property Carbon|null $due_date
  * @property string $status
+ * @property string|null $capability_code
+ * @property string|null $playbook_phase_key
+ * @property string|null $category
  * @property int $created_by
  * @property int $updated_by
  */
 class TtxActionItem extends Model
 {
-    protected $fillable = ['title', 'owner', 'priority', 'due_date', 'status'];
+    protected $fillable = ['title', 'owner', 'priority', 'due_date', 'status', 'capability_code', 'playbook_phase_key', 'category'];
 
     protected $casts = ['due_date' => 'date'];
 

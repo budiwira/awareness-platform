@@ -10,14 +10,16 @@ use App\Models\TtxSession;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
+use App\Models\TtxSessionTeam;
 use App\Models\User;
+use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function participantWorkspaceFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $exercise = TtxExercise::create([
@@ -30,7 +32,7 @@ function participantWorkspaceFixture(): array
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
         'title' => 'Workspace session',
-        'created_by' => $admin->id,
+        'created_by' => $facilitator->id,
         'status' => TtxSessionStatus::InProgress,
         'started_at' => now(),
         'exercise_snapshot' => ['title' => $exercise->title],
@@ -43,10 +45,17 @@ function participantWorkspaceFixture(): array
         'session_role' => TtxSessionRole::Facilitator,
     ]);
 
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
 
@@ -130,7 +139,7 @@ test('participant runtime exposes only released allow-listed inject content', fu
     $response = $this->actingAs($participant)
         ->getJson(route('tenant.ttx.sessions.show', $session))
         ->assertOk()
-        ->assertJsonPath('actor_role', 'security')
+        ->assertJsonPath('actor_role', 'participant')
         ->assertJsonPath('progress.total', 2)
         ->assertJsonCount(2, 'injects');
 
@@ -274,3 +283,17 @@ test('response mutation cannot bypass membership or tenant boundary', function (
         'decision' => 'Respons penyerang',
     ])->assertForbidden();
 })->with(['unassigned', 'cross-tenant']);
+
+test('participant response editor exposes explicit processing success and conflict feedback', function () {
+    $workspace = File::get(resource_path('js/Pages/Tenant/Ttx/Sessions/ParticipantWorkspace.vue'));
+    $editor = File::get(resource_path('js/Pages/Tenant/Ttx/Sessions/Partials/ResponseEditor.vue'));
+
+    expect($editor)
+        ->toContain('Mengirim...', 'Kirim Keputusan Tim', 'Perbarui Keputusan Tim')
+        ->toContain(':disabled="!canSave"', 'Terakhir diperbarui', 'Muat Versi Tim Terbaru')
+        ->toContain('Draf yang sedang Anda edit tidak dibuang.', 'KEPUTUSAN DIKIRIM', 'coordination_handoff')
+        ->and($workspace)
+        ->toContain('Keputusan tim berhasil dikirim.', 'Keputusan tim telah diperbarui oleh anggota lain.')
+        ->toContain('status === 403', 'status === 409', 'status === 422')
+        ->toContain('await fetchSession({ refresh: true, resetEditor: true })');
+});

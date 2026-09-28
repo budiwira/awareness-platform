@@ -13,14 +13,6 @@ class DemoAccessSeeder extends Seeder
 {
     public function run(): void
     {
-        // Koneksi runtime dengan role khusus (BYPASSRLS).
-        // Tidak perlu ubah config/database.php.
-        config([
-            'database.connections.pgsql_seeder' => config('database.connections.pgsql'),
-            'database.connections.pgsql_seeder.username' => env('DB_SEEDER_USERNAME', 'postgres'),
-            'database.connections.pgsql_seeder.password' => env('DB_SEEDER_PASSWORD', ''),
-        ]);
-
         $tenant = Tenant::on('pgsql_seeder')->firstOrCreate(
             ['slug' => 'pt-demo'],
             ['name' => 'PT Demo Nusantara']
@@ -51,6 +43,8 @@ class DemoAccessSeeder extends Seeder
                 ]
             );
         }
+
+        $this->call(TtxFlagshipScenarioSeeder::class);
 
         $count = User::on('pgsql_seeder')->where('tenant_id', $tenant->id)->count();
 

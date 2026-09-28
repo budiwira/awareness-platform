@@ -11,8 +11,10 @@ use App\Models\TtxSession;
 use App\Models\TtxSessionInject;
 use App\Models\TtxSessionParticipant;
 use App\Models\TtxSessionResponse;
+use App\Models\TtxSessionTeam;
 use App\Models\User;
 use App\Services\TtxSessionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +22,7 @@ function ttxResponseRuntimeFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $exercise = TtxExercise::create([
@@ -41,7 +43,7 @@ function ttxResponseRuntimeFixture(): array
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
         'title' => 'Response runtime session',
-        'created_by' => $admin->id,
+        'created_by' => $facilitator->id,
         'status' => TtxSessionStatus::InProgress,
         'started_at' => now(),
         'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
@@ -54,10 +56,17 @@ function ttxResponseRuntimeFixture(): array
         'session_role' => TtxSessionRole::Facilitator,
     ]);
 
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
 
@@ -96,7 +105,188 @@ test('assigned participant can create response for ACTIVE inject', function () {
     ]);
 });
 
-test('assigned facilitator can create response', function () {
+test('different teams create separate official responses for the same inject', function () {
+    [$tenant, , , $securityUser, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $operationsTeam = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'IT Operations',
+    ]);
+    $operationsUser = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $operationsUser->id,
+        'team_id' => $operationsTeam->id,
+    ]);
+
+    $this->actingAs($securityUser)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Isolate affected endpoints',
+    ])->assertCreated();
+    $this->actingAs($operationsUser)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Fail over critical services',
+    ])->assertCreated();
+
+    expect(TtxSessionResponse::where('session_inject_id', $sessionInject->id)->count())->toBe(2)
+        ->and(TtxSessionResponse::where('session_inject_id', $sessionInject->id)->pluck('session_team_id')->unique()->count())->toBe(2);
+});
+
+test('same-team participants collaborate on the same response while other teams cannot read it', function () {
+    [$tenant, , , $securityUser, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $securityTeamId = TtxSessionParticipant::where('session_id', $session->id)->where('user_id', $securityUser->id)->value('team_id');
+    $teammate = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $teammate->id,
+        'team_id' => $securityTeamId,
+    ]);
+    $otherTeam = TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'Communications']);
+    $otherUser = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $otherUser->id,
+        'team_id' => $otherTeam->id,
+    ]);
+
+    $this->actingAs($securityUser)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Security team decision',
+    ])->assertCreated();
+
+    $teammatePayload = $this->actingAs($teammate)->getJson(route('tenant.ttx.sessions.show', $session))->assertOk()->json();
+    $otherPayload = $this->actingAs($otherUser)->getJson(route('tenant.ttx.sessions.show', $session))->assertOk()->json();
+    expect($teammatePayload['injects'][0]['response']['decision'])->toBe('Security team decision')
+        ->and($otherPayload['injects'][0]['response'])->toBeNull();
+});
+
+test('facilitator sees read-only response and no-response status for every team', function () {
+    [$tenant, , $facilitator, $securityUser, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $otherTeam = TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'Communications']);
+
+    $this->actingAs($securityUser)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Security response',
+    ])->assertCreated();
+
+    $payload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->assertOk()->json();
+    $inject = $payload['injects'][0];
+    $byTeam = collect($inject['team_responses'])->keyBy('team.id');
+    expect($inject['response_summary'])->toBe(['responded' => 1, 'total' => 2])
+        ->and($byTeam->get(TtxSessionParticipant::where('session_id', $session->id)->where('user_id', $securityUser->id)->value('team_id'))['response']['decision'])->toBe('Security response')
+        ->and($byTeam->get($otherTeam->id)['response'])->toBeNull();
+});
+
+test('ambiguous historical shared response remains facilitator-readable without team attribution', function () {
+    [$tenant, , $facilitator, $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'IT Operations']);
+    TtxSessionResponse::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'session_team_id' => null,
+        'decision' => 'Legacy shared response',
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]);
+
+    $facilitatorPayload = $this->actingAs($facilitator)->getJson(route('tenant.ttx.sessions.show', $session))->assertOk()->json();
+    $participantPayload = $this->actingAs($participant)->getJson(route('tenant.ttx.sessions.show', $session))->assertOk()->json();
+    expect($facilitatorPayload['injects'][0]['legacy_response']['decision'])->toBe('Legacy shared response')
+        ->and($participantPayload['injects'][0]['response'])->toBeNull();
+});
+
+test('team id spoofing is ignored and server derives the participants own team', function () {
+    [$tenant, , , $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $foreignTeam = TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'Management']);
+    $ownTeamId = TtxSessionParticipant::where('session_id', $session->id)->where('user_id', $participant->id)->value('team_id');
+
+    $response = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'team_id' => $foreignTeam->id,
+        'tenant_id' => 'spoofed',
+        'submitted_by' => 999999,
+        'decision' => 'Derived ownership',
+    ])->assertCreated();
+
+    expect($response->json('session_team_id'))->toBe($ownTeamId);
+});
+
+test('participant cannot update another teams response', function () {
+    [$tenant, , , $securityUser, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $otherTeam = TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'IT Operations']);
+    $otherUser = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $otherUser->id,
+        'team_id' => $otherTeam->id,
+    ]);
+    $responseId = $this->actingAs($otherUser)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+        'session_inject_id' => $sessionInject->id,
+        'decision' => 'Operations decision',
+    ])->assertCreated()->json('id');
+
+    $this->actingAs($securityUser)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
+        'expected_revision' => 1,
+        'decision' => 'Tampered',
+    ])->assertNotFound();
+});
+
+test('database rejects a response whose team belongs to another session', function () {
+    [$tenant, , $facilitator, $participant, $exercise, , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $otherSession = TtxSession::forceCreate([
+        'tenant_id' => $tenant->id,
+        'exercise_id' => $exercise->id,
+        'title' => 'Other session',
+        'created_by' => $facilitator->id,
+        'status' => TtxSessionStatus::InProgress,
+        'exercise_snapshot' => ['title' => 'Other session'],
+    ]);
+    $foreignTeam = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $otherSession->id,
+        'name' => 'Foreign session team',
+    ]);
+
+    expect(fn () => TtxSessionResponse::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'session_inject_id' => $sessionInject->id,
+        'session_team_id' => $foreignTeam->id,
+        'decision' => 'Invalid ownership',
+        'submitted_by' => $participant->id,
+        'submitted_at' => now(),
+    ]))->toThrow(QueryException::class);
+});
+
+test('unassigned inactive and teamless learners cannot create responses', function () {
+    [$tenant, , , $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    $unassigned = User::factory()->create(['tenant_id' => $tenant->id]);
+    $inactive = User::factory()->create(['tenant_id' => $tenant->id, 'is_active' => false]);
+    $teamless = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $inactive->id,
+        'team_id' => TtxSessionParticipant::where('session_id', $session->id)->where('user_id', $participant->id)->value('team_id'),
+    ]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $teamless->id,
+    ]);
+    $payload = ['session_inject_id' => $sessionInject->id, 'decision' => 'Unauthorized'];
+
+    foreach ([$unassigned, $inactive, $teamless] as $actor) {
+        $this->actingAs($actor)->postJson(route('tenant.ttx.sessions.responses.store', $session), $payload)->assertForbidden();
+    }
+});
+
+test('facilitator cannot create response', function () {
     [, , $facilitator, , , , $session, $sessionInject] = ttxResponseRuntimeFixture();
 
     $response = $this->actingAs($facilitator)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
@@ -104,13 +294,16 @@ test('assigned facilitator can create response', function () {
         'decision' => 'Facilitator response',
     ]);
 
-    $response->assertStatus(201);
+    $response->assertForbidden();
+    $this->assertDatabaseMissing('ttx_session_responses', [
+        'session_inject_id' => $sessionInject->id,
+    ]);
 });
 
-test('assigned facilitator can update response', function () {
-    [, , $facilitator, , , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+test('facilitator cannot update response', function () {
+    [, , $facilitator, $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
 
-    $create = $this->actingAs($facilitator)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+    $create = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
         'session_inject_id' => $sessionInject->id,
         'decision' => 'Initial decision',
     ]);
@@ -122,8 +315,12 @@ test('assigned facilitator can update response', function () {
         'decision' => 'Updated decision',
     ]);
 
-    $update->assertStatus(200)
-        ->assertJsonFragment(['decision' => 'Updated decision', 'revision' => 2]);
+    $update->assertForbidden();
+    $this->assertDatabaseHas('ttx_session_responses', [
+        'id' => $responseId,
+        'decision' => 'Initial decision',
+        'revision' => 1,
+    ]);
 });
 
 test('new response revision is 1', function () {
@@ -232,8 +429,8 @@ test('submitted_at remains unchanged after edit', function () {
     expect($response->submitted_at->timestamp)->toBe($originalSubmittedAt->timestamp);
 });
 
-test('last_edited_by becomes updater on successful update', function () {
-    [, , $facilitator, $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+test('last_edited_by becomes participant updater on successful update', function () {
+    [, , , $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
 
     $create = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
         'session_inject_id' => $sessionInject->id,
@@ -242,14 +439,14 @@ test('last_edited_by becomes updater on successful update', function () {
 
     $responseId = $create->json('id');
 
-    $this->actingAs($facilitator)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
+    $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
         'expected_revision' => 1,
-        'decision' => 'Facilitator updated',
+        'decision' => 'Participant updated',
     ]);
 
     $this->assertDatabaseHas('ttx_session_responses', [
         'id' => $responseId,
-        'last_edited_by' => $facilitator->id,
+        'last_edited_by' => $participant->id,
     ]);
 });
 
@@ -445,7 +642,7 @@ test('PENDING inject cannot be responded to', function () {
 });
 
 test('LOCKED inject cannot be mutated', function () {
-    [, , $facilitator, , , , $session] = ttxResponseRuntimeFixture();
+    [, , , $participant, , , $session] = ttxResponseRuntimeFixture();
 
     $lockedInject = TtxSessionInject::forceCreate([
         'tenant_id' => $session->tenant_id,
@@ -462,7 +659,7 @@ test('LOCKED inject cannot be mutated', function () {
         'locked_at' => now(),
     ]);
 
-    $response = $this->actingAs($facilitator)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+    $response = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
         'session_inject_id' => $lockedInject->id,
         'decision' => 'Locked response',
     ]);
@@ -473,9 +670,9 @@ test('LOCKED inject cannot be mutated', function () {
 // ─── SESSION STATUS ───────────────────────────────────────
 
 test('DEBRIEF session cannot mutate responses', function () {
-    [, $admin, $facilitator, , , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    [, , , $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
 
-    $create = $this->actingAs($facilitator)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+    $create = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
         'session_inject_id' => $sessionInject->id,
         'decision' => 'Before debrief',
     ]);
@@ -484,7 +681,7 @@ test('DEBRIEF session cannot mutate responses', function () {
 
     $session->update(['status' => TtxSessionStatus::Debrief, 'debrief_started_at' => now()]);
 
-    $update = $this->actingAs($facilitator)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
+    $update = $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
         'expected_revision' => 1,
         'decision' => 'During debrief',
     ]);
@@ -493,9 +690,9 @@ test('DEBRIEF session cannot mutate responses', function () {
 });
 
 test('COMPLETED session cannot mutate responses', function () {
-    [, $admin, $facilitator, , , , $session, $sessionInject] = ttxResponseRuntimeFixture();
+    [, , , $participant, , , $session, $sessionInject] = ttxResponseRuntimeFixture();
 
-    $create = $this->actingAs($facilitator)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+    $create = $this->actingAs($participant)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
         'session_inject_id' => $sessionInject->id,
         'decision' => 'Before completion',
     ]);
@@ -504,7 +701,7 @@ test('COMPLETED session cannot mutate responses', function () {
 
     $session->update(['status' => TtxSessionStatus::Completed, 'completed_at' => now()]);
 
-    $update = $this->actingAs($facilitator)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
+    $update = $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $responseId]), [
         'expected_revision' => 1,
         'decision' => 'After completion',
     ]);
@@ -900,10 +1097,17 @@ function ttxProgressionFixture(): array
         'session_role' => TtxSessionRole::Facilitator,
     ]);
 
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
 
@@ -967,10 +1171,17 @@ function ttxFinalProgressionFixture(): array
         'session_role' => TtxSessionRole::Facilitator,
     ]);
 
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
 
@@ -1253,7 +1464,7 @@ test('ttx.response_locked and ttx.debrief_started emitted on final progression',
 // ─── IMMUTABILITY AFTER PROGRESSION ──────────────────────
 
 test('response update after progression is rejected', function () {
-    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    [, $admin, , $participant, , , , $session, $sessionInject1] = ttxProgressionFixture();
     $this->actingAs($admin);
 
     $response = TtxSessionResponse::forceCreate([
@@ -1270,7 +1481,7 @@ test('response update after progression is rejected', function () {
     $service->advanceInject($session, $admin);
 
     // Inject is now LOCKED — update should be rejected
-    $update = $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+    $update = $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
         'expected_revision' => 1,
         'decision' => 'Should not work',
     ]);
@@ -1279,7 +1490,7 @@ test('response update after progression is rejected', function () {
 });
 
 test('rejected update after progression does not alter response content', function () {
-    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    [, $admin, , $participant, , , , $session, $sessionInject1] = ttxProgressionFixture();
     $this->actingAs($admin);
 
     $response = TtxSessionResponse::forceCreate([
@@ -1295,7 +1506,7 @@ test('rejected update after progression does not alter response content', functi
     $service = app(TtxSessionService::class);
     $service->advanceInject($session, $admin);
 
-    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+    $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
         'expected_revision' => 1,
         'decision' => 'Should not apply',
     ]);
@@ -1304,7 +1515,7 @@ test('rejected update after progression does not alter response content', functi
 });
 
 test('rejected update after progression does not increment revision', function () {
-    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    [, $admin, , $participant, , , , $session, $sessionInject1] = ttxProgressionFixture();
     $this->actingAs($admin);
 
     $response = TtxSessionResponse::forceCreate([
@@ -1320,7 +1531,7 @@ test('rejected update after progression does not increment revision', function (
     $service = app(TtxSessionService::class);
     $service->advanceInject($session, $admin);
 
-    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+    $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
         'expected_revision' => 1,
         'decision' => 'Should not work',
     ]);
@@ -1329,7 +1540,7 @@ test('rejected update after progression does not increment revision', function (
 });
 
 test('rejected update after progression does not emit ttx.response_saved', function () {
-    [, $admin, , , , , , $session, $sessionInject1] = ttxProgressionFixture();
+    [, $admin, , $participant, , , , $session, $sessionInject1] = ttxProgressionFixture();
     $this->actingAs($admin);
 
     $response = TtxSessionResponse::forceCreate([
@@ -1347,7 +1558,7 @@ test('rejected update after progression does not emit ttx.response_saved', funct
 
     $beforeCount = AuditLog::where('action', 'ttx.response_saved')->count();
 
-    $this->actingAs($admin)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
+    $this->actingAs($participant)->putJson(route('tenant.ttx.sessions.responses.update', [$session, $response->id]), [
         'expected_revision' => 1,
         'decision' => 'Should not audit',
     ]);
@@ -1431,7 +1642,7 @@ function ttxReadModelFixture(): array
 {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
-    $facilitator = User::factory()->create(['tenant_id' => $tenant->id]);
+    $facilitator = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $participant = User::factory()->create(['tenant_id' => $tenant->id]);
 
     $exercise = TtxExercise::create([
@@ -1460,7 +1671,7 @@ function ttxReadModelFixture(): array
         'tenant_id' => $tenant->id,
         'exercise_id' => $exercise->id,
         'title' => 'Read model session',
-        'created_by' => $admin->id,
+        'created_by' => $facilitator->id,
         'status' => TtxSessionStatus::InProgress,
         'started_at' => now(),
         'exercise_snapshot' => ['title' => $exercise->title, 'scenario' => $exercise->scenario],
@@ -1473,10 +1684,17 @@ function ttxReadModelFixture(): array
         'session_role' => TtxSessionRole::Facilitator,
     ]);
 
+    $team = TtxSessionTeam::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'name' => 'Security / SOC',
+    ]);
+
     TtxSessionParticipant::forceCreate([
         'tenant_id' => $tenant->id,
         'session_id' => $session->id,
         'user_id' => $participant->id,
+        'team_id' => $team->id,
         'session_role' => TtxSessionRole::Security,
     ]);
 
@@ -2137,4 +2355,28 @@ test('defense-in-depth: facilitator payload does not expose pending response con
         ->and(array_key_exists('response', $pendingInject))->toBeFalse()
         ->and(json_encode($pendingInject))->not->toContain('Secret pending decision')
         ->and(json_encode($pendingInject))->not->toContain('"revision":7');
+});
+
+test('advancing locks every existing team response for the current inject', function () {
+    [$tenant, $admin, , $securityUser, , , , $session, $currentInject] = ttxProgressionFixture();
+    $operationsTeam = TtxSessionTeam::forceCreate(['tenant_id' => $tenant->id, 'session_id' => $session->id, 'name' => 'IT Operations']);
+    $operationsUser = User::factory()->create(['tenant_id' => $tenant->id]);
+    TtxSessionParticipant::forceCreate([
+        'tenant_id' => $tenant->id,
+        'session_id' => $session->id,
+        'user_id' => $operationsUser->id,
+        'team_id' => $operationsTeam->id,
+    ]);
+
+    foreach ([[$securityUser, 'Security response'], [$operationsUser, 'Operations response']] as [$actor, $decision]) {
+        $this->actingAs($actor)->postJson(route('tenant.ttx.sessions.responses.store', $session), [
+            'session_inject_id' => $currentInject->id,
+            'decision' => $decision,
+        ])->assertCreated();
+    }
+
+    app(TtxSessionService::class)->advanceInject($session, $admin);
+
+    expect(TtxSessionResponse::where('session_inject_id', $currentInject->id)->whereNull('locked_at')->count())->toBe(0)
+        ->and(TtxSessionResponse::where('session_inject_id', $currentInject->id)->count())->toBe(2);
 });

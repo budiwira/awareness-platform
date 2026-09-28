@@ -1,313 +1,1179 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
-import axios from 'axios';
-import AppLayout from '@/Layouts/AppLayout.vue';
-import EmptyState from '@/Components/EmptyState.vue';
+import { computed, ref } from "vue";
+import { Head, Link } from "@inertiajs/vue3";
+import axios from "axios";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 
 const props = defineProps({
-    session: { type: Object, required: true },
-    exercise_title: { type: String, default: null },
-    inject_count: { type: Number, default: 0 },
-    facilitator: { type: Object, default: null },
-    facilitator_count: { type: Number, default: 0 },
-    participants: { type: Array, default: () => [] },
-    readiness: { type: Object, default: () => ({}) },
-    permissions: { type: Object, default: () => ({}) },
-    can_open_console: { type: Boolean, default: false },
-    can_assign: Boolean,
-    can_assign_facilitator: Boolean,
-    assignable_users: { type: Array, default: () => [] },
-    role_options: { type: Array, default: () => [] },
+    session: Object,
+    exercise_title: String,
+    exercise_context: Object,
+    playbook: Object,
+    capabilities: Array,
+    relevant_playbook_phase_keys: Array,
+    inject_count: Number,
+    facilitator: Object,
+    participants: Array,
+    teams: Array,
+    readiness: Object,
+    permissions: Object,
+    assignable_users: Array,
+    can_open_console: Boolean,
 });
-
 const state = ref({ ...props });
-watch(() => ({ ...props }), (value) => { state.value = value; });
-const saving = ref(false);
-const markingReady = ref(false);
-const loading = ref(false);
-const error = ref('');
-const notice = ref('');
-const blocked = ref(false);
-const facilitatorUser = ref('');
-const participantUser = ref('');
-const participantRole = ref('');
-const regularParticipants = computed(() => state.value.participants.filter((p) => p.role !== 'facilitator'));
-const regularRoles = computed(() => state.value.role_options.filter((r) => r.value !== 'facilitator'));
-const busy = computed(() => saving.value || markingReady.value || loading.value || blocked.value);
+const busy = ref(false);
+const error = ref("");
+const notice = ref("");
+const teamForm = ref({ name: "", description: "" });
+const participantForm = ref({ user_id: "", team_id: "" });
+const responsibilityDrafts = ref(
+    Object.fromEntries(
+        props.teams.map((team) => [team.id, team.responsibilities ?? ""]),
+    ),
+);
 
-function reload() {
-    if (saving.value || loading.value) return;
-    loading.value = true;
-    router.reload({
-        onSuccess: () => { blocked.value = false; error.value = ''; },
-        onFinish: () => { loading.value = false; },
-    });
-}
-
-async function mutate(method, url, data = {}) {
-    if (busy.value) return;
-    saving.value = true;
-    error.value = '';
-    notice.value = '';
-    try {
-        const response = await axios({ method, url, data, headers: { Accept: 'application/json' } });
-        state.value = response.data;
-        facilitatorUser.value = '';
-        participantUser.value = '';
-        participantRole.value = '';
-        notice.value = 'Daftar peserta berhasil diperbarui.';
-    } catch (failure) {
-        const code = failure.response?.status;
-        const messages = {
-            403: 'Akses ditolak. Hak akses atau status sesi mungkin telah berubah. Muat ulang untuk memeriksa.',
-            404: 'Sesi atau peserta tidak lagi tersedia. Muat ulang daftar peserta.',
-            409: 'Daftar peserta atau status sesi telah berubah. Muat ulang sebelum melanjutkan.',
-            422: 'Periksa pengguna dan peran yang dipilih, lalu coba lagi.',
-        };
-        error.value = messages[code] ?? 'Perubahan belum dapat dikonfirmasi. Muat ulang sebelum mencoba lagi.';
-        blocked.value = code !== 422;
-    } finally {
-        saving.value = false;
-    }
-}
-
-const assign = (user, role) => mutate('post', route('tenant.ttx.sessions.participants.store', state.value.session.id), { user_id: user, role });
-const remove = (participant) => mutate('delete', route('tenant.ttx.sessions.participants.destroy', [state.value.session.id, participant.assignment_id]));
-
-async function markReady() {
-    if (busy.value || !state.value.permissions.can_mark_ready) return;
-    markingReady.value = true;
-    error.value = '';
-    notice.value = '';
-    try {
-        const response = await axios.post(
-            route('tenant.ttx.sessions.ready', state.value.session.id),
-            {},
-            { headers: { Accept: 'application/json' } },
-        );
-        state.value = response.data;
-        blocked.value = false;
-        notice.value = 'Sesi siap dan telah diserahkan kepada fasilitator.';
-    } catch (failure) {
-        const code = failure.response?.status;
-        const messages = {
-            403: 'Akses ditolak. Hak akses Anda mungkin telah berubah. Muat ulang untuk memeriksa.',
-            409: 'Status sesi telah berubah. Muat ulang sebelum melanjutkan.',
-            422: 'Sesi belum memenuhi seluruh persyaratan kesiapan. Muat ulang untuk melihat kondisi terbaru.',
-        };
-        error.value = messages[code] ?? 'Sesi belum dapat ditandai siap. Muat ulang sebelum mencoba lagi.';
-        blocked.value = true;
-    } finally {
-        markingReady.value = false;
-    }
-}
-
-const statusMeta = {
-    draft: { label: 'Draft', class: 'badge chip-brand' },
-    ready: { label: 'Siap', class: 'badge badge-ok' },
-    in_progress: { label: 'Berlangsung', class: 'badge badge-warn' },
-    debrief: { label: 'Debrief', class: 'badge' },
-    completed: { label: 'Selesai', class: 'badge' },
-};
-
-const status = computed(() => statusMeta[state.value.session.status] ?? { label: state.value.session.status, class: 'badge' });
-
-const roleLabel = (role) => state.value.role_options.find((option) => option.value === role)?.label ?? role;
-
-const formatDate = (value) => {
-    if (!value) return '—';
-    return new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-const checklist = computed(() => [
-    { key: 'has_exercise_snapshot', label: 'Skenario latihan tersimpan' },
-    { key: 'has_facilitator', label: 'Tepat satu fasilitator' },
-    { key: 'has_non_facilitator_participant', label: 'Minimal satu peserta selain fasilitator' },
-    { key: 'has_injects', label: 'Minimal satu inject tersedia' },
-    { key: 'all_injects_pending', label: 'Semua inject berstatus pending' },
+const canEdit = computed(
+    () =>
+        state.value.session.status === "draft" &&
+        state.value.permissions.can_manage_roster,
+);
+const relevantPhases = computed(() => {
+    const keys = new Set(state.value.relevant_playbook_phase_keys ?? []);
+    return (state.value.playbook?.structured_phases ?? []).filter((phase) =>
+        keys.has(phase.key),
+    );
+});
+const rosterByTeam = computed(() =>
+    state.value.teams.map((team) => ({
+        ...team,
+        participants: state.value.participants.filter(
+            (participant) => participant.team_id === team.id,
+        ),
+    })),
+);
+const phaseByKey = computed(() =>
+    Object.fromEntries(relevantPhases.value.map((phase) => [phase.key, phase])),
+);
+const readinessChecks = computed(() => [
+    { ok: state.value.readiness.has_exercise_snapshot, label: "Skenario siap" },
+    {
+        ok: state.value.readiness.has_playbook,
+        label: "Referensi Playbook siap",
+    },
+    {
+        ok: state.value.readiness.has_facilitator,
+        label: "Fasilitator aktif dan memiliki otoritas",
+    },
+    { ok: state.value.readiness.has_teams, label: "Tim exercise tersedia" },
+    {
+        ok: true,
+        label:
+            state.value.capabilities.length > 0
+                ? `${state.value.capabilities.length} capability exercise didefinisikan`
+                : "Session legacy menggunakan tujuan exercise tanpa metadata capability",
+    },
+    {
+        ok: state.value.readiness.participants_have_valid_team,
+        label: "Peserta aktif telah ditempatkan pada satu tim",
+    },
+    {
+        ok:
+            state.value.readiness.responsibility_coverage_complete ??
+            state.value.readiness.participating_teams_prepared,
+        label: state.value.readiness.uses_structured_responsibility_ownership
+            ? "Semua area respons memiliki Primary yang berpeserta"
+            : "Persiapan tim lengkap",
+    },
+    {
+        ok:
+            state.value.readiness.has_injects &&
+            state.value.readiness.all_injects_pending,
+        label: `${state.value.inject_count} situation update siap`,
+    },
 ]);
+
+function sync(payload) {
+    const previousTeams = state.value.teams;
+    const previousDrafts = responsibilityDrafts.value;
+    state.value = payload;
+    responsibilityDrafts.value = Object.fromEntries(
+        payload.teams.map((team) => {
+            const previous = previousTeams.find((item) => item.id === team.id);
+            const hasLocalChanges =
+                previous &&
+                previousDrafts[team.id] !== (previous.responsibilities ?? "");
+            return [
+                team.id,
+                hasLocalChanges
+                    ? previousDrafts[team.id]
+                    : (team.responsibilities ?? ""),
+            ];
+        }),
+    );
+}
+function failureMessage(failure) {
+    const errors = failure.response?.data?.errors;
+    return errors
+        ? Object.values(errors).flat()[0]
+        : (failure.response?.data?.message ??
+              "Perubahan tidak dapat disimpan.");
+}
+async function mutate(
+    method,
+    url,
+    data = {},
+    success = "Perubahan tersimpan.",
+) {
+    if (busy.value) return false;
+    busy.value = true;
+    error.value = "";
+    notice.value = "";
+    try {
+        const response = await axios({
+            method,
+            url,
+            data,
+            headers: { Accept: "application/json" },
+        });
+        sync(response.data);
+        notice.value = success;
+        return true;
+    } catch (failure) {
+        error.value = failureMessage(failure);
+        return false;
+    } finally {
+        busy.value = false;
+    }
+}
+async function assignmentRequest(method, assignmentId, data = {}) {
+    const url = assignmentId
+        ? route(
+              `tenant.ttx.sessions.responsibility-assignments.${method === "delete" ? "destroy" : "update"}`,
+              [state.value.session.id, assignmentId],
+          )
+        : route(
+              "tenant.ttx.sessions.responsibility-assignments.store",
+              state.value.session.id,
+          );
+    const response = await axios({
+        method,
+        url,
+        data,
+        headers: { Accept: "application/json" },
+    });
+    sync(response.data);
+}
+function assignmentsFor(phaseKey) {
+    return state.value.teams.flatMap((team) =>
+        team.responsibility_assignments
+            .filter((assignment) => assignment.playbook_phase_key === phaseKey)
+            .map((assignment) => ({
+                ...assignment,
+                team_id: team.id,
+                team_name: team.name,
+            })),
+    );
+}
+function primaryTeamId(phaseKey) {
+    return (
+        assignmentsFor(phaseKey).find(
+            (assignment) => assignment.role === "primary",
+        )?.team_id ?? ""
+    );
+}
+function isSupport(phaseKey, teamId) {
+    return assignmentsFor(phaseKey).some(
+        (assignment) =>
+            assignment.team_id === teamId && assignment.role === "support",
+    );
+}
+async function setPrimary(phaseKey, rawTeamId) {
+    if (!canEdit.value || busy.value) return;
+    const teamId = Number(rawTeamId) || null;
+    const current = assignmentsFor(phaseKey).find(
+        (assignment) => assignment.role === "primary",
+    );
+    if (!teamId) return;
+    if ((current?.team_id ?? null) === teamId) return;
+    busy.value = true;
+    error.value = "";
+    notice.value = "";
+    try {
+        if (current)
+            await assignmentRequest("put", current.id, {
+                role: "primary",
+                team_id: teamId,
+            });
+        else {
+            const support = assignmentsFor(phaseKey).find(
+                (assignment) => assignment.team_id === teamId,
+            );
+            if (support)
+                await assignmentRequest("put", support.id, { role: "primary" });
+            else
+                await assignmentRequest("post", null, {
+                    team_id: teamId,
+                    playbook_phase_key: phaseKey,
+                    role: "primary",
+                });
+        }
+        notice.value = "Primary owner diperbarui.";
+    } catch (failure) {
+        error.value = failureMessage(failure);
+    } finally {
+        busy.value = false;
+    }
+}
+async function toggleSupport(phaseKey, teamId, checked) {
+    if (!canEdit.value || busy.value) return;
+    const existing = assignmentsFor(phaseKey).find(
+        (assignment) =>
+            assignment.team_id === teamId && assignment.role === "support",
+    );
+    busy.value = true;
+    error.value = "";
+    notice.value = "";
+    try {
+        if (checked && !existing)
+            await assignmentRequest("post", null, {
+                team_id: teamId,
+                playbook_phase_key: phaseKey,
+                role: "support",
+            });
+        if (!checked && existing)
+            await assignmentRequest("delete", existing.id);
+        notice.value = "Support owner diperbarui.";
+    } catch (failure) {
+        error.value = failureMessage(failure);
+    } finally {
+        busy.value = false;
+    }
+}
+async function addTeam() {
+    if (
+        await mutate(
+            "post",
+            route("tenant.ttx.sessions.teams.store", state.value.session.id),
+            teamForm.value,
+            "Tim berhasil dibuat.",
+        )
+    )
+        teamForm.value = { name: "", description: "" };
+}
+async function assignParticipant() {
+    if (
+        await mutate(
+            "post",
+            route(
+                "tenant.ttx.sessions.participants.store",
+                state.value.session.id,
+            ),
+            participantForm.value,
+            "Peserta berhasil ditugaskan.",
+        )
+    )
+        participantForm.value = { user_id: "", team_id: "" };
+}
+const removeTeam = (id) =>
+    mutate(
+        "delete",
+        route("tenant.ttx.sessions.teams.destroy", [
+            state.value.session.id,
+            id,
+        ]),
+        {},
+        "Tim berhasil dihapus.",
+    );
+const removeParticipant = (id) =>
+    mutate(
+        "delete",
+        route("tenant.ttx.sessions.participants.destroy", [
+            state.value.session.id,
+            id,
+        ]),
+        {},
+        "Peserta berhasil dihapus.",
+    );
+async function saveNotes(id) {
+    const submitted = responsibilityDrafts.value[id];
+    if (
+        await mutate(
+            "put",
+            route("tenant.ttx.sessions.teams.responsibilities.update", [
+                state.value.session.id,
+                id,
+            ]),
+            { responsibilities: submitted },
+            "Catatan persiapan disimpan.",
+        )
+    )
+        responsibilityDrafts.value[id] =
+            state.value.teams.find((team) => team.id === id)
+                ?.responsibilities ?? "";
+}
+const markReady = () =>
+    mutate(
+        "post",
+        route("tenant.ttx.sessions.ready", state.value.session.id),
+        {},
+        "Session telah ditandai siap.",
+    );
+const formatDate = (value) =>
+    value
+        ? new Date(value).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+          })
+        : "Belum dijadwalkan";
 </script>
 
 <template>
-    <Head :title="`Persiapan — ${state.session.title}`" />
+    <Head :title="`Persiapan - ${state.session.title}`" />
+    <AppLayout title="Persiapan Tabletop">
+        <div class="prepare-page fade-in">
+            <Link
+                :href="route('tenant.ttx.sessions.index')"
+                class="back-link text-sm"
+                >Kembali ke Sessions</Link
+            >
+            <header class="prepare-header">
+                <p class="eyebrow">Persiapan Exercise</p>
+                <h1 class="font-display text-2xl font-bold t-ink sm:text-3xl">
+                    {{ state.session.title }}
+                </h1>
+                <p class="mt-2 text-sm t-muted">
+                    {{ formatDate(state.session.scheduled_at) }} · Fasilitator
+                    {{ state.facilitator?.name }}
+                </p>
+            </header>
+            <p v-if="error" class="message message-error" role="alert">
+                {{ error }}
+            </p>
+            <p
+                v-if="notice"
+                class="message message-success"
+                role="status"
+                aria-live="polite"
+            >
+                {{ notice }}
+            </p>
 
-    <AppLayout title="Persiapan Sesi">
-        <div class="mb-6">
-            <Link :href="route('tenant.ttx.sessions.index')" class="back-link text-sm hover:underline" style="color: var(--ink);">
-                ← Kembali ke Daftar Sesi
-            </Link>
-        </div>
-
-        <div class="preparation fade-in min-w-0 space-y-6">
-            <!-- Ringkasan sesi -->
-            <section class="card overflow-hidden">
-                <div class="p-6 sm:p-8" style="background: var(--surface-2);">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="min-w-0">
-                            <h1 class="font-display break-words text-2xl font-bold t-ink">{{ state.session.title }}</h1>
-                            <p class="mt-1 text-sm t-muted">
-                                {{ state.exercise_title ?? 'Latihan terkait' }}
-                            </p>
-                        </div>
-                        <span :class="status.class" class="self-start" style="color: var(--ink)">{{ status.label }}</span>
+            <section class="prepare-section" aria-labelledby="context-heading">
+                <p class="section-number">01 / Exercise Context</p>
+                <h2 id="context-heading" class="section-title">
+                    {{ state.exercise_context?.title ?? state.exercise_title }}
+                </h2>
+                <p class="narrative">
+                    {{
+                        state.exercise_context?.scenario ||
+                        "Deskripsi skenario belum tersedia."
+                    }}
+                </p>
+                <dl class="facts">
+                    <div>
+                        <dt>Durasi / cakupan</dt>
+                        <dd>
+                            {{
+                                state.exercise_context?.scope ||
+                                "Tidak ditentukan"
+                            }}
+                        </dd>
                     </div>
-                </div>
-
-                <dl class="grid grid-cols-1 gap-px sm:grid-cols-3" style="background: var(--line);">
-                    <div class="p-5" style="background: var(--surface);">
-                        <dt class="text-xs font-semibold uppercase tracking-wide t-muted">Jadwal</dt>
-                        <dd class="mt-1 text-sm t-ink">{{ formatDate(state.session.scheduled_at) }}</dd>
-                    </div>
-                    <div class="p-5" style="background: var(--surface);">
-                        <dt class="text-xs font-semibold uppercase tracking-wide t-muted">Jumlah Inject</dt>
-                        <dd class="mt-1 text-sm tabular-nums t-ink">{{ state.inject_count }}</dd>
-                    </div>
-                    <div class="p-5" style="background: var(--surface);">
-                        <dt class="text-xs font-semibold uppercase tracking-wide t-muted">Fasilitator</dt>
-                        <dd class="mt-1 text-sm t-ink">{{ state.facilitator?.name ?? 'Belum ditetapkan' }}</dd>
+                    <div>
+                        <dt>Situation updates</dt>
+                        <dd>{{ state.inject_count }}</dd>
                     </div>
                 </dl>
             </section>
 
-            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <!-- Peserta -->
-                <section class="card min-w-0 p-5 sm:p-6 lg:col-span-2">
-                    <h2 class="font-display text-lg font-bold t-ink">Pengelolaan Peserta</h2>
-                    <p class="mb-4 mt-1 text-sm t-muted">
-                        Daftar peserta yang sudah ditetapkan pada sesi ini.
-                    </p>
-
-                    <p v-if="error" role="alert" class="mb-4 rounded-xl border p-4 text-sm t-ink" style="border-color: var(--line)">{{ error }} <button type="button" class="btn btn-secondary mt-2" :disabled="saving || loading" @click="reload">Muat ulang</button></p>
-                    <p v-if="notice" role="status" class="mb-4 text-sm t-ink">{{ notice }}</p>
-                    <div v-if="loading" class="skeleton mb-4 h-20 rounded-xl" role="status"><span class="sr-only">Memuat daftar peserta...</span></div>
-                    <div :aria-busy="saving || loading">
-                        <h3 class="font-display font-semibold t-ink">Fasilitator utama</h3>
-                        <div v-if="state.facilitator" class="my-4 flex flex-wrap items-center justify-between gap-3 rounded-xl p-4" style="background: var(--surface-2)">
-                            <span class="min-w-0 break-words t-ink">{{ state.facilitator.name }}</span>
-                            <button v-if="state.facilitator.can_remove" class="btn btn-secondary" :disabled="busy" @click="remove(state.facilitator)">{{ saving ? 'Memproses...' : 'Hapus fasilitator' }}</button>
-                            <span v-else class="text-sm t-muted">Tidak dapat diubah</span>
-                        </div>
-                        <EmptyState v-else class="roster-empty" title="Fasilitator belum ditetapkan" message="Tetapkan satu pengguna aktif untuk memandu sesi." />
-                        <form v-if="state.can_assign_facilitator && state.assignable_users.length" class="mt-4 grid min-w-0 gap-3" @submit.prevent="assign(facilitatorUser, 'facilitator')">
-                            <label for="facilitator-user" class="text-sm font-medium t-ink">Pengguna fasilitator</label>
-                            <select id="facilitator-user" v-model="facilitatorUser" required :disabled="busy" class="input w-full"><option disabled value="">Pilih fasilitator</option><option v-for="user in state.assignable_users" :key="user.id" :value="user.id">{{ user.name }}</option></select>
-                            <button class="btn btn-primary sm:justify-self-end" :disabled="busy || !facilitatorUser">{{ saving ? 'Memproses...' : 'Tetapkan fasilitator' }}</button>
-                        </form>
-                        <h3 class="font-display mt-6 border-t pt-6 font-semibold t-ink" style="border-color: var(--line)">Peserta sesi</h3>
-                        <EmptyState v-if="!regularParticipants.length" class="roster-empty" title="Belum ada peserta" message="Tambahkan peserta beserta perannya untuk menyiapkan sesi." />
-                        <ul v-else class="mt-3" aria-label="Daftar peserta">
-                            <li v-for="participant in regularParticipants" :key="participant.assignment_id" class="flex flex-wrap items-center justify-between gap-3 border-b py-4" style="border-color: var(--line)">
-                                <div class="min-w-0 flex-1"><p class="break-words text-sm font-semibold t-ink">{{ participant.name }}</p><p class="mt-1 text-sm t-muted">{{ roleLabel(participant.role) }}</p></div>
-                                <button v-if="participant.can_remove" class="btn btn-secondary" :aria-label="`Hapus peserta ${participant.name}`" :disabled="busy" @click="remove(participant)">{{ saving ? 'Memproses...' : 'Hapus' }}</button>
-                            </li>
-                        </ul>
-                        <form v-if="state.can_assign && state.assignable_users.length" class="mt-5 grid min-w-0 gap-4 sm:grid-cols-2" @submit.prevent="assign(participantUser, participantRole)">
-                            <div class="min-w-0"><label for="participant-user" class="mb-2 block text-sm font-medium t-ink">Pengguna</label><select id="participant-user" v-model="participantUser" required :disabled="busy" class="input w-full"><option disabled value="">Pilih peserta</option><option v-for="user in state.assignable_users" :key="user.id" :value="user.id">{{ user.name }}</option></select></div>
-                            <div class="min-w-0"><label for="participant-role" class="mb-2 block text-sm font-medium t-ink">Peran sesi</label><select id="participant-role" v-model="participantRole" required :disabled="busy" class="input w-full"><option disabled value="">Pilih peran</option><option v-for="role in regularRoles" :key="role.value" :value="role.value">{{ role.label }}</option></select></div>
-                            <button class="btn btn-primary sm:col-span-2 sm:justify-self-end" :disabled="busy || !participantUser || !participantRole">{{ saving ? 'Memproses...' : 'Tambahkan peserta' }}</button>
-                        </form>
-                        <p v-else-if="state.can_assign" class="mt-5 text-sm t-muted">Tidak ada pengguna aktif lain yang dapat ditambahkan.</p>
-                        <p v-else class="mt-5 text-sm t-muted">Daftar peserta terkunci pada tahap sesi ini.</p>
-                        <p v-if="state.session.status === 'ready'" class="mt-4 text-sm t-muted">Fasilitator tetap. Penghapusan peserta hanya tersedia jika kesiapan sesi tetap terpenuhi.</p>
-                    </div>
-                </section>
-
-                <!-- Checklist kesiapan (server-derived) -->
-                <section class="card self-start p-5 sm:p-6">
-                    <h2 class="font-display text-lg font-bold t-ink">Checklist Kesiapan</h2>
-                    <p class="mb-4 mt-1 text-sm t-muted">Diperbarui setelah perubahan tersimpan.</p>
-
-                    <ul class="space-y-3">
-                        <li v-for="item in checklist" :key="item.key" class="flex items-start gap-3 text-sm">
-                            <span
-                                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                                :style="state.readiness[item.key] ? 'background: var(--ok-bg); color: var(--ok);' : 'background: var(--surface-2); color: var(--muted);'"
-                                aria-hidden="true"
-                            >
-                                <svg v-if="state.readiness[item.key]" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <svg v-else class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </span>
-                            <span :class="state.readiness[item.key] ? 't-ink' : 't-muted'"><span class="sr-only">{{ state.readiness[item.key] ? 'Terpenuhi:' : 'Belum terpenuhi:' }}</span> {{ item.label }}</span>
-                        </li>
-                    </ul>
-
-                    <div v-if="state.session.status === 'draft'" class="mt-6 border-t pt-5" style="border-color: var(--line)">
-                        <p class="mb-4 text-sm t-muted">Status siap hanya dapat diberikan setelah seluruh pemeriksaan server terpenuhi.</p>
-                        <button
-                            type="button"
-                            class="btn btn-primary w-full justify-center"
-                            :disabled="busy || !state.permissions.can_mark_ready"
-                            @click="markReady"
-                        >
-                            <svg v-if="!markingReady" class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            {{ markingReady ? 'Menandai siap...' : 'Tandai Siap' }}
-                        </button>
-                        <p v-if="!state.permissions.can_mark_ready" class="mt-3 text-sm t-muted">Lengkapi item yang belum terpenuhi untuk melanjutkan.</p>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Serah terima fasilitator -->
-            <section v-if="state.session.status === 'ready'" class="card overflow-hidden">
-                <div class="grid gap-5 p-5 sm:p-6 md:grid-cols-[auto,1fr,auto] md:items-center">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl" style="background: var(--ok-bg); color: var(--ok)">
-                        <svg class="h-6 w-6" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div class="min-w-0">
-                        <h2 class="font-display text-xl font-bold t-ink">Sesi Siap</h2>
-                        <p class="mt-1 text-sm t-muted">Persiapan selesai. {{ state.facilitator?.name ?? 'Fasilitator yang ditetapkan' }} memulai latihan melalui konsol fasilitator.</p>
-                    </div>
-                    <Link
-                        v-if="state.permissions.can_open_console"
-                        :href="route('tenant.ttx.sessions.console', state.session.id)"
-                        class="btn btn-primary justify-center md:justify-self-end"
+            <section
+                class="prepare-section"
+                aria-labelledby="capabilities-heading"
+            >
+                <p class="section-number">02 / Objectives & Capabilities</p>
+                <h2 id="capabilities-heading" class="section-title">
+                    Yang akan diuji
+                </h2>
+                <p
+                    v-if="state.exercise_context?.objectives"
+                    class="narrative whitespace-pre-wrap"
+                >
+                    {{ state.exercise_context.objectives }}
+                </p>
+                <div class="capability-list">
+                    <article
+                        v-for="capability in state.capabilities"
+                        :key="capability.code"
+                        class="capability-row"
                     >
-                        <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        Buka Console
-                    </Link>
-                    <p v-else class="text-sm t-muted md:max-w-xs md:text-right">Fasilitator yang ditetapkan akan melanjutkan sesi dari akunnya.</p>
+                        <strong>{{ capability.code }}</strong>
+                        <div>
+                            <h3>{{ capability.label }}</h3>
+                            <p>{{ capability.description }}</p>
+                        </div>
+                    </article>
                 </div>
             </section>
 
-            <div v-else-if="state.session.status !== 'draft'" class="flex justify-end">
-                <Link
-                    v-if="state.permissions.can_open_console"
-                    :href="route('tenant.ttx.sessions.console', state.session.id)"
-                    class="btn btn-primary"
+            <section class="prepare-section" aria-labelledby="playbook-heading">
+                <p class="section-number">03 / Playbook Baseline</p>
+                <h2 id="playbook-heading" class="section-title">
+                    {{ state.playbook?.title ?? "Playbook belum tersedia" }}
+                </h2>
+                <p class="narrative">{{ state.playbook?.description }}</p>
+                <p class="reference-note">
+                    Playbook adalah panduan respons organisasi yang menjadi
+                    referensi exercise.
+                </p>
+                <ol
+                    v-if="state.playbook?.structured_phases?.length"
+                    class="phase-list"
                 >
-                    <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    Buka Console
-                </Link>
-            </div>
+                    <li
+                        v-for="(phase, index) in state.playbook
+                            .structured_phases"
+                        :key="phase.key"
+                    >
+                        <span>{{ String(index + 1).padStart(2, "0") }}</span>
+                        <div>
+                            <h3>{{ phase.title }}</h3>
+                            <p>{{ phase.guidance }}</p>
+                            <small>{{
+                                phase.capability_codes.join(" · ")
+                            }}</small>
+                        </div>
+                    </li>
+                </ol>
+                <p v-else class="legacy-playbook whitespace-pre-wrap">
+                    {{
+                        state.playbook?.content ||
+                        "Isi Playbook legacy tidak tersedia."
+                    }}
+                </p>
+            </section>
+
+            <section class="prepare-section" aria-labelledby="teams-heading">
+                <p class="section-number">04 / Teams & Participants</p>
+                <h2 id="teams-heading" class="section-title">
+                    Susunan exercise
+                </h2>
+                <div v-if="rosterByTeam.length" class="roster-list">
+                    <article
+                        v-for="team in rosterByTeam"
+                        :key="team.id"
+                        class="roster-row"
+                    >
+                        <div>
+                            <h3>{{ team.name }}</h3>
+                            <p>
+                                {{ team.description || "Tanpa deskripsi tim" }}
+                            </p>
+                        </div>
+                        <div class="roster-members">
+                            <span
+                                v-for="person in team.participants"
+                                :key="person.assignment_id"
+                                >{{ person.name
+                                }}<button
+                                    v-if="person.can_remove"
+                                    type="button"
+                                    :disabled="busy"
+                                    @click="
+                                        removeParticipant(person.assignment_id)
+                                    "
+                                >
+                                    Hapus
+                                </button></span
+                            ><em v-if="!team.participants.length"
+                                >Belum ada peserta</em
+                            >
+                        </div>
+                        <button
+                            v-if="team.can_remove"
+                            type="button"
+                            class="text-action"
+                            :disabled="busy"
+                            @click="removeTeam(team.id)"
+                        >
+                            Hapus tim
+                        </button>
+                    </article>
+                </div>
+                <EmptyState
+                    v-else
+                    title="Belum ada tim"
+                    message="Buat minimal satu tim fungsional untuk exercise ini."
+                />
+                <div v-if="canEdit" class="management-grid">
+                    <form class="compact-form" @submit.prevent="addTeam">
+                        <h3>Tambah tim</h3>
+                        <input
+                            v-model="teamForm.name"
+                            class="input"
+                            maxlength="120"
+                            required
+                            aria-label="Nama tim"
+                            placeholder="Nama tim"
+                            :disabled="busy"
+                        /><input
+                            v-model="teamForm.description"
+                            class="input"
+                            maxlength="1000"
+                            aria-label="Deskripsi tim opsional"
+                            placeholder="Deskripsi opsional"
+                            :disabled="busy"
+                        /><button class="btn btn-secondary" :disabled="busy">
+                            {{ busy ? "Memproses..." : "Tambah Tim" }}
+                        </button>
+                    </form>
+                    <form
+                        v-if="
+                            state.assignable_users.length && state.teams.length
+                        "
+                        class="compact-form"
+                        @submit.prevent="assignParticipant"
+                    >
+                        <h3>Tempatkan peserta</h3>
+                        <select
+                            v-model="participantForm.user_id"
+                            aria-label="Peserta yang ditugaskan"
+                            required
+                            class="input"
+                            :disabled="busy"
+                        >
+                            <option disabled value="">Pilih learner</option>
+                            <option
+                                v-for="user in state.assignable_users"
+                                :key="user.id"
+                                :value="user.id"
+                            >
+                                {{ user.name }}
+                            </option></select
+                        ><select
+                            v-model="participantForm.team_id"
+                            aria-label="Tim peserta"
+                            required
+                            class="input"
+                            :disabled="busy"
+                        >
+                            <option disabled value="">Pilih tim</option>
+                            <option
+                                v-for="team in state.teams"
+                                :key="team.id"
+                                :value="team.id"
+                            >
+                                {{ team.name }}
+                            </option></select
+                        ><button class="btn btn-secondary" :disabled="busy">
+                            {{ busy ? "Memproses..." : "Tambahkan Peserta" }}
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section
+                class="prepare-section"
+                aria-labelledby="ownership-heading"
+            >
+                <p class="section-number">05 / Responsibility Ownership</p>
+                <h2 id="ownership-heading" class="section-title">
+                    Pemilik area respons
+                </h2>
+                <p class="narrative">
+                    Tetapkan tepat satu Primary untuk setiap area relevan. Tim
+                    Support bersifat opsional.
+                </p>
+                <div v-if="relevantPhases.length" class="ownership-table-wrap">
+                    <table class="ownership-table">
+                        <thead>
+                            <tr>
+                                <th>Response area</th>
+                                <th>Primary</th>
+                                <th>Support</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="phase in relevantPhases"
+                                :key="phase.key"
+                                :class="{
+                                    uncovered:
+                                        state.readiness.uncovered_relevant_phase_keys?.includes(
+                                            phase.key,
+                                        ),
+                                }"
+                            >
+                                <th scope="row">
+                                    <span>{{ phase.title }}</span
+                                    ><small>{{
+                                        phase.capability_codes.join(" · ")
+                                    }}</small>
+                                </th>
+                                <td>
+                                    <select
+                                        :value="primaryTeamId(phase.key)"
+                                        class="input"
+                                        :disabled="!canEdit || busy"
+                                        :aria-label="`Primary untuk ${phase.title}`"
+                                        @change="
+                                            setPrimary(
+                                                phase.key,
+                                                $event.target.value,
+                                            )
+                                        "
+                                    >
+                                        <option disabled value="">
+                                            Belum ditetapkan
+                                        </option>
+                                        <option
+                                            v-for="team in state.teams"
+                                            :key="team.id"
+                                            :value="team.id"
+                                        >
+                                            {{ team.name }}
+                                        </option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="support-options">
+                                        <label
+                                            v-for="team in state.teams"
+                                            :key="team.id"
+                                            ><input
+                                                type="checkbox"
+                                                :checked="
+                                                    isSupport(
+                                                        phase.key,
+                                                        team.id,
+                                                    )
+                                                "
+                                                :disabled="
+                                                    !canEdit ||
+                                                    busy ||
+                                                    primaryTeamId(phase.key) ===
+                                                        team.id
+                                                "
+                                                @change="
+                                                    toggleSupport(
+                                                        phase.key,
+                                                        team.id,
+                                                        $event.target.checked,
+                                                    )
+                                                "
+                                            /><span>{{
+                                                team.name
+                                            }}</span></label
+                                        ><span
+                                            v-if="!state.teams.length"
+                                            class="t-muted"
+                                            >Belum ada tim</span
+                                        >
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p v-else class="message">
+                    Session legacy menggunakan catatan persiapan tim sebagai
+                    baseline readiness.
+                </p>
+            </section>
+
+            <section class="prepare-section" aria-labelledby="notes-heading">
+                <p class="section-number">06 / Optional Preparation Notes</p>
+                <h2 id="notes-heading" class="section-title">
+                    Catatan persiapan
+                </h2>
+                <p class="narrative">
+                    Catatan khusus tim sebelum exercise dimulai. Pada session
+                    V2, catatan ini opsional; ownership mengikuti assignment
+                    fase. Pada session legacy, catatan persiapan tetap
+                    diperlukan.
+                </p>
+                <div class="notes-grid">
+                    <article v-for="team in state.teams" :key="team.id">
+                        <label :for="`notes-${team.id}`">{{ team.name }}</label
+                        ><textarea
+                            :id="`notes-${team.id}`"
+                            v-model="responsibilityDrafts[team.id]"
+                            class="input"
+                            rows="4"
+                            maxlength="5000"
+                            :disabled="!canEdit || busy"
+                            placeholder="Konteks atau persiapan khusus tim (opsional)."
+                        ></textarea
+                        ><button
+                            v-if="canEdit"
+                            class="btn btn-secondary"
+                            :disabled="busy"
+                            @click="saveNotes(team.id)"
+                        >
+                            {{ busy ? "Menyimpan..." : "Simpan Catatan" }}
+                        </button>
+                    </article>
+                </div>
+            </section>
+
+            <section
+                class="prepare-section"
+                aria-labelledby="readiness-heading"
+            >
+                <p class="section-number">07 / Readiness</p>
+                <h2 id="readiness-heading" class="section-title">
+                    Pemeriksaan operasional
+                </h2>
+                <ul class="check-list">
+                    <li
+                        v-for="check in readinessChecks"
+                        :key="check.label"
+                        :class="check.ok ? 'check-ok' : 'check-missing'"
+                    >
+                        <span aria-hidden="true">{{
+                            check.ok ? "✓" : "!"
+                        }}</span
+                        >{{ check.label }}
+                    </li>
+                </ul>
+                <div
+                    v-if="state.readiness.uncovered_relevant_phase_keys?.length"
+                    class="ownership-warning"
+                    role="alert"
+                >
+                    <strong>Primary owner masih diperlukan untuk:</strong>
+                    <ul>
+                        <li
+                            v-for="key in state.readiness
+                                .uncovered_relevant_phase_keys"
+                            :key="key"
+                        >
+                            {{ phaseByKey[key]?.title ?? key }}
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="start-section">
+                <div>
+                    <p class="section-number">08 / Start</p>
+                    <h2 class="section-title">
+                        {{
+                            state.session.status === "draft"
+                                ? "Tandai siap saat semua pemeriksaan terpenuhi"
+                                : "Exercise siap dibuka di Control Room"
+                        }}
+                    </h2>
+                </div>
+                <button
+                    v-if="state.session.status === 'draft'"
+                    class="btn btn-primary"
+                    :disabled="busy || !state.permissions.can_mark_ready"
+                    @click="markReady"
+                >
+                    {{ busy ? "Memproses..." : "Tandai Siap" }}</button
+                ><Link
+                    v-else-if="state.can_open_console"
+                    :href="
+                        route('tenant.ttx.sessions.console', state.session.id)
+                    "
+                    class="btn btn-primary"
+                    >Buka Control Room</Link
+                >
+            </section>
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
-.preparation { overflow-wrap: anywhere; }
-.roster-empty { padding: 1.25rem .5rem; }
-.back-link { border-radius: .25rem; transition: box-shadow 150ms, opacity 150ms; }
-.back-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
-.back-link:hover { box-shadow: 0 0 0 1px var(--brand); }
-.back-link:active { opacity: .75; }
-.preparation select { min-width: 0; max-width: 100%; background-color: var(--surface); color: var(--ink); border-color: var(--line); border-radius: .75rem; }
-.preparation :is(button, a, select) { transition: background-color 150ms, box-shadow 150ms, opacity 150ms; }
-.preparation :is(button, a, select):focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
-.preparation :is(button, a, select):hover:not(:disabled) { box-shadow: 0 0 0 1px var(--brand); }
-.preparation :is(button, a, select):active:not(:disabled) { opacity: .75; }
-.preparation :disabled { cursor: not-allowed; opacity: .6; }
-@media (prefers-reduced-motion: reduce) { .preparation, .preparation * { animation: none !important; transition: none !important; } }
+.prepare-page {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.prepare-header {
+    padding: var(--sp-6) 0 var(--sp-8);
+    max-width: 52rem;
+}
+.eyebrow,
+.section-number {
+    color: var(--brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.prepare-section {
+    padding: var(--sp-8) 0;
+    border-top: 1px solid var(--line);
+}
+.section-title {
+    margin-top: var(--sp-2);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+.narrative {
+    max-width: 48rem;
+    margin-top: var(--sp-3);
+    color: var(--muted);
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+.facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5);
+    max-width: 48rem;
+    margin-top: var(--sp-5);
+}
+.facts dt {
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.facts dd {
+    margin-top: var(--sp-1);
+    color: var(--ink);
+}
+.message {
+    margin: var(--sp-4) 0;
+    padding: var(--sp-3) var(--sp-4);
+    border-left: 3px solid var(--line);
+    background: var(--surface-2);
+    color: var(--muted);
+}
+.message-error {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+.message-success {
+    border-color: var(--ok);
+    color: var(--ok);
+}
+.capability-list,
+.phase-list,
+.roster-list {
+    max-width: 64rem;
+    margin-top: var(--sp-5);
+    border-top: 1px solid var(--line);
+}
+.capability-row {
+    display: grid;
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: var(--sp-4);
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--line);
+}
+.capability-row strong {
+    color: var(--brand);
+}
+.capability-row h3,
+.phase-list h3,
+.roster-row h3,
+.compact-form h3 {
+    color: var(--ink);
+    font-weight: 700;
+}
+.capability-row p,
+.phase-list p,
+.roster-row p {
+    margin-top: 0.25rem;
+    color: var(--muted);
+    line-height: 1.6;
+}
+.reference-note {
+    margin-top: var(--sp-3);
+    color: var(--muted);
+    font-size: 0.8125rem;
+}
+.phase-list {
+    list-style: none;
+    padding: 0;
+}
+.phase-list li {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: var(--sp-4);
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--line);
+}
+.phase-list > li > span {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+.phase-list small {
+    display: block;
+    margin-top: var(--sp-2);
+    color: var(--brand);
+}
+.legacy-playbook {
+    max-width: 48rem;
+    margin-top: var(--sp-5);
+    color: var(--ink);
+    line-height: 1.7;
+}
+.roster-row {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(12rem, 1.5fr) auto;
+    gap: var(--sp-5);
+    align-items: start;
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--line);
+}
+.roster-members {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    color: var(--ink);
+}
+.roster-members span {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--sp-3);
+}
+.roster-members button,
+.text-action {
+    color: var(--brand);
+    font-size: 0.8125rem;
+}
+.roster-members button:hover,
+.text-action:hover {
+    text-decoration: underline;
+}
+.management-grid,
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-6);
+    margin-top: var(--sp-6);
+}
+.compact-form {
+    display: grid;
+    gap: var(--sp-3);
+    padding-left: var(--sp-4);
+    border-left: 2px solid var(--line);
+}
+.compact-form .btn {
+    justify-self: start;
+}
+.ownership-table-wrap {
+    margin-top: var(--sp-5);
+    overflow-x: auto;
+}
+.ownership-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+}
+.ownership-table th,
+.ownership-table td {
+    padding: var(--sp-4);
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+.ownership-table thead th {
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.ownership-table tbody th {
+    color: var(--ink);
+}
+.ownership-table tbody th span,
+.ownership-table tbody th small {
+    display: block;
+}
+.ownership-table tbody th small {
+    margin-top: 0.3rem;
+    color: var(--muted);
+    font-weight: 400;
+}
+.ownership-table tr.uncovered {
+    background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+.support-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2) var(--sp-4);
+}
+.support-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    color: var(--ink);
+    font-size: 0.875rem;
+}
+.notes-grid article {
+    display: grid;
+    gap: var(--sp-2);
+}
+.notes-grid label {
+    color: var(--ink);
+    font-weight: 700;
+}
+.notes-grid textarea {
+    width: 100%;
+    resize: vertical;
+}
+.notes-grid .btn {
+    justify-self: start;
+}
+.check-list {
+    display: grid;
+    gap: var(--sp-3);
+    margin-top: var(--sp-5);
+    padding: 0;
+    list-style: none;
+}
+.check-list li {
+    display: flex;
+    gap: var(--sp-3);
+    color: var(--ink);
+}
+.check-list span {
+    display: inline-grid;
+    width: 1.4rem;
+    height: 1.4rem;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-weight: 800;
+}
+.check-ok span {
+    color: var(--ok);
+}
+.check-missing span {
+    color: var(--warn);
+}
+.ownership-warning {
+    max-width: 42rem;
+    margin-top: var(--sp-5);
+    padding: var(--sp-4);
+    border-left: 3px solid var(--warn);
+    background: var(--surface-2);
+    color: var(--ink);
+}
+.ownership-warning ul {
+    margin: var(--sp-2) 0 0;
+    padding-left: 1.25rem;
+}
+.start-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-5);
+    padding: var(--sp-8) 0;
+    border-top: 1px solid var(--line);
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+@media (max-width: 768px) {
+    .facts,
+    .management-grid,
+    .notes-grid {
+        grid-template-columns: 1fr;
+    }
+    .roster-row {
+        grid-template-columns: 1fr;
+    }
+    .start-section {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .start-section .btn {
+        width: 100%;
+    }
+    .prepare-section {
+        padding: var(--sp-6) 0;
+    }
+}
+@media (max-width: 420px) {
+    .capability-row,
+    .phase-list li {
+        grid-template-columns: 1fr;
+        gap: var(--sp-2);
+    }
+    .prepare-header {
+        padding-top: var(--sp-4);
+    }
+}
+.prepare-page {
+    overflow-wrap: anywhere;
+}
+.prepare-page .input {
+    border-radius: var(--r-lg);
+    min-width: 0;
+}
+.prepare-page .input:focus {
+    box-shadow: none;
+}
+.prepare-page .btn:hover {
+    box-shadow: none;
+}
+.prepare-page button:not(.btn),
+.prepare-page select,
+.prepare-page summary {
+    transition:
+        background 160ms ease,
+        color 160ms ease,
+        border-color 160ms ease;
+}
+.prepare-page button:not(.btn):active {
+    transform: translateY(1px);
+}
+.prepare-page input[type="checkbox"] {
+    accent-color: var(--brand);
+}
+@media (max-width: 768px) {
+    .ownership-table {
+        min-width: 0;
+    }
+    .ownership-table thead {
+        display: none;
+    }
+    .ownership-table tbody,
+    .ownership-table tr,
+    .ownership-table th,
+    .ownership-table td {
+        display: block;
+        width: 100%;
+    }
+    .ownership-table tr {
+        border-bottom: 1px solid var(--line);
+        padding: var(--sp-3) 0;
+    }
+    .ownership-table th,
+    .ownership-table td {
+        border: 0;
+        padding: var(--sp-2) 0;
+    }
+    .ownership-table td:nth-child(2)::before {
+        content: "Primary";
+        display: block;
+        margin-bottom: var(--sp-1);
+        color: var(--muted);
+        font-size: 0.75rem;
+    }
+    .ownership-table td:nth-child(3)::before {
+        content: "Support";
+        display: block;
+        margin-bottom: var(--sp-1);
+        color: var(--muted);
+        font-size: 0.75rem;
+    }
+    .roster-row {
+        min-width: 0;
+    }
+}
 </style>

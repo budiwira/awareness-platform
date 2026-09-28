@@ -26,21 +26,22 @@ class TtxSessionPolicy
 
     public function view(User $user, TtxSession $session): bool
     {
-        return $this->sameTenant($user, $session)
-            && $session->participants()->where('user_id', $user->id)->exists();
+        return $this->runtimeActor($user, $session) || $this->participate($user, $session);
     }
 
     public function assign(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)
             && $user->isTenantAdmin()
-            && in_array($session->status->value, ['draft', 'ready'], true);
+            && $session->created_by === $user->id
+            && $session->status->value === 'draft';
     }
 
     public function prepare(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)
-            && $user->isTenantAdmin();
+            && $user->isTenantAdmin()
+            && $session->created_by === $user->id;
     }
 
     public function start(User $user, TtxSession $session): bool
@@ -66,16 +67,30 @@ class TtxSessionPolicy
     public function participate(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)
+            && $user->role === UserRole::User
+            && $session->created_by !== $user->id
             && $session->participants()
+                ->where('tenant_id', $session->tenant_id)
                 ->where('user_id', $user->id)
-                ->where('session_role', '!=', 'facilitator')
+                ->whereNotNull('team_id')
+                ->whereHas('team', fn ($query) => $query
+                    ->where('tenant_id', $session->tenant_id)
+                    ->where('session_id', $session->id))
                 ->exists();
     }
 
     public function respond(User $user, TtxSession $session): bool
     {
         return $this->sameTenant($user, $session)
-            && $session->participants()->where('user_id', $user->id)->exists();
+            && $user->role === UserRole::User
+            && $session->participants()
+                ->where('tenant_id', $session->tenant_id)
+                ->where('user_id', $user->id)
+                ->whereNotNull('team_id')
+                ->whereHas('team', fn ($query) => $query
+                    ->where('tenant_id', $session->tenant_id)
+                    ->where('session_id', $session->id))
+                ->exists();
     }
 
     private function sameTenant(User $user, TtxSession $session): bool
@@ -85,11 +100,8 @@ class TtxSessionPolicy
 
     private function runtimeActor(User $user, TtxSession $session): bool
     {
-        return $this->sameTenant($user, $session) && (
-            $session->participants()
-                ->where('user_id', $user->id)
-                ->where('session_role', 'facilitator')
-                ->exists()
-        );
+        return $this->sameTenant($user, $session)
+            && $user->isTenantAdmin()
+            && $session->created_by === $user->id;
     }
 }
