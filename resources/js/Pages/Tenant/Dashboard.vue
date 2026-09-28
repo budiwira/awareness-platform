@@ -179,13 +179,13 @@ const tenantName = computed(() => usePage().props.auth?.user?.tenant_name ?? 'Or
                     <p class="text-sm mt-1" style="color: var(--muted)">Tugaskan modul ke anggota.</p>
                 </BaseCard>
             </Link>
-            <Link :href="route('tenant.ttx.exercises.index')">
+            <Link :href="route('tenant.ttx.sessions.index')">
                 <BaseCard interactive>
                     <div class="flex items-center justify-between">
-                        <div class="font-display font-semibold t-ink">Simulasi Tabletop</div>
+                        <div class="font-display font-semibold t-ink">Tabletop Sessions</div>
                         <span class="text-xs font-medium t-muted">Buka</span>
                     </div>
-                    <p class="text-sm mt-1" style="color: var(--muted)">Jalankan latihan tabletop.</p>
+                    <p class="text-sm mt-1" style="color: var(--muted)">Siapkan dan jalankan exercise.</p>
                 </BaseCard>
             </Link>
             <Link :href="route('tenant.reports')">

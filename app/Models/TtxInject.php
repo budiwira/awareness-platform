@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property int $order
  * @property string $title
  * @property string $description
+ * @property array<int, string>|null $capability_codes
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read TtxExercise $exercise
@@ -20,6 +21,8 @@ use Illuminate\Support\Carbon;
 class TtxInject extends Model
 {
     protected $fillable = ['tenant_id', 'exercise_id', 'order', 'title', 'description'];
+
+    protected $casts = ['capability_codes' => 'array'];
 
     public function exercise(): BelongsTo
     {

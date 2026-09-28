@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\TtxExercise;
+use App\Models\TtxPlaybook;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,4 +49,18 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+function attachTtxTestPlaybook(TtxExercise $exercise): TtxExercise
+{
+    $playbook = TtxPlaybook::create([
+        'tenant_id' => $exercise->tenant_id,
+        'title' => 'Test Playbook '.$exercise->id,
+        'description' => 'Panduan respons organisasi untuk pengujian.',
+        'content' => "1. Detection & Validation\n2. Escalation & Ownership\n3. Recovery",
+        'is_active' => true,
+    ]);
+    $exercise->update(['playbook_id' => $playbook->id]);
+
+    return $exercise->fresh();
 }

@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property string $scenario
  * @property string $objectives
  * @property string $scope
+ * @property array<int, string>|null $capability_codes
+ * @property int $injects_count
  * @property int|null $playbook_id
  * @property int|null $runbook_id
  * @property string $phase
@@ -26,13 +28,18 @@ use Illuminate\Support\Carbon;
  * @property-read TtxPlaybook|null $playbook
  * @property-read TtxRunbook|null $runbook
  * @property-read Collection<int, TtxInject> $injects
+ * @property-read Collection<int, TtxSession> $sessions
  * @property-read Collection<int, TtxTeam> $teams
  */
 class TtxExercise extends Model
 {
     protected $fillable = ['tenant_id', 'title', 'scenario', 'objectives', 'scope', 'playbook_id', 'runbook_id', 'phase', 'scheduled_at', 'aar_notes', 'corrective_actions'];
 
-    protected $casts = ['scheduled_at' => 'datetime', 'corrective_actions' => 'array'];
+    protected $casts = [
+        'scheduled_at' => 'datetime',
+        'corrective_actions' => 'array',
+        'capability_codes' => 'array',
+    ];
 
     public function playbook(): BelongsTo
     {
@@ -44,11 +51,22 @@ class TtxExercise extends Model
         return $this->belongsTo(TtxRunbook::class, 'runbook_id');
     }
 
+    /**
+     * @return HasMany<TtxInject, $this>
+     */
     public function injects(): HasMany
     {
         return $this->hasMany(TtxInject::class, 'exercise_id')->orderBy('order');
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(TtxSession::class, 'exercise_id');
+    }
+
+    /**
+     * @return HasMany<TtxTeam, $this>
+     */
     public function teams(): HasMany
     {
         return $this->hasMany(TtxTeam::class, 'exercise_id');

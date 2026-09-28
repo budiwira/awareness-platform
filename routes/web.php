@@ -11,6 +11,7 @@ use App\Http\Controllers\Platform\PackageController as PlatformPackageController
 use App\Http\Controllers\Platform\QuizController as PlatformQuizController;
 use App\Http\Controllers\Platform\TenantController as PlatformTenantController;
 use App\Http\Controllers\Platform\TrainingModuleController as PlatformModuleController;
+use App\Http\Controllers\Platform\TtxScenarioController as PlatformTtxScenarioController;
 use App\Http\Controllers\Platform\UserAccessController as PlatformUserAccessController;
 use App\Http\Controllers\Platform\UserController as PlatformUserController;
 use App\Http\Controllers\PlatformReportController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentCo
 use App\Http\Controllers\Tenant\PhishingCampaignController as TenantPhishingController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
+use App\Http\Controllers\Tenant\TtxSessionController as TenantTtxSessionController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
 use App\Http\Controllers\TenantReportController;
 use App\Http\Controllers\User\BadgeController;
@@ -29,6 +31,7 @@ use App\Http\Controllers\User\LeaderboardController;
 use App\Http\Controllers\User\ModuleQuizController as UserQuizController;
 use App\Http\Controllers\User\MyScoreController as UserScoreController;
 use App\Http\Controllers\User\MyTrainingController as UserTrainingController;
+use App\Http\Controllers\User\TtxSessionController as UserTtxSessionController;
 use App\Models\CaseParticipation;
 use App\Models\CtfChallenge;
 use App\Models\CtfSolve;
@@ -53,6 +56,15 @@ Route::get('/', function () {
 Route::get('/phish/{token}', [PhishingTrapController::class, 'show'])->name('phishing.trap');
 
 Route::middleware('auth')->group(function () {
+    // Session read model is available to assigned participants as well as facilitators.
+    Route::get('/ttx/sessions/{session}', [TenantTtxSessionController::class, 'show'])->name('tenant.ttx.sessions.show');
+    // Facilitator console (Inertia page, not JSON).
+    Route::get('/ttx/sessions/{session}/console', [TenantTtxSessionController::class, 'console'])->name('tenant.ttx.sessions.console');
+    // Assigned non-facilitator participant workspace (Inertia page, not JSON).
+    Route::get('/ttx/sessions/{session}/workspace', [TenantTtxSessionController::class, 'workspace'])->name('tenant.ttx.sessions.workspace');
+    Route::get('/ttx/sessions/{session}/debrief', [TenantTtxSessionController::class, 'debrief'])->name('tenant.ttx.sessions.debrief');
+    Route::get('/ttx/sessions/{session}/result', [TenantTtxSessionController::class, 'result'])->name('tenant.ttx.sessions.result');
+    Route::get('/ttx/sessions/{session}/participant-result', [TenantTtxSessionController::class, 'participantResult'])->name('tenant.ttx.sessions.participant-result');
     Route::get('/platform/media/{filename}', [PlatformMediaController::class, 'serve'])->name('platform.media.serve');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
@@ -74,6 +86,7 @@ Route::middleware('auth')->group(function () {
         ->name('platform.')
         ->group(function () {
             Route::get('/dashboard', [PlatformReportController::class, 'dashboard'])->name('dashboard');
+            Route::get('/ttx/scenarios', [PlatformTtxScenarioController::class, 'index'])->name('ttx.scenarios.index');
 
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
@@ -265,7 +278,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/ttx/exercises/{exercise}/injects', [TenantTtxExerciseController::class, 'storeInject'])->name('ttx.exercises.injects.store');
             Route::get('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateForm'])->name('ttx.exercises.evaluate');
             Route::post('/ttx/exercises/{exercise}/evaluate', [TenantTtxExerciseController::class, 'evaluateStore'])->name('ttx.exercises.evaluate.store');
-
+            Route::post('/ttx/exercises/{exercise}/sessions', [TenantTtxSessionController::class, 'store'])->name('ttx.sessions.store');
+            // TTX Session Preparation (P1): Tenant Admin sessions index + dedicated preparation page
+            Route::get('/ttx/sessions', [TenantTtxSessionController::class, 'index'])->name('ttx.sessions.index');
+            Route::get('/ttx/sessions/{session}/prepare', [TenantTtxSessionController::class, 'prepare'])->name('ttx.sessions.prepare');
             // Route Billing
             Route::get('/billing', [TenantBillingController::class, 'index'])->name('billing.index');
             Route::post('/billing/subscribe', [TenantBillingController::class, 'subscribe'])->name('billing.subscribe');
@@ -278,6 +294,27 @@ Route::middleware('auth')->group(function () {
             Route::get('/phishing/{campaign}', [TenantPhishingController::class, 'show'])->name('phishing.show');
             Route::post('/phishing/{campaign}/send', [TenantPhishingController::class, 'send'])->name('phishing.send');
         });
+
+    Route::prefix('tenant')->name('tenant.')->group(function () {
+        Route::post('/ttx/sessions/{session}/participants', [TenantTtxSessionController::class, 'assign'])->name('ttx.sessions.participants.store');
+        Route::delete('/ttx/sessions/{session}/participants/{participant}', [TenantTtxSessionController::class, 'remove'])->whereNumber('participant')->name('ttx.sessions.participants.destroy');
+        Route::post('/ttx/sessions/{session}/teams', [TenantTtxSessionController::class, 'storeTeam'])->name('ttx.sessions.teams.store');
+        Route::delete('/ttx/sessions/{session}/teams/{team}', [TenantTtxSessionController::class, 'removeTeam'])->whereNumber('team')->name('ttx.sessions.teams.destroy');
+        Route::put('/ttx/sessions/{session}/teams/{team}/responsibilities', [TenantTtxSessionController::class, 'updateTeamResponsibilities'])->whereNumber('team')->name('ttx.sessions.teams.responsibilities.update');
+        Route::post('/ttx/sessions/{session}/responsibility-assignments', [TenantTtxSessionController::class, 'storeResponsibilityAssignment'])->name('ttx.sessions.responsibility-assignments.store');
+        Route::put('/ttx/sessions/{session}/responsibility-assignments/{assignment}', [TenantTtxSessionController::class, 'updateResponsibilityAssignment'])->whereNumber('assignment')->name('ttx.sessions.responsibility-assignments.update');
+        Route::delete('/ttx/sessions/{session}/responsibility-assignments/{assignment}', [TenantTtxSessionController::class, 'removeResponsibilityAssignment'])->whereNumber('assignment')->name('ttx.sessions.responsibility-assignments.destroy');
+        Route::post('/ttx/sessions/{session}/ready', [TenantTtxSessionController::class, 'ready'])->name('ttx.sessions.ready');
+        Route::post('/ttx/sessions/{session}/start', [TenantTtxSessionController::class, 'start'])->name('ttx.sessions.start');
+        Route::post('/ttx/sessions/{session}/advance', [TenantTtxSessionController::class, 'advance'])->name('ttx.sessions.advance');
+        Route::post('/ttx/sessions/{session}/responses', [TenantTtxSessionController::class, 'storeResponse'])->name('ttx.sessions.responses.store');
+        Route::put('/ttx/sessions/{session}/responses/{response}', [TenantTtxSessionController::class, 'updateResponse'])->name('ttx.sessions.responses.update');
+        Route::put('/ttx/sessions/{session}/evaluation', [TenantTtxSessionController::class, 'updateEvaluation'])->name('ttx.sessions.evaluation.update');
+        Route::post('/ttx/sessions/{session}/action-items', [TenantTtxSessionController::class, 'storeActionItem'])->name('ttx.sessions.action-items.store');
+        Route::put('/ttx/sessions/{session}/action-items/{actionItem}', [TenantTtxSessionController::class, 'updateActionItem'])->name('ttx.sessions.action-items.update');
+        Route::put('/ttx/sessions/{session}/after-action-summary', [TenantTtxSessionController::class, 'updateAfterActionSummary'])->name('ttx.sessions.aar.update');
+        Route::post('/ttx/sessions/{session}/complete', [TenantTtxSessionController::class, 'complete'])->name('ttx.sessions.complete');
+    });
 
     Route::middleware('can:access-user-dashboard')
         ->prefix('me')
@@ -324,6 +361,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/quiz/attempt/{attempt}/review', [UserQuizController::class, 'review'])->name('training.quiz.review');
             Route::get('/quiz-result/{attempt}', [UserQuizController::class, 'result'])->name('quiz.result');
             Route::get('/score', [UserScoreController::class, 'index'])->name('score');
+
+            // Assigned Tabletop sessions for learners and facilitators.
+            Route::get('/tabletop', [UserTtxSessionController::class, 'index'])->name('ttx.index');
 
             // Route Cases for Users
             Route::get('/cases', [UserCaseController::class, 'index'])->name('cases.index');

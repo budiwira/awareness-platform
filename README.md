@@ -52,7 +52,7 @@ Platform komprehensif untuk melatih, menguji, dan mengukur tingkat kesadaran kea
 - Quiz dengan multiple choice, randomization, dan passing threshold
 - Case study interaktif
 - CTF challenges
-- Tabletop Exercise (TTX) dengan 4 fase simulasi
+- Tabletop Exercise (TTX) dengan Prepare, respons tim, kontrol fasilitator, Debrief/AAR, dan Result
 
 ### Role-Based Access Control
 - **Super Admin**: Platform management, tenant creation, content library, cross-tenant reports
