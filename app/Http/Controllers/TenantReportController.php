@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\Reporting\TenantReportService;
 use App\Services\TenantEntitlement;
+use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -23,6 +24,7 @@ class TenantReportController extends Controller
         $trend = $this->reportService->getTrendData($tenant->id);
         $riskTiers = $this->reportService->getRiskTierBreakdown($tenant->id);
         $users = $this->reportService->getUserRiskList($tenant->id);
+        $assignments = $this->reportService->getAssignmentTracking($tenant->id);
 
         $canExport = $this->entitlement->hasFeature($tenant, 'reports_export');
 
@@ -31,6 +33,7 @@ class TenantReportController extends Controller
             'trend' => $trend,
             'risk_tiers' => $riskTiers,
             'users' => $users,
+            'assignments' => $assignments,
             'can_export' => $canExport,
         ]);
     }
@@ -49,6 +52,12 @@ class TenantReportController extends Controller
         }
 
         $csv = $this->reportService->exportCsv($tenant->id);
+
+        Audit::log('report.exported', null, [
+            'tenant_id' => $tenant->id,
+            'format' => 'csv',
+            'row_count' => $this->reportService->countExportRows($tenant->id),
+        ]);
 
         $filename = sprintf(
             'awareness-report-%s-%s.csv',

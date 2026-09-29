@@ -28,8 +28,24 @@ const getAssignmentStatusLabel = (status) => {
         'completed': 'Selesai',
         'in_progress': 'Sedang Berjalan',
         'assigned': 'Ditugaskan',
+        'overdue': 'Terlambat',
+        'cancelled': 'Dibatalkan',
+        'needs_follow_up': 'Perlu Tindak Lanjut',
     };
     return labels[status] || status;
+};
+
+const formatDate = (value, withTime = false) => value
+    ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}) }).format(new Date(value))
+    : '—';
+const formatPercent = (value) => value === null || value === undefined ? '—' : `${value}%`;
+const formatGain = (value) => value === null || value === undefined ? '—' : `${value > 0 ? '+' : ''}${value} pp`;
+const purposeLabel = (purpose) => ({ pretest: 'Pretest', posttest: 'Posttest', practice: 'Latihan' }[purpose] ?? purpose);
+const attemptResult = (attempt) => {
+    if (attempt.status === 'expired') return 'Kedaluwarsa';
+    if (attempt.purpose === 'pretest') return 'Baseline selesai';
+    if (attempt.purpose === 'posttest') return attempt.passed ? 'Lulus' : 'Belum Lulus';
+    return attempt.status === 'submitted' ? 'Selesai' : attempt.status;
 };
 </script>
 
@@ -66,24 +82,20 @@ const getAssignmentStatusLabel = (status) => {
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Skor Kesadaran</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ report.summary.avg_awareness_score }}</div>
+                <div class="text-xs mb-2 t-muted">Rata-rata Baseline</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(report.summary.avg_baseline_score) }}</div>
             </div>
             <div class="card p-6">
                 <div class="text-xs mb-2 t-muted">Tingkat Penyelesaian</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ report.summary.completion_rate }}%</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(report.summary.completion_rate) }}</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Pelatihan Selesai</div>
-                <div class="font-display text-4xl font-bold t-ink">
-                    {{ report.summary.completed_assignments }}<span class="text-xl t-muted">/{{ report.summary.total_assignments }}</span>
-                </div>
+                <div class="text-xs mb-2 t-muted">Rata-rata Posttest Terbaik</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(report.summary.avg_best_posttest_score) }}</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Phishing Diklik</div>
-                <div class="font-display text-4xl font-bold" style="color: var(--danger)">
-                    {{ report.summary.phishing_clicked }}<span class="text-xl t-muted">/{{ report.summary.phishing_received }}</span>
-                </div>
+                <div class="text-xs mb-2 t-muted">Rata-rata Learning Gain</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatGain(report.summary.avg_learning_gain) }}</div>
             </div>
         </div>
 
@@ -96,21 +108,29 @@ const getAssignmentStatusLabel = (status) => {
             <table v-if="report.assignments.length > 0" class="w-full text-sm">
                 <thead>
                     <tr class="text-left border-b b-line t-muted">
-                        <th class="px-6 py-3 font-medium">Modul</th>
+                        <th class="px-6 py-3 font-medium">Siklus / Modul</th>
+                        <th class="px-6 py-3 font-medium">Penugasan</th>
                         <th class="px-6 py-3 font-medium">Status</th>
-                        <th class="px-6 py-3 font-medium text-right">Nilai</th>
+                        <th class="px-6 py-3 font-medium text-right">Baseline</th>
+                        <th class="px-6 py-3 font-medium text-right">Posttest</th>
+                        <th class="px-6 py-3 font-medium text-right">Gain</th>
+                        <th class="px-6 py-3 font-medium text-right">Percobaan</th>
                         <th class="px-6 py-3 font-medium">Tanggal Selesai</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="assignment in report.assignments" :key="assignment.id" class="border-b b-line">
-                        <td class="px-6 py-3 font-medium t-ink">{{ assignment.module_title }}</td>
+                        <td class="px-6 py-3"><div class="font-medium t-ink">Siklus #{{ assignment.cycle_id }}</div><div class="text-xs t-muted">{{ assignment.module_title }}</div></td>
+                        <td class="px-6 py-3 t-muted"><div>{{ formatDate(assignment.assigned_at) }}</div><div class="text-xs">Tenggat {{ formatDate(assignment.deadline_at) }}</div></td>
                         <td class="px-6 py-3">
                             <span v-if="assignment.status === 'completed'" class="badge badge-ok">Selesai</span>
-                            <span v-else class="badge badge-warn">{{ getAssignmentStatusLabel(assignment.status) }}</span>
+                            <span v-else class="badge badge-warn">{{ getAssignmentStatusLabel(assignment.display_status) }}</span>
                         </td>
-                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ assignment.score ?? '-' }}</td>
-                        <td class="px-6 py-3 t-muted">{{ assignment.completed_at ?? '-' }}</td>
+                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ formatPercent(assignment.pretest_baseline) }}</td>
+                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ formatPercent(assignment.best_posttest) }}</td>
+                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ formatGain(assignment.learning_gain) }}</td>
+                        <td class="px-6 py-3 text-right t-ink">{{ assignment.posttest_configured ? assignment.posttest_attempts_used : '—' }}</td>
+                        <td class="px-6 py-3 t-muted">{{ formatDate(assignment.completed_at) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -129,7 +149,8 @@ const getAssignmentStatusLabel = (status) => {
             <table v-if="report.quiz_attempts.length > 0" class="w-full text-sm">
                 <thead>
                     <tr class="text-left border-b b-line t-muted">
-                        <th class="px-6 py-3 font-medium">Quiz</th>
+                        <th class="px-6 py-3 font-medium">Quiz / Siklus</th>
+                        <th class="px-6 py-3 font-medium">Tujuan</th>
                         <th class="px-6 py-3 font-medium text-right">Nilai</th>
                         <th class="px-6 py-3 font-medium">Status Kelulusan</th>
                         <th class="px-6 py-3 font-medium">Tanggal Pengumpulan</th>
@@ -137,13 +158,13 @@ const getAssignmentStatusLabel = (status) => {
                 </thead>
                 <tbody>
                     <tr v-for="attempt in report.quiz_attempts" :key="attempt.id" class="border-b b-line">
-                        <td class="px-6 py-3 font-medium t-ink">{{ attempt.quiz_title }}</td>
-                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ attempt.score }}</td>
+                        <td class="px-6 py-3"><div class="font-medium t-ink">{{ attempt.quiz_title }}</div><div class="text-xs t-muted">Siklus #{{ attempt.assignment_id }}</div></td>
+                        <td class="px-6 py-3 t-muted">{{ purposeLabel(attempt.purpose) }}</td>
+                        <td class="px-6 py-3 text-right font-semibold t-ink">{{ attempt.score ?? '—' }}</td>
                         <td class="px-6 py-3">
-                            <span v-if="attempt.passed" class="badge badge-ok">Lulus</span>
-                            <span v-else class="badge badge-warn">Belum Lulus</span>
+                            <span :class="attempt.status === 'expired' ? 'badge badge-neutral' : attempt.passed ? 'badge badge-ok' : 'badge badge-warn'">{{ attemptResult(attempt) }}</span>
                         </td>
-                        <td class="px-6 py-3 t-muted">{{ attempt.submitted_at }}</td>
+                        <td class="px-6 py-3 t-muted">{{ formatDate(attempt.submitted_at, true) }}</td>
                     </tr>
                 </tbody>
             </table>

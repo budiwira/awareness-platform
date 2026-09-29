@@ -176,10 +176,11 @@ Route::middleware('auth')->group(function () {
 
                 $users = User::where('tenant_id', $tenantId)->get();
                 $assignments = ModuleAssignment::where('tenant_id', $tenantId)->get();
+                $activeAssignments = $assignments->where('status', '!=', 'cancelled');
                 $attempts = QuizAttempt::where('tenant_id', $tenantId)->get();
                 $totalCtfPoints = (int) CtfChallenge::where('is_active', true)->sum('points');
 
-                $gAssign = $assignments->groupBy('user_id');
+                $gAssign = $activeAssignments->groupBy('user_id');
                 $gQuiz = $attempts->groupBy('user_id');
                 $gCase = CaseParticipation::where('tenant_id', $tenantId)->get()->groupBy('user_id');
                 $gSolve = CtfSolve::where('tenant_id', $tenantId)->get()->groupBy('user_id');
@@ -216,8 +217,8 @@ Route::middleware('auth')->group(function () {
                 $belumMengerjakan = $scores->filter(fn ($s) => $s === 0)->count();
 
                 // % penugasan completed
-                $completionRate = $assignments->count() > 0
-                    ? (int) round($assignments->where('status', 'completed')->count() / $assignments->count() * 100)
+                $completionRate = $activeAssignments->count() > 0
+                    ? (int) round($activeAssignments->where('status', 'completed')->count() / $activeAssignments->count() * 100)
                     : 0;
 
                 // Phishing awareness stats (jika tenant punya fitur phishing)

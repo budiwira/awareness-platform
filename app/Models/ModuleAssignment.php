@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $assignedBy
  * @property-read Quiz|null $pretestQuiz
  * @property-read Quiz|null $posttestQuiz
+ * @property-read Collection<int, QuizAttempt> $quizAttempts
  */
 class ModuleAssignment extends Model
 {
@@ -129,6 +131,6 @@ class ModuleAssignment extends Model
     {
         return $this->deadline_at !== null
             && $this->deadline_at->isPast()
-            && ! in_array($this->status, ['completed', 'cancelled'], true);
+            && in_array($this->status, ['assigned', 'in_progress'], true);
     }
 }

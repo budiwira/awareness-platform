@@ -10,6 +10,7 @@ const props = defineProps({
     trend: Object,
     risk_tiers: Object,
     users: Array,
+    assignments: Array,
     can_export: Boolean,
 });
 
@@ -38,6 +39,7 @@ const tierVariant = (tier) => ({
 }[tier] ?? 'neutral');
 
 const progressBarColor = (score) => {
+    if (score === null || score === undefined) return 'var(--muted)';
     if (score >= 80) return 'var(--ok)';
     if (score >= 60) return 'var(--warn)';
     if (score > 0) return 'var(--danger)';
@@ -57,14 +59,40 @@ const getChartPath = (data, max = 100) => {
     
     return data.map((value, i) => {
         const x = padding + i * stepX;
-        const y = padding + height - (value / max) * height;
+        const y = padding + height - ((value ?? 0) / max) * height;
         return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
     }).join(' ');
 };
 
 const completionPath = computed(() => getChartPath(props.trend.completion_trend, 100));
-const quizScorePath = computed(() => getChartPath(props.trend.quiz_score_trend, 100));
+const quizScorePath = computed(() => getChartPath(props.trend.submitted_quiz_score_trend, 100));
 const phishingPath = computed(() => getChartPath(props.trend.phishing_click_trend, 100));
+
+const formatPercent = (value) => value === null || value === undefined ? '—' : `${value}%`;
+const formatGain = (value) => {
+    if (value === null || value === undefined) return '—';
+    return `${value > 0 ? '+' : ''}${value} pp`;
+};
+const gainClass = (value) => value > 0 ? 'badge-ok' : value < 0 ? 'badge-warn' : 'badge-neutral';
+const formatDate = (value) => value
+    ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value))
+    : '—';
+const assignmentStatus = (status) => ({
+    assigned: 'Ditugaskan',
+    in_progress: 'Sedang Berjalan',
+    completed: 'Selesai',
+    overdue: 'Terlambat',
+    cancelled: 'Dibatalkan',
+    needs_follow_up: 'Perlu Tindak Lanjut',
+}[status] ?? status);
+const statusVariant = (status) => ({
+    completed: 'success',
+    assigned: 'neutral',
+    in_progress: 'info',
+    overdue: 'danger',
+    cancelled: 'neutral',
+    needs_follow_up: 'warning',
+}[status] ?? 'neutral');
 </script>
 
 <template>
@@ -77,41 +105,69 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
             <p class="t-muted">Pantau perkembangan pelatihan, hasil kuis, dan respons simulasi phishing untuk menentukan tindak lanjut yang tepat.</p>
         </div>
 
-        <!-- Executive Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Skor Kesadaran Rata-rata</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ summary.avg_awareness_score }}</div>
-                <div class="text-xs mt-2 t-muted">Dari seluruh pengguna</div>
+        <section class="fade-in mb-8" aria-labelledby="training-learning-heading">
+            <div class="mb-4">
+                <h2 id="training-learning-heading" class="font-display text-xl font-bold t-ink">Training &amp; Learning</h2>
+                <p class="text-sm t-muted mt-1">Setiap siklus penugasan dihitung secara mandiri; penugasan dibatalkan tidak masuk metrik.</p>
             </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             <div class="card p-6">
                 <div class="text-xs mb-2 t-muted">Tingkat Penyelesaian</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ summary.completion_rate }}%</div>
-                <div class="text-xs mt-2 t-muted">Penugasan pelatihan</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(summary.completion_rate) }}</div>
+                <div class="text-xs mt-2 t-muted">{{ summary.completed_assignments }} dari {{ summary.total_assignments }} siklus</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Nilai Kuis Rata-rata</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ summary.avg_quiz_score }}</div>
-                <div class="text-xs mt-2 t-muted">Dari seluruh percobaan</div>
+                <div class="text-xs mb-2 t-muted">Terlambat</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ summary.overdue_count }}</div>
+                <div class="text-xs mt-2 t-muted">Siklus aktif melewati tenggat</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Rasio Klik Phishing</div>
-                <div class="font-display text-4xl font-bold t-ink">{{ summary.phishing_click_rate }}%</div>
-                <div class="text-xs mt-2 t-muted">Semakin rendah semakin baik</div>
+                <div class="text-xs mb-2 t-muted">Rata-rata Baseline</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(summary.avg_baseline_score) }}</div>
+                <div class="text-xs mt-2 t-muted">{{ summary.baseline_count }} siklus dengan Pretest</div>
             </div>
             <div class="card p-6">
-                <div class="text-xs mb-2 t-muted">Pengguna Berisiko</div>
-                <div class="font-display text-4xl font-bold" style="color: var(--danger)">{{ summary.users_at_risk }}</div>
-                <div class="text-xs mt-2 t-muted">Perlu perhatian lanjutan</div>
+                <div class="text-xs mb-2 t-muted">Rata-rata Posttest Terbaik</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(summary.avg_best_posttest_score) }}</div>
+                <div class="text-xs mt-2 t-muted">{{ summary.posttest_result_count }} siklus dengan hasil valid</div>
             </div>
-        </div>
+            <div class="card p-6">
+                <div class="text-xs mb-2 t-muted">Rata-rata Learning Gain</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatGain(summary.avg_learning_gain) }}</div>
+                <div class="text-xs mt-2 t-muted">{{ summary.gain_count }} siklus memiliki kedua hasil</div>
+            </div>
+            <div class="card p-6">
+                <div class="text-xs mb-2 t-muted">Tingkat Kelulusan Posttest</div>
+                <div class="font-display text-4xl font-bold t-ink">{{ formatPercent(summary.posttest_pass_rate) }}</div>
+                <div class="text-xs mt-2 t-muted">{{ summary.posttest_passed_count }} dari {{ summary.posttest_participation_count }} partisipasi terminal</div>
+            </div>
+            </div>
+        </section>
+
+        <section class="fade-in mb-8" aria-labelledby="security-behavior-heading">
+            <h2 id="security-behavior-heading" class="font-display text-xl font-bold t-ink mb-4">Security Behavior / Phishing</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="card p-6">
+                    <div class="text-xs mb-2 t-muted">Skor Kesadaran Rata-rata</div>
+                    <div class="font-display text-3xl font-bold t-ink">{{ summary.avg_awareness_score ?? '—' }}</div>
+                </div>
+                <div class="card p-6">
+                    <div class="text-xs mb-2 t-muted">Rasio Klik Phishing</div>
+                    <div class="font-display text-3xl font-bold t-ink">{{ formatPercent(summary.phishing_click_rate) }}</div>
+                </div>
+                <div class="card p-6">
+                    <div class="text-xs mb-2 t-muted">Pengguna Berisiko</div>
+                    <div class="font-display text-3xl font-bold" style="color: var(--danger)">{{ summary.users_at_risk }}</div>
+                </div>
+            </div>
+        </section>
 
         <!-- Trend Chart -->
         <div class="card p-6 mb-8">
             <div class="flex items-start justify-between gap-4 mb-4">
                 <div>
                     <div class="font-semibold t-ink">Tren 30 Hari Terakhir</div>
-                    <p class="text-sm t-muted mt-1">Perbandingan penyelesaian, nilai kuis, dan klik phishing dari waktu ke waktu.</p>
+                    <p class="text-sm t-muted mt-1">Penyelesaian siklus aktif, seluruh kuis terkumpul, dan klik phishing dari waktu ke waktu.</p>
                 </div>
                 <span class="badge badge-ok">Skala persentase</span>
             </div>
@@ -144,13 +200,45 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-1 rounded" style="background: var(--ok)"></div>
-                    <span class="t-muted">Nilai kuis</span>
+                    <span class="t-muted">Semua kuis terkumpul</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-1 rounded" style="background: var(--danger)"></div>
                     <span class="t-muted">Klik phishing</span>
                 </div>
             </div>
+        </div>
+
+        <div class="card overflow-hidden mb-8 fade-in">
+            <div class="px-6 py-4 border-b b-line">
+                <div class="font-semibold t-ink">Pelacakan Siklus Penugasan</div>
+                <p class="text-sm t-muted mt-1">Baseline, hasil Posttest terbaik, dan perubahan nilai untuk setiap siklus.</p>
+            </div>
+            <BaseTableContainer v-if="assignments.length > 0">
+                <table class="w-full text-sm">
+                    <thead><tr class="text-left border-b b-line t-muted">
+                        <th class="px-5 py-3 font-medium">Peserta / Modul</th>
+                        <th class="px-5 py-3 font-medium">Tanggal</th>
+                        <th class="px-5 py-3 font-medium">Status</th>
+                        <th class="px-5 py-3 font-medium text-right">Baseline</th>
+                        <th class="px-5 py-3 font-medium text-right">Posttest</th>
+                        <th class="px-5 py-3 font-medium text-right">Gain</th>
+                        <th class="px-5 py-3 font-medium text-right">Percobaan</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr v-for="assignment in assignments" :key="assignment.id" class="border-b b-line transition-colors hover:bg-surface-2">
+                            <td class="px-5 py-3"><div class="font-medium t-ink">{{ assignment.learner_name }}</div><div class="text-xs t-muted">{{ assignment.module_title }} · Siklus #{{ assignment.cycle_id }}</div></td>
+                            <td class="px-5 py-3 t-muted"><div>{{ formatDate(assignment.assigned_at) }}</div><div class="text-xs">Tenggat {{ formatDate(assignment.deadline_at) }}</div></td>
+                            <td class="px-5 py-3"><BaseBadge :variant="statusVariant(assignment.display_status)">{{ assignmentStatus(assignment.display_status) }}</BaseBadge></td>
+                            <td class="px-5 py-3 text-right t-ink">{{ formatPercent(assignment.pretest_baseline) }}</td>
+                            <td class="px-5 py-3 text-right t-ink">{{ formatPercent(assignment.best_posttest) }}</td>
+                            <td class="px-5 py-3 text-right"><span class="badge" :class="gainClass(assignment.learning_gain)">{{ formatGain(assignment.learning_gain) }}</span></td>
+                            <td class="px-5 py-3 text-right t-ink">{{ assignment.posttest_configured ? assignment.posttest_attempts_used : '—' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </BaseTableContainer>
+            <EmptyState v-else message="Belum ada siklus penugasan untuk dilaporkan." />
         </div>
 
         <!-- Risk Tier Breakdown -->
@@ -255,10 +343,10 @@ const phishingPath = computed(() => getChartPath(props.trend.phishing_click_tren
                                 <div class="h-1.5 rounded-full overflow-hidden" style="width: 60px; background: var(--surface-2);">
                                     <div
                                         class="h-full rounded-full transition-all"
-                                        :style="{ width: user.awareness_score + '%', backgroundColor: progressBarColor(user.awareness_score) }"
+                                        :style="{ width: (user.awareness_score ?? 0) + '%', backgroundColor: progressBarColor(user.awareness_score) }"
                                     ></div>
                                 </div>
-                                <span class="font-semibold t-ink">{{ user.awareness_score }}</span>
+                                <span class="font-semibold t-ink">{{ user.awareness_score ?? '—' }}</span>
                             </div>
                         </td>
                         <td class="px-6 py-3 text-right font-semibold t-ink">{{ user.completion_rate }}%</td>
