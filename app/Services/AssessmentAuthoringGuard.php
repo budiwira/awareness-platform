@@ -22,4 +22,21 @@ class AssessmentAuthoringGuard
             ]);
         }
     }
+
+    public function isCurrent(Quiz $quiz): bool
+    {
+        return $quiz->module?->pretest_quiz_id === $quiz->id
+            || $quiz->module?->posttest_quiz_id === $quiz->id;
+    }
+
+    public function assertDeletable(Quiz $quiz): void
+    {
+        $this->assertMutable($quiz);
+
+        if ($this->isCurrent($quiz)) {
+            throw ValidationException::withMessages([
+                'quiz' => 'Assessment aktif tidak dapat dihapus. Ganti binding modul terlebih dahulu.',
+            ]);
+        }
+    }
 }

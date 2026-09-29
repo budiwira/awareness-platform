@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
 import QuillEditor from '@/Components/QuillEditor.vue';
@@ -43,6 +43,7 @@ const canNext = computed(() => {
 });
 
 const quizTitle = (id) => props.quizzes.find((q) => q.id === id)?.title ?? '-';
+const selectedQuiz = (purpose) => props.quizzes.find((quiz) => quiz.id === form.value[`${purpose}_quiz_id`]) ?? null;
 
 const next = () => {
     if (canNext.value && step.value < 4) step.value++;
@@ -118,23 +119,45 @@ const uploadHandler = async (file) => {
                 <p v-if="errors.content_html" class="text-xs mt-1" style="color: var(--danger)" role="alert">{{ errors.content_html }}</p>
             </div>
 
-            <div v-if="step === 3" class="space-y-4 fade-in">
-                <p v-if="quizzes.length === 0" class="text-sm t-muted">Kuis pretest/posttest ditetapkan setelah modul dibuat, lewat halaman Edit modul ini (kuis wajib terikat pada modul).</p>
-                <BaseSelect v-model="form.pretest_quiz_id" label="Pretest (opsional)" hint="Baseline pengetahuan sebelum materi. Tidak menghitung score akhir." :error="errors.pretest_quiz_id" :disabled="!isEdit">
-                        <option :value="null">Tanpa pretest</option>
-                        <option v-for="quiz in quizzes.filter(q => q.purpose === 'pretest')" :key="'pre-' + quiz.id" :value="quiz.id">
-                            {{ quiz.title }} (passing {{ quiz.passing_score }}%)
-                        </option>
-                </BaseSelect>
-                <BaseSelect v-model="form.posttest_quiz_id" label="Posttest" hint="Sumber score akhir modul dan learning gain." :error="errors.posttest_quiz_id" :disabled="!isEdit">
-                        <option :value="null">Tanpa posttest</option>
-                        <option v-for="quiz in quizzes.filter(q => q.purpose === 'posttest')" :key="'post-' + quiz.id" :value="quiz.id">
-                            {{ quiz.title }} (passing {{ quiz.passing_score }}%)
-                        </option>
-                </BaseSelect>
-                <div class="rounded-lg p-4 text-sm bg-surface2 t-muted">
-                    Belum punya quiz? Buat di halaman <a :href="route('platform.quizzes.index')" class="font-semibold underline">Quizzes</a>, lalu kembali ke wizard ini.
+            <div v-if="step === 3" class="space-y-6 fade-in">
+                <div v-if="!isEdit" class="rounded-xl bg-surface2 p-5 text-sm t-muted">
+                    Simpan modul sebagai draft terlebih dahulu. Setelah itu Pretest dan Posttest dapat dibuat dan diikat dari langkah ini.
                 </div>
+
+                <section v-for="purpose in ['pretest', 'posttest']" :key="purpose" class="rounded-2xl border b-line p-5">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 class="font-display text-lg font-bold t-ink">{{ purpose === 'pretest' ? 'Pretest · Baseline Assessment' : 'Posttest · Final Assessment' }}</h3>
+                            <p class="mt-1 text-sm t-muted">{{ purpose === 'pretest' ? 'Mengukur baseline sebelum materi; bukan kelulusan.' : 'Mengukur hasil akhir dengan passing score yang diwajibkan.' }}</p>
+                        </div>
+                        <span v-if="selectedQuiz(purpose)" class="rounded-full px-3 py-1 text-xs" :class="selectedQuiz(purpose).is_frozen ? 'badge-warn' : 'chip-brand'">
+                            {{ selectedQuiz(purpose).is_frozen ? 'Frozen' : 'Mutable' }}
+                        </span>
+                    </div>
+
+                    <BaseSelect v-model="form[`${purpose}_quiz_id`]" class="mt-4" :label="`Assessment ${purpose === 'pretest' ? 'Pretest' : 'Posttest'}`" :error="errors[`${purpose}_quiz_id`]" :disabled="!isEdit">
+                        <option :value="null">Tidak dikonfigurasi</option>
+                        <option v-for="quiz in quizzes.filter(q => q.purpose === purpose)" :key="quiz.id" :value="quiz.id">
+                            {{ quiz.title }} · {{ quiz.questions_count }} soal · {{ quiz.is_frozen ? 'Frozen' : 'Mutable' }}
+                        </option>
+                    </BaseSelect>
+
+                    <div v-if="selectedQuiz(purpose)" class="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-surface2 p-4 text-sm md:grid-cols-4">
+                        <div><div class="text-xs t-muted">Status</div><div class="font-semibold t-ink">{{ selectedQuiz(purpose).is_current ? 'Aktif' : 'Historis' }}</div></div>
+                        <div><div class="text-xs t-muted">Pertanyaan</div><div class="font-semibold t-ink">{{ selectedQuiz(purpose).questions_count }}</div></div>
+                        <div><div class="text-xs t-muted">Durasi</div><div class="font-semibold t-ink">{{ selectedQuiz(purpose).duration_minutes ?? '-' }} menit</div></div>
+                        <div v-if="purpose === 'posttest'"><div class="text-xs t-muted">Passing</div><div class="font-semibold t-ink">{{ selectedQuiz(purpose).passing_score }}%</div></div>
+                    </div>
+
+                    <div v-if="isEdit" class="mt-4 flex flex-wrap gap-2">
+                        <Link v-if="!selectedQuiz(purpose)" :href="route('platform.quizzes.index')" class="btn btn-primary">Buat {{ purpose === 'pretest' ? 'Pretest' : 'Posttest' }}</Link>
+                        <template v-else>
+                            <Link :href="route('platform.quizzes.show', selectedQuiz(purpose).id)" class="btn btn-secondary">Kelola</Link>
+                            <Link :href="route('platform.quizzes.preview', selectedQuiz(purpose).id)" class="btn btn-secondary">Preview</Link>
+                            <button v-if="selectedQuiz(purpose).is_frozen" type="button" class="btn btn-primary" @click="router.post(route('platform.quizzes.replace', selectedQuiz(purpose).id))">Buat Pengganti</button>
+                        </template>
+                    </div>
+                </section>
             </div>
 
             <div v-if="step === 4" class="space-y-6 fade-in">

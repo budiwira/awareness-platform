@@ -7,7 +7,7 @@ import BaseAlert from '@/Components/BaseAlert.vue';
 import BaseBadge from '@/Components/BaseBadge.vue';
 import BaseButton from '@/Components/BaseButton.vue';
 
-const props = defineProps({ module: Object, stats: Object });
+const props = defineProps({ module: Object, stats: Object, assessments: Object, preview: { type: Boolean, default: false } });
 const processing = ref(null);
 
 const publish = () => {
@@ -59,11 +59,17 @@ const completionRate = computed(() => {
                 <p class="text-sm t-muted">{{ module.description }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <Link :href="route('platform.modules.edit', module.id)" class="btn btn-secondary">
+                <Link v-if="!preview" :href="route('platform.modules.preview', module.id)" class="btn btn-secondary">
+                    Preview
+                </Link>
+                <Link v-if="preview" :href="route('platform.modules.show', module.id)" class="btn btn-secondary">
+                    Kembali Kelola
+                </Link>
+                <Link v-if="!preview" :href="route('platform.modules.edit', module.id)" class="btn btn-secondary">
                     Edit
                 </Link>
-                <BaseButton v-if="module.status === 'draft'" :loading="processing === 'publish'" @click="publish">{{ processing === 'publish' ? 'Memproses...' : 'Publish' }}</BaseButton>
-                <BaseButton v-if="module.status === 'published'" variant="danger" :loading="processing === 'archive'" @click="archive">{{ processing === 'archive' ? 'Memproses...' : 'Archive' }}</BaseButton>
+                <BaseButton v-if="!preview && module.status === 'draft'" :loading="processing === 'publish'" @click="publish">{{ processing === 'publish' ? 'Memproses...' : 'Publish' }}</BaseButton>
+                <BaseButton v-if="!preview && module.status === 'published'" variant="danger" :loading="processing === 'archive'" @click="archive">{{ processing === 'archive' ? 'Memproses...' : 'Archive' }}</BaseButton>
             </div>
         </div>
 
@@ -100,30 +106,36 @@ const completionRate = computed(() => {
             <RichContent :html="module.content_html" />
         </div>
 
-        <!-- Kuis -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-display text-lg font-bold t-ink">Evaluasi</h3>
-                <Link
-                    v-if="module.quiz"
-                    :href="route('platform.quizzes.show', module.quiz.id)"
-                    class="btn btn-secondary text-sm"
-                >
-                    Kelola Kuis
-                </Link>
-                <span v-else class="text-sm t-muted">Belum ada kuis</span>
-            </div>
-            <div v-if="module.quiz" class="bg-app rounded-lg p-4">
-                <div class="text-sm t-ink">
-                    <strong>{{ module.quiz.questions?.length || 0 }}</strong> pertanyaan tersedia
+        <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div v-for="purpose in ['pretest', 'posttest']" :key="purpose" class="card p-6">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide t-muted">{{ purpose === 'pretest' ? 'Baseline Assessment' : 'Final Assessment' }}</p>
+                        <h3 class="mt-1 font-display text-lg font-bold t-ink">{{ purpose === 'pretest' ? 'Pretest' : 'Posttest' }}</h3>
+                    </div>
+                    <span v-if="assessments[purpose]" class="rounded-full px-3 py-1 text-xs" :class="assessments[purpose].is_frozen ? 'badge-warn' : 'chip-brand'">
+                        {{ assessments[purpose].is_frozen ? 'Frozen' : 'Mutable' }}
+                    </span>
                 </div>
+
+                <div v-if="assessments[purpose]" class="mt-5 space-y-3">
+                    <div class="font-semibold t-ink">{{ assessments[purpose].title }}</div>
+                    <dl class="grid grid-cols-2 gap-3 rounded-xl bg-surface2 p-4 text-sm">
+                        <div><dt class="text-xs t-muted">Status</dt><dd class="font-medium t-ink">{{ assessments[purpose].is_current ? 'Aktif' : 'Historis' }}</dd></div>
+                        <div><dt class="text-xs t-muted">Pertanyaan</dt><dd class="font-medium t-ink">{{ assessments[purpose].questions_count }}</dd></div>
+                        <div><dt class="text-xs t-muted">Durasi</dt><dd class="font-medium t-ink">{{ assessments[purpose].duration_minutes ?? '-' }} menit</dd></div>
+                        <div v-if="purpose === 'posttest'"><dt class="text-xs t-muted">Passing</dt><dd class="font-medium t-ink">{{ assessments[purpose].passing_score }}%</dd></div>
+                    </dl>
+                    <div class="flex flex-wrap gap-2">
+                        <Link :href="route(preview ? 'platform.quizzes.preview' : 'platform.quizzes.show', assessments[purpose].id)" class="btn btn-secondary text-sm">
+                            {{ preview ? 'Preview Assessment' : 'Kelola Assessment' }}
+                        </Link>
+                    </div>
+                </div>
+                <BaseAlert v-else variant="warning" class="mt-5">
+                    {{ purpose === 'pretest' ? 'Pretest belum dikonfigurasi.' : 'Posttest belum dikonfigurasi.' }} Modul tanpa assessment tetap diperbolehkan.
+                </BaseAlert>
             </div>
-            <BaseAlert v-else variant="warning">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Modul ini belum memiliki kuis. Buat kuis di halaman <strong>Quizzes</strong> dan pilih modul ini.
-            </BaseAlert>
-        </div>
+        </section>
     </AppLayout>
 </template>

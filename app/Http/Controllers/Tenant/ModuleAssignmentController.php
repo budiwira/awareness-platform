@@ -142,25 +142,40 @@ class ModuleAssignmentController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($request, $targetUser, $module, $validated) {
+            $module = DB::transaction(function () use ($request, $targetUser, $module, $validated): TrainingModule {
+                $lockedModule = TrainingModule::query()
+                    ->whereKey($module->id)
+                    ->where('is_active', true)
+                    ->where('status', 'published')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $lockedModule) {
+                    throw ValidationException::withMessages([
+                        'training_module_id' => 'Modul harus aktif dan sudah dipublikasikan.',
+                    ]);
+                }
+
                 $assignment = ModuleAssignment::create([
                     'user_id' => $targetUser->id,
                     'tenant_id' => $request->user()->tenant_id,
-                    'training_module_id' => $module->id,
+                    'training_module_id' => $lockedModule->id,
                     'assigned_by' => $request->user()->id,
                     'assigned_at' => now(),
                     'deadline_at' => $validated['deadline_at'] ?? null,
-                    'module_snapshot' => $module->runtimeSnapshot(),
-                    'pretest_quiz_id' => $module->pretest_quiz_id,
-                    'posttest_quiz_id' => $module->posttest_quiz_id,
+                    'module_snapshot' => $lockedModule->runtimeSnapshot(),
+                    'pretest_quiz_id' => $lockedModule->pretest_quiz_id,
+                    'posttest_quiz_id' => $lockedModule->posttest_quiz_id,
                     'status' => 'assigned',
                 ]);
 
                 Audit::log('module.assigned', $assignment, [
                     'user_id' => $targetUser->id,
-                    'module_id' => $module->id,
+                    'module_id' => $lockedModule->id,
                     'deadline_at' => $assignment->deadline_at?->toIso8601String(),
                 ]);
+
+                return $lockedModule;
             });
         } catch (QueryException $exception) {
             if ($exception->getCode() === '23505') {

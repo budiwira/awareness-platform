@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/modules/create', [PlatformModuleController::class, 'create'])->name('modules.create');
             Route::post('/modules', [PlatformModuleController::class, 'store'])->name('modules.store');
             Route::get('/modules/{module}', [PlatformModuleController::class, 'show'])->name('modules.show');
+            Route::get('/modules/{module}/preview', [PlatformModuleController::class, 'preview'])->name('modules.preview');
             Route::get('/modules/{module}/edit', [PlatformModuleController::class, 'edit'])->name('modules.edit');
             Route::patch('/modules/{module}', [PlatformModuleController::class, 'update'])->name('modules.update');
             Route::post('/modules/{module}/publish', [PlatformModuleController::class, 'publish'])->name('modules.publish');
@@ -125,7 +126,14 @@ Route::middleware('auth')->group(function () {
             Route::get('/quizzes', [PlatformQuizController::class, 'index'])->name('quizzes.index');
             Route::post('/quizzes', [PlatformQuizController::class, 'store'])->name('quizzes.store');
             Route::get('/quizzes/{quiz}', [PlatformQuizController::class, 'show'])->name('quizzes.show');
+            Route::get('/quizzes/{quiz}/preview', [PlatformQuizController::class, 'preview'])->name('quizzes.preview');
+            Route::patch('/quizzes/{quiz}', [PlatformQuizController::class, 'update'])->name('quizzes.update');
+            Route::post('/quizzes/{quiz}/replace', [PlatformQuizController::class, 'replace'])->name('quizzes.replace');
+            Route::post('/quizzes/{quiz}/bind', [PlatformQuizController::class, 'bind'])->name('quizzes.bind');
+            Route::delete('/quizzes/{quiz}', [PlatformQuizController::class, 'destroy'])->name('quizzes.destroy');
             Route::post('/quizzes/{quiz}/questions', [PlatformQuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
+            Route::patch('/quizzes/{quiz}/questions/{question}', [PlatformQuizController::class, 'updateQuestion'])->name('quizzes.questions.update');
+            Route::delete('/quizzes/{quiz}/questions/{question}', [PlatformQuizController::class, 'destroyQuestion'])->name('quizzes.questions.destroy');
 
             // Route Cases
             Route::get('/cases', [PlatformCaseController::class, 'index'])->name('cases.index');
