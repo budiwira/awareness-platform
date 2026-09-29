@@ -2,7 +2,6 @@
 
 use App\Models\Quiz;
 use App\Models\TrainingModule;
-use Illuminate\Database\UniqueConstraintViolationException;
 
 test('invariant: XSS di content_html dilucuti saat save', function () {
     $module = TrainingModule::create([
@@ -21,20 +20,22 @@ test('invariant: XSS di content_html dilucuti saat save', function () {
         ->and($module->content_html)->toContain('Halo');
 });
 
-test('invariant: maksimal 1 pretest per modul (DB partial unique index)', function () {
+test('invariant: multiple historical pretests per module are allowed', function () {
     $module = TrainingModule::create(['title' => 'M', 'content' => 'x', 'duration_minutes' => 5, 'status' => 'published', 'is_active' => true]);
     Quiz::create(['training_module_id' => $module->id, 'title' => 'Pre 1', 'passing_score' => 50, 'purpose' => 'pretest']);
 
-    expect(fn () => Quiz::create(['training_module_id' => $module->id, 'title' => 'Pre 2', 'passing_score' => 50, 'purpose' => 'pretest']))
-        ->toThrow(UniqueConstraintViolationException::class);
+    Quiz::create(['training_module_id' => $module->id, 'title' => 'Pre 2', 'passing_score' => 50, 'purpose' => 'pretest']);
+
+    expect(Quiz::where('training_module_id', $module->id)->where('purpose', 'pretest')->count())->toBe(2);
 });
 
-test('invariant: maksimal 1 posttest per modul (DB partial unique index)', function () {
+test('invariant: multiple historical posttests per module are allowed', function () {
     $module = TrainingModule::create(['title' => 'M', 'content' => 'x', 'duration_minutes' => 5, 'status' => 'published', 'is_active' => true]);
     Quiz::create(['training_module_id' => $module->id, 'title' => 'Post 1', 'passing_score' => 50, 'purpose' => 'posttest']);
 
-    expect(fn () => Quiz::create(['training_module_id' => $module->id, 'title' => 'Post 2', 'passing_score' => 50, 'purpose' => 'posttest']))
-        ->toThrow(UniqueConstraintViolationException::class);
+    Quiz::create(['training_module_id' => $module->id, 'title' => 'Post 2', 'passing_score' => 50, 'purpose' => 'posttest']);
+
+    expect(Quiz::where('training_module_id', $module->id)->where('purpose', 'posttest')->count())->toBe(2);
 });
 
 test('invariant: pretest dan posttest koeksisten per modul', function () {

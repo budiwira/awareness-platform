@@ -29,9 +29,10 @@ const formatDate = (dateString) => {
         <div class="card p-6 mb-8">
             <div class="flex items-start justify-between">
                 <div>
+                    <div class="text-xs font-semibold uppercase tracking-wide t-muted mb-1">{{ quiz.purpose === 'pretest' ? 'Pretest baseline' : 'Posttest' }}</div>
                     <div class="text-sm mb-1 t-muted">Skor Anda</div>
                     <div class="font-display text-4xl font-bold mb-2 t-ink">{{ attempt.score }}%</div>
-                    <span class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
+                    <span v-if="quiz.purpose !== 'pretest'" class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
                         {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
                     </span>
                 </div>

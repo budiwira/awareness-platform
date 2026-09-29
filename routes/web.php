@@ -364,7 +364,9 @@ Route::middleware('auth')->group(function () {
             // Route Training
             Route::get('/training', [UserTrainingController::class, 'index'])->name('training.index');
             Route::get('/training/{assignment}', [UserTrainingController::class, 'show'])->name('training.show');
-            Route::patch('/training/{assignment}/complete', [UserTrainingController::class, 'markComplete'])->name('training.complete');
+            Route::patch('/training/{assignment}/content/start', [UserTrainingController::class, 'startContent'])->name('training.content.start');
+            Route::patch('/training/{assignment}/content/complete', [UserTrainingController::class, 'completeContent'])->name('training.content.complete');
+            Route::patch('/training/{assignment}/complete', [UserTrainingController::class, 'completeContent'])->name('training.complete');
 
             // Route Quizzes for Users
             Route::get('/training/{assignment}/quiz', [UserQuizController::class, 'show'])->name('training.quiz');

@@ -14,6 +14,7 @@ const learningGain = computed(() => {
 });
 
 const resultMessage = computed(() => {
+    if (props.attempt.assessment_purpose === 'pretest') return 'Baseline tersimpan. Lanjutkan ke materi pembelajaran.';
     if (props.attempt.passed) return 'Nilai Anda sudah memenuhi standar kelulusan.';
     if (props.assignment?.status === 'completed') return 'Training telah selesai. Nilai terbaik tetap tersimpan sebagai catatan kompetensi Anda.';
     return 'Pelajari kembali materi dan coba lagi setelah masa tunggu berakhir.';
@@ -26,13 +27,13 @@ const resultMessage = computed(() => {
     <AppLayout title="Hasil Quiz">
         <div class="max-w-2xl mx-auto space-y-6">
             <div class="card p-8 text-center">
-                <div class="text-sm font-medium mb-2 t-muted">HASIL QUIZ</div>
+                <div class="text-sm font-medium mb-2 t-muted">{{ attempt.assessment_purpose === 'pretest' ? 'HASIL PRETEST' : 'HASIL POSTTEST' }}</div>
                 <h1 class="font-display text-3xl font-bold mb-6 t-ink">{{ attempt.quiz.title }}</h1>
                 <div class="mx-auto w-28 h-28 rounded-2xl flex items-center justify-center text-3xl font-display font-bold mb-4"
                     :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
                     {{ attempt.score }}%
                 </div>
-                <span class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
+                <span v-if="attempt.assessment_purpose !== 'pretest'" class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
                     {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
                 </span>
                 <p class="mt-4 t-muted">
@@ -40,7 +41,7 @@ const resultMessage = computed(() => {
                 </p>
             </div>
 
-            <div v-if="learningGain !== null" class="card p-6">
+            <div v-if="attempt.assessment_purpose === 'posttest' && learningGain !== null" class="card p-6">
                 <div class="text-sm font-medium mb-1 t-muted">Learning gain</div>
                 <div class="text-2xl font-bold" :style="{ color: learningGain >= 0 ? 'var(--success)' : 'var(--danger)' }">
                     {{ learningGain > 0 ? '+' : '' }}{{ learningGain }}%

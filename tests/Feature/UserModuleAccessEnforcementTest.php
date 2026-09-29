@@ -38,14 +38,7 @@ beforeEach(function () {
     $this->admin = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'tenant_admin']);
     $this->user = User::factory()->create(['tenant_id' => $this->tenant->id, 'role' => 'user']);
 
-    // 4. Setup Assignment & Quiz
-    $this->assignment = ModuleAssignment::create([
-        'user_id' => $this->user->id,
-        'tenant_id' => $this->tenant->id,
-        'training_module_id' => $this->module->id,
-        'status' => 'assigned',
-    ]);
-
+    // 4. Setup Quiz lalu snapshot ke Assignment
     $this->quiz = Quiz::create([
         'training_module_id' => $this->module->id,
         'title' => 'Test Quiz',
@@ -60,6 +53,16 @@ beforeEach(function () {
         'question' => 'Test question?',
         'options' => ['A', 'B', 'C', 'D'],
         'correct_index' => 0,
+    ]);
+
+    $this->module->update(['posttest_quiz_id' => $this->quiz->id]);
+    $this->assignment = ModuleAssignment::create([
+        'user_id' => $this->user->id,
+        'tenant_id' => $this->tenant->id,
+        'training_module_id' => $this->module->id,
+        'status' => 'assigned',
+        'content_started_at' => now(),
+        'content_completed_at' => now(),
     ]);
 });
 

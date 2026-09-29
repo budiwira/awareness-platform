@@ -25,7 +25,7 @@ test('user can view their own training assignments', function () {
         ->assertInertia(fn ($page) => $page->component('User/MyTraining/Index'));
 });
 
-test('user can mark assignment as completed', function () {
+test('content completion completes an assignment without posttest', function () {
     $tenant = Tenant::factory()->create();
     $package = Package::create([
         'name' => 'Training', 'slug' => 'training-'.uniqid(), 'price_monthly' => 100,
@@ -46,13 +46,13 @@ test('user can mark assignment as completed', function () {
 
     $this->actingAs($user)
         ->patch(route('user.training.complete', $assignment->id))
-        ->assertRedirect(route('user.training.index'));
+        ->assertRedirect();
 
     $this->assertDatabaseHas('module_assignments', [
         'id' => $assignment->id,
         'status' => 'completed',
     ]);
-    $this->assertDatabaseHas('audit_logs', ['action' => 'training.completed']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'training.content_completed']);
 });
 
 test('user cannot view another user assignment', function () {

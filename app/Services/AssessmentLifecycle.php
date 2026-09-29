@@ -6,7 +6,6 @@ use App\Models\ModuleAssignment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\TrainingModule;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 
 class AssessmentLifecycle
@@ -15,19 +14,33 @@ class AssessmentLifecycle
 
     public const POSTTEST_COOLDOWN_HOURS = 2;
 
-    public function quiz(TrainingModule $module, string $purpose): ?Quiz
+    public function quiz(ModuleAssignment|TrainingModule $subject, string $purpose): ?Quiz
     {
+        if ($subject instanceof ModuleAssignment) {
+            $quiz = match ($purpose) {
+                'pretest' => $subject->pretestQuiz,
+                'posttest' => $subject->posttestQuiz,
+                default => null,
+            };
+
+            if ($subject->module_snapshot !== null) {
+                return $this->isValidBinding($subject->module, $quiz, $purpose) ? $quiz : null;
+            }
+
+            return $this->quiz($subject->module, $purpose);
+        }
+
         $quiz = match ($purpose) {
-            'pretest' => $module->pretestQuiz,
-            'posttest' => $module->posttestQuiz,
+            'pretest' => $subject->pretestQuiz,
+            'posttest' => $subject->posttestQuiz,
             default => null,
         };
 
-        if (! $quiz && $purpose === 'posttest' && ! $module->pretest_quiz_id && ! $module->posttest_quiz_id) {
-            $quiz = $module->quiz;
+        if (! $quiz && $purpose === 'posttest' && ! $subject->pretest_quiz_id && ! $subject->posttest_quiz_id) {
+            $quiz = $subject->quiz;
         }
 
-        return $this->isValidBinding($module, $quiz, $purpose) ? $quiz : null;
+        return $this->isValidBinding($subject, $quiz, $purpose) ? $quiz : null;
     }
 
     public function isValidBinding(TrainingModule $module, ?Quiz $quiz, string $purpose): bool
@@ -56,21 +69,26 @@ class AssessmentLifecycle
     /** @return array<string, mixed> */
     public function state(ModuleAssignment $assignment): array
     {
-        $module = $assignment->module;
-        $pretest = $this->quiz($module, 'pretest');
-        $posttest = $this->quiz($module, 'posttest');
-        $configuredInvalid = $this->bindingErrors($module) !== [];
-        $pretestAttempt = $pretest ? $this->submittedAttempts($pretest, $assignment->user_id)->first() : null;
-        $posttestAttempts = $posttest ? $this->terminalAttempts($posttest, $assignment->user_id) : collect();
+        $pretest = $this->quiz($assignment, 'pretest');
+        $posttest = $this->quiz($assignment, 'posttest');
+        $configuredInvalid = $this->assignmentBindingErrors($assignment) !== [];
+        $pretestAttempt = $pretest ? $this->terminalAttempts($assignment, $pretest)->oldest('submitted_at')->first() : null;
+        $posttestAttempts = $posttest ? $this->terminalAttempts($assignment, $posttest)->latest('submitted_at')->get() : collect();
         $latestPosttest = $posttestAttempts->first();
-        $cooldownUntil = $latestPosttest?->submitted_at?->copy()->addHours(self::POSTTEST_COOLDOWN_HOURS);
+        $cooldownUntil = $latestPosttest && ! $latestPosttest->passed
+            ? $latestPosttest->submitted_at?->copy()->addHours(self::POSTTEST_COOLDOWN_HOURS)
+            : null;
         $cooldownActive = $cooldownUntil instanceof Carbon && now()->lessThan($cooldownUntil);
-        $completed = $assignment->status === 'completed';
+        $terminal = in_array($assignment->status, ['completed', 'cancelled'], true);
+        $pretestComplete = ! $pretest || $pretestAttempt !== null;
+        $contentComplete = $assignment->content_completed_at !== null;
 
         $stage = match (true) {
-            $completed => 'completed',
+            $assignment->status === 'completed' => 'completed',
+            $assignment->status === 'cancelled' => 'cancelled',
             $configuredInvalid => 'configuration_unavailable',
-            $pretest && ! $pretestAttempt => 'pretest_required',
+            ! $pretestComplete => 'pretest_required',
+            ! $contentComplete => 'material',
             $posttest && $posttestAttempts->count() >= self::POSTTEST_MAX_ATTEMPTS => 'attempts_exhausted',
             $posttest && $cooldownActive => 'posttest_cooldown',
             $posttest => 'posttest_available',
@@ -79,11 +97,15 @@ class AssessmentLifecycle
 
         return [
             'stage' => $stage,
+            'overdue' => $assignment->isOverdue(),
             'configuration_valid' => ! $configuredInvalid,
-            'configuration_message' => $configuredInvalid ? 'Assessment modul belum tersedia karena konfigurasi quiz tidak valid.' : null,
-            'can_start_pretest' => ! $completed && ! $configuredInvalid && $pretest && ! $pretestAttempt,
-            'can_start_posttest' => ! $completed && ! $configuredInvalid && $posttest
-                && (! $pretest || $pretestAttempt)
+            'configuration_message' => $configuredInvalid ? 'Assessment assignment belum tersedia karena konfigurasi quiz tidak valid.' : null,
+            'can_start_pretest' => ! $terminal && ! $configuredInvalid && $pretest && ! $pretestAttempt,
+            'can_start_content' => ! $terminal && ! $configuredInvalid && $pretestComplete && ! $assignment->content_started_at,
+            'can_complete_content' => ! $terminal && ! $configuredInvalid && $pretestComplete && ! $contentComplete,
+            'can_start_posttest' => ! $terminal && ! $configuredInvalid && $posttest
+                && $pretestComplete
+                && $contentComplete
                 && $posttestAttempts->count() < self::POSTTEST_MAX_ATTEMPTS
                 && ! $cooldownActive,
             'posttest_attempts_used' => $posttestAttempts->count(),
@@ -96,23 +118,33 @@ class AssessmentLifecycle
         ];
     }
 
-    /** @return Collection<int, QuizAttempt> */
-    public function submittedAttempts(Quiz $quiz, int $userId): Collection
+    public function attempts(ModuleAssignment $assignment, Quiz $quiz)
     {
-        return QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('user_id', $userId)
-            ->where('status', 'submitted')
-            ->orderBy('submitted_at')
-            ->get();
+        return QuizAttempt::query()
+            ->where('module_assignment_id', $assignment->id)
+            ->where('quiz_id', $quiz->id);
     }
 
-    /** @return Collection<int, QuizAttempt> */
-    public function terminalAttempts(Quiz $quiz, int $userId): Collection
+    public function terminalAttempts(ModuleAssignment $assignment, Quiz $quiz)
     {
-        return QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('user_id', $userId)
-            ->whereIn('status', ['submitted', 'expired'])
-            ->latest('submitted_at')
-            ->get();
+        return $this->attempts($assignment, $quiz)
+            ->whereIn('status', ['submitted', 'expired']);
+    }
+
+    /** @return array<string, string> */
+    private function assignmentBindingErrors(ModuleAssignment $assignment): array
+    {
+        $errors = [];
+        $module = $assignment->module;
+
+        if ($assignment->pretest_quiz_id && ! $this->isValidBinding($module, $assignment->pretestQuiz, 'pretest')) {
+            $errors['pretest_quiz_id'] = 'Pretest assignment tidak valid.';
+        }
+
+        if ($assignment->posttest_quiz_id && ! $this->isValidBinding($module, $assignment->posttestQuiz, 'posttest')) {
+            $errors['posttest_quiz_id'] = 'Posttest assignment tidak valid.';
+        }
+
+        return $errors;
     }
 }

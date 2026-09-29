@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ModuleAssignment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\Tenant;
@@ -105,8 +106,22 @@ test('leaderboard sorts by awareness score descending', function () {
         'is_active' => true,
     ]);
 
+    $assignment1 = ModuleAssignment::create([
+        'user_id' => $this->user1->id,
+        'tenant_id' => $this->tenant->id,
+        'training_module_id' => $module->id,
+        'status' => 'in_progress',
+    ]);
+    $assignment2 = ModuleAssignment::create([
+        'user_id' => $this->user2->id,
+        'tenant_id' => $this->tenant->id,
+        'training_module_id' => $module->id,
+        'status' => 'in_progress',
+    ]);
+
     // user1: score 50
     QuizAttempt::create([
+        'module_assignment_id' => $assignment1->id,
         'quiz_id' => $quiz->id,
         'user_id' => $this->user1->id,
         'tenant_id' => $this->tenant->id,
@@ -120,6 +135,7 @@ test('leaderboard sorts by awareness score descending', function () {
 
     // user2: score 90
     QuizAttempt::create([
+        'module_assignment_id' => $assignment2->id,
         'quiz_id' => $quiz->id,
         'user_id' => $this->user2->id,
         'tenant_id' => $this->tenant->id,

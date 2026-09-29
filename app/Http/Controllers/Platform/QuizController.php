@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Platform;
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\TrainingModule;
+use App\Services\AssessmentAuthoringGuard;
 use App\Support\Audit\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -57,6 +58,7 @@ class QuizController extends Controller
     public function storeQuestion(Request $request, Quiz $quiz)
     {
         Gate::authorize('create', Quiz::class);
+        app(AssessmentAuthoringGuard::class)->assertMutable($quiz);
 
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:1000'],

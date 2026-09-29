@@ -103,6 +103,7 @@ test('TrainingModule RLS filters tenant and learner listings even with cached fo
         ModuleAssignment::create([
             'tenant_id' => $this->tenantA->id, 'user_id' => $learner->id,
             'training_module_id' => $module->id, 'status' => 'assigned',
+            'module_snapshot' => $module->runtimeSnapshot(),
         ]);
     }
 

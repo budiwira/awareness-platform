@@ -26,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, ModuleAssignment> $assignments
  * @property-read Quiz|null $quiz
+ * @property-read Quiz|null $pretestQuiz
+ * @property-read Quiz|null $posttestQuiz
  * @property-read Collection<int, Package> $packages
  */
 class TrainingModule extends Model
@@ -70,6 +72,24 @@ class TrainingModule extends Model
     public function quiz(): HasOne
     {
         return $this->hasOne(Quiz::class, 'training_module_id');
+    }
+
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class, 'training_module_id');
+    }
+
+    /** @return array{schema_version: int, module_id: int, title: string, description: ?string, content_html: ?string, duration_minutes: int} */
+    public function runtimeSnapshot(): array
+    {
+        return [
+            'schema_version' => 1,
+            'module_id' => $this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'content_html' => $this->content_html,
+            'duration_minutes' => $this->duration_minutes,
+        ];
     }
 
     /** @return BelongsTo<Quiz, $this> */

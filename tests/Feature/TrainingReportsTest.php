@@ -15,8 +15,15 @@ test('user sees own score page with stats', function () {
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
     $module = TrainingModule::create(['title' => 'M', 'content' => 'x', 'duration_minutes' => 10]);
     $quiz = Quiz::create(['training_module_id' => $module->id, 'title' => 'Q', 'passing_score' => 70]);
+    $assignment = ModuleAssignment::create([
+        'user_id' => $user->id,
+        'tenant_id' => $tenant->id,
+        'training_module_id' => $module->id,
+        'status' => 'in_progress',
+    ]);
 
     QuizAttempt::create([
+        'module_assignment_id' => $assignment->id,
         'quiz_id' => $quiz->id,
         'user_id' => $user->id,
         'tenant_id' => $tenant->id,

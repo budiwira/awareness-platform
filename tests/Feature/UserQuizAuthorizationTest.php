@@ -29,6 +29,7 @@ test('user without assignment cannot start quiz', function () {
         'tenant_id' => $tenant->id,
         'training_module_id' => $module->id,
         'status' => 'assigned',
+        'content_started_at' => now(), 'content_completed_at' => now(),
     ]);
 
     // User tanpa assignment coba akses
@@ -55,6 +56,7 @@ test('user with assignment but without entitlement cannot start quiz', function 
         'tenant_id' => $tenant->id,
         'training_module_id' => $module->id,
         'status' => 'assigned',
+        'content_started_at' => now(), 'content_completed_at' => now(),
     ]);
 
     // User dengan assignment tapi tenant tidak entitled
@@ -82,6 +84,7 @@ test('user with assignment and entitlement can start quiz', function () {
         'tenant_id' => $tenant->id,
         'training_module_id' => $module->id,
         'status' => 'assigned',
+        'content_started_at' => now(), 'content_completed_at' => now(),
     ]);
 
     // Happy path
@@ -115,6 +118,7 @@ test('attempt created is tied to correct user and assignment context', function 
         'tenant_id' => $tenant->id,
         'training_module_id' => $module->id,
         'status' => 'assigned',
+        'content_started_at' => now(), 'content_completed_at' => now(),
     ]);
 
     $response = $this->actingAs($user)
@@ -127,6 +131,8 @@ test('attempt created is tied to correct user and assignment context', function 
     // Verifikasi attempt terikat ke user dan quiz yang benar
     expect($attempt->user_id)->toBe($user->id);
     expect($attempt->tenant_id)->toBe($tenant->id);
+    expect($attempt->module_assignment_id)->toBe($assignment->id);
+    expect($attempt->assessment_purpose)->toBe('posttest');
     expect($attempt->quiz_id)->toBe($quiz->id);
 
     // Verifikasi quiz terkait dengan module yang di-assign

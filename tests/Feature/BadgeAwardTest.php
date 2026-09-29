@@ -87,7 +87,15 @@ test('user earns perfect score badge', function () {
         'is_active' => true,
     ]);
 
+    $assignment = ModuleAssignment::create([
+        'user_id' => $this->user->id,
+        'tenant_id' => $this->tenant->id,
+        'training_module_id' => $module->id,
+        'status' => 'in_progress',
+    ]);
+
     QuizAttempt::create([
+        'module_assignment_id' => $assignment->id,
         'quiz_id' => $quiz->id,
         'user_id' => $this->user->id,
         'tenant_id' => $this->tenant->id,

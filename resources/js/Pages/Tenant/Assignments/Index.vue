@@ -7,7 +7,7 @@ import { BaseButton, BaseSelect } from '@/Components';
 const props = defineProps({ assignments: Array, users: Array, modules: Array });
 
 const showForm = ref(false);
-const form = useForm({ user_id: '', training_module_id: '' });
+const form = useForm({ user_id: '', training_module_id: '', deadline_at: '' });
 const updatingId = ref(null);
 
 const selectedUser = computed(() => props.users.find((user) => user.id === Number(form.user_id)));
@@ -66,6 +66,7 @@ const statusLabel = (status) => ({
     assigned: 'Ditugaskan',
     in_progress: 'Sedang berjalan',
     completed: 'Selesai',
+    cancelled: 'Dibatalkan',
 }[status] ?? status);
 </script>
 
@@ -108,11 +109,16 @@ const statusLabel = (status) => ({
                 </div>
                 <BaseButton variant="ghost" size="sm" :disabled="form.processing" @click="showForm = false">Tutup</BaseButton>
             </div>
-            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <BaseSelect v-model="form.user_id" label="Anggota" required :error="form.errors.user_id" :disabled="form.processing">
                         <option value="" disabled>Pilih anggota</option>
                         <option v-for="user in users" :key="user.id" :value="user.id">{{ user.name }} — {{ user.email }}</option>
                 </BaseSelect>
+                <label class="text-sm font-medium t-ink">
+                    Deadline (opsional)
+                    <input v-model="form.deadline_at" type="datetime-local" class="input mt-1 w-full" :disabled="form.processing" />
+                    <span v-if="form.errors.deadline_at" class="mt-1 block text-xs" style="color: var(--danger)">{{ form.errors.deadline_at }}</span>
+                </label>
                 <BaseSelect v-model="form.training_module_id" label="Modul training" required :error="form.errors.training_module_id" :disabled="form.processing || !selectedUser || hasNoAssignableModules">
                         <option value="" disabled>{{ selectedUser ? 'Pilih modul' : 'Pilih anggota terlebih dahulu' }}</option>
                         <option v-for="mod in assignableModules" :key="mod.id" :value="mod.id">{{ mod.title }} ({{ mod.duration_minutes }} menit)</option>
@@ -143,25 +149,29 @@ const statusLabel = (status) => ({
                             <div class="text-xs t-muted">{{ assignment.user?.email ?? 'Data akun tidak tersedia' }}</div>
                         </td>
                         <td class="px-6 py-3 t-ink">{{ assignment.module?.title ?? 'Modul tidak tersedia' }}</td>
-                        <td class="px-6 py-3 t-muted">{{ formatDate(assignment.created_at) }}</td>
+                        <td class="px-6 py-3 t-muted">
+                            <div>{{ formatDate(assignment.assigned_at || assignment.created_at) }}</div>
+                            <div v-if="assignment.deadline_at" class="text-xs">Deadline {{ formatDate(assignment.deadline_at) }}</div>
+                        </td>
                         <td class="px-6 py-3">
                             <span class="px-2 py-0.5 rounded-full text-xs font-medium" 
                                   :class="{
                                       'badge-warn': assignment.status === 'assigned',
                                       'chip-brand': assignment.status === 'in_progress',
-                                      'badge-ok': assignment.status === 'completed'
+                                      'badge-ok': assignment.status === 'completed',
+                                      'badge-neutral': assignment.status === 'cancelled'
                                   }">
                                 {{ statusLabel(assignment.status) }}
                             </span>
                         </td>
                         <td class="px-6 py-3 text-right space-x-2">
-                            <BaseButton v-if="assignment.status !== 'completed'"
+                            <BaseButton v-if="!['completed', 'cancelled'].includes(assignment.status)"
                                     size="sm"
                                     variant="secondary"
                                     :loading="updatingId === assignment.id"
                                     :disabled="updatingId !== null && updatingId !== assignment.id"
-                                    @click="updateStatus(assignment, 'completed')">
-                                {{ updatingId === assignment.id ? 'Memproses...' : 'Koreksi: tandai selesai' }}
+                                    @click="updateStatus(assignment, 'cancelled')">
+                                {{ updatingId === assignment.id ? 'Memproses...' : 'Batalkan' }}
                             </BaseButton>
                         </td>
                     </tr>

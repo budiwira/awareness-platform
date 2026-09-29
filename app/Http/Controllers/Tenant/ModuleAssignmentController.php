@@ -10,10 +10,12 @@ use App\Models\User;
 use App\Notifications\TrainingAssigned;
 use App\Services\TenantEntitlement;
 use App\Support\Audit\Audit;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Throwable;
 
@@ -46,7 +48,9 @@ class ModuleAssignmentController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('role', UserRole::User->value)
             ->where('is_active', true)
-            ->with(['moduleAssignments:id,user_id,training_module_id'])
+            ->with(['moduleAssignments' => fn ($query) => $query
+                ->select(['id', 'user_id', 'training_module_id'])
+                ->whereIn('status', ['assigned', 'in_progress'])])
             ->orderBy('name')
             ->get(['id', 'name', 'email'])
             ->map(function (User $user) use ($assignableModuleIds) {
@@ -70,10 +74,26 @@ class ModuleAssignmentController extends Controller
     public function store(Request $request)
     {
         Gate::authorize('create', ModuleAssignment::class);
+        abort_unless($request->user()->is_active && $request->user()->isTenantAdmin(), 403);
 
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
             'training_module_id' => ['required', 'exists:training_modules,id'],
+            'deadline_at' => ['nullable', 'date', 'after:now'],
+            'tenant_id' => ['prohibited'],
+            'assigned_by' => ['prohibited'],
+            'module_snapshot' => ['prohibited'],
+            'pretest_quiz_id' => ['prohibited'],
+            'posttest_quiz_id' => ['prohibited'],
+            'pretest_score' => ['prohibited'],
+            'pretest_completed_at' => ['prohibited'],
+            'started_at' => ['prohibited'],
+            'content_started_at' => ['prohibited'],
+            'content_completed_at' => ['prohibited'],
+            'completed_at' => ['prohibited'],
+            'cancelled_at' => ['prohibited'],
+            'score' => ['prohibited'],
+            'status' => ['prohibited'],
         ]);
 
         $targetUser = User::where('id', $validated['user_id'])
@@ -112,6 +132,7 @@ class ModuleAssignmentController extends Controller
 
         $exists = ModuleAssignment::where('user_id', $targetUser->id)
             ->where('training_module_id', $validated['training_module_id'])
+            ->whereIn('status', ['assigned', 'in_progress'])
             ->exists();
 
         if ($exists) {
@@ -120,17 +141,36 @@ class ModuleAssignmentController extends Controller
             ]);
         }
 
-        ModuleAssignment::create([
-            'user_id' => $targetUser->id,
-            'tenant_id' => $request->user()->tenant_id,
-            'training_module_id' => $validated['training_module_id'],
-            'status' => 'assigned',
-        ]);
+        try {
+            DB::transaction(function () use ($request, $targetUser, $module, $validated) {
+                $assignment = ModuleAssignment::create([
+                    'user_id' => $targetUser->id,
+                    'tenant_id' => $request->user()->tenant_id,
+                    'training_module_id' => $module->id,
+                    'assigned_by' => $request->user()->id,
+                    'assigned_at' => now(),
+                    'deadline_at' => $validated['deadline_at'] ?? null,
+                    'module_snapshot' => $module->runtimeSnapshot(),
+                    'pretest_quiz_id' => $module->pretest_quiz_id,
+                    'posttest_quiz_id' => $module->posttest_quiz_id,
+                    'status' => 'assigned',
+                ]);
 
-        Audit::log('module.assigned', null, [
-            'user_id' => $targetUser->id,
-            'module_id' => $validated['training_module_id'],
-        ]);
+                Audit::log('module.assigned', $assignment, [
+                    'user_id' => $targetUser->id,
+                    'module_id' => $module->id,
+                    'deadline_at' => $assignment->deadline_at?->toIso8601String(),
+                ]);
+            });
+        } catch (QueryException $exception) {
+            if ($exception->getCode() === '23505') {
+                throw ValidationException::withMessages([
+                    'training_module_id' => 'Masih ada assignment terbuka untuk modul ini.',
+                ]);
+            }
+
+            throw $exception;
+        }
 
         try {
             $targetUser->notify(new TrainingAssigned($module));
@@ -150,18 +190,30 @@ class ModuleAssignmentController extends Controller
         Gate::authorize('update', $assignment);
 
         $validated = $request->validate([
-            'status' => ['required', 'in:assigned,in_progress,completed'],
+            'status' => ['required', 'in:cancelled'],
+            'pretest_score' => ['prohibited'],
+            'score' => ['prohibited'],
+            'pretest_completed_at' => ['prohibited'],
+            'started_at' => ['prohibited'],
+            'content_started_at' => ['prohibited'],
+            'content_completed_at' => ['prohibited'],
+            'completed_at' => ['prohibited'],
+            'cancelled_at' => ['prohibited'],
+            'pretest_quiz_id' => ['prohibited'],
+            'posttest_quiz_id' => ['prohibited'],
+            'module_snapshot' => ['prohibited'],
+            'tenant_id' => ['prohibited'],
+            'assigned_by' => ['prohibited'],
+            'assigned_at' => ['prohibited'],
+            'deadline_at' => ['prohibited'],
         ]);
 
         DB::transaction(function () use ($assignment, $validated) {
-            $assignment->update(['status' => $validated['status']]);
+            $locked = ModuleAssignment::whereKey($assignment->id)->lockForUpdate()->firstOrFail();
+            abort_if(in_array($locked->status, ['completed', 'cancelled'], true), 422, 'Assignment sudah berstatus terminal.');
+            $locked->update(['status' => $validated['status'], 'cancelled_at' => now()]);
 
-            if ($validated['status'] === 'completed') {
-                $assignment->completed_at = now();
-                $assignment->save();
-            }
-
-            Audit::log('assignment.updated', $assignment, ['status' => $validated['status']]);
+            Audit::log('assignment.updated', $locked, ['status' => $validated['status']]);
         });
 
         return redirect()->route('tenant.assignments.index')->with('success', 'Perubahan disimpan.');

@@ -27,6 +27,8 @@ function makeQuizFixture(): array
         'tenant_id' => $tenant->id,
         'training_module_id' => $module->id,
         'status' => 'assigned',
+        'content_started_at' => now(),
+        'content_completed_at' => now(),
     ]);
 
     return [$user, $quiz, $q1, $q2, $assignment];

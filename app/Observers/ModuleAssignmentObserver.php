@@ -19,6 +19,7 @@ class ModuleAssignmentObserver
     {
         $changes = array_intersect_key($assignment->getChanges(), array_flip([
             'score', 'status', 'completed_at', 'pretest_score', 'pretest_completed_at',
+            'started_at', 'content_started_at', 'content_completed_at', 'cancelled_at', 'deadline_at',
         ]));
 
         if ($changes !== []) {

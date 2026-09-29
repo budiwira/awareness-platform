@@ -45,4 +45,14 @@ class Quiz extends Model
     {
         return $this->hasMany(QuizAttempt::class);
     }
+
+    public function pretestAssignments(): HasMany
+    {
+        return $this->hasMany(ModuleAssignment::class, 'pretest_quiz_id');
+    }
+
+    public function posttestAssignments(): HasMany
+    {
+        return $this->hasMany(ModuleAssignment::class, 'posttest_quiz_id');
+    }
 }

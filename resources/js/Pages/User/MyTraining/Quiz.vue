@@ -242,7 +242,8 @@ onUnmounted(() => {
                         <li>Semua soal harus dijawab</li>
                         <li v-if="quiz.duration_minutes">Jawaban otomatis terkirim saat waktu habis</li>
                         <li>Urutan soal dan opsi jawaban diacak untuk setiap peserta</li>
-                        <li>Quiz dapat dikerjakan kembali jika belum lulus</li>
+                        <li v-if="quiz.purpose === 'posttest'">Posttest dapat dikerjakan kembali jika belum lulus, maksimal 3 attempt</li>
+                        <li v-else>Pretest adalah baseline satu kali dan tidak mensyaratkan kelulusan</li>
                     </ul>
                 </div>
 

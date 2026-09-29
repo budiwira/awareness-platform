@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import RichContent from '@/Components/RichContent.vue';
@@ -37,12 +37,21 @@ const markComplete = () => {
     if (isCompleted.value || completing.value) return;
     if (confirm('Tandai modul ini sebagai selesai?')) {
         completing.value = true;
-        router.patch(route('user.training.complete', props.assignment.id), {}, {
+        router.patch(route('user.training.content.complete', props.assignment.id), {}, {
             preserveScroll: true,
             onFinish: () => { completing.value = false; },
         });
     }
 };
+
+onMounted(() => {
+    if (props.lifecycle?.can_start_content) {
+        router.patch(route('user.training.content.start', props.assignment.id), {}, {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }
+});
 </script>
 
 <template>
@@ -103,7 +112,10 @@ const markComplete = () => {
                 <RichContent :html="module.content_html" />
 
                 <div class="border-t b-line pt-6 flex flex-col gap-3">
-                    <template v-if="posttestQuiz && lifecycle.can_start_posttest">
+                    <button v-if="lifecycle.can_complete_content" class="btn btn-primary w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" :disabled="completing" @click="markComplete">
+                        {{ completing ? 'Memproses...' : 'Saya Sudah Mempelajari Materi' }}
+                    </button>
+                    <template v-else-if="posttestQuiz && lifecycle.can_start_posttest">
                         <div>
                             <p class="text-xs font-semibold uppercase tracking-wide t-muted mb-1">Tahap 3 dari 4</p>
                             <p class="text-sm font-medium t-ink">Uji pemahaman Anda melalui posttest.</p>
@@ -116,7 +128,6 @@ const markComplete = () => {
                     <div v-else-if="stage === 'attempts_exhausted'" class="rounded-xl border b-line bg-app p-4 text-sm t-muted" role="status">
                         Batas attempt posttest telah tercapai. Hubungi pengelola jika status training belum diperbarui.
                     </div>
-                    <button v-else-if="!posttestQuiz && !isCompleted" class="btn btn-primary w-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" :disabled="completing" @click="markComplete">{{ completing ? 'Memproses...' : 'Tandai Selesai' }}</button>
                     <span v-else class="text-center text-sm t-muted">Materi ini sudah selesai dipelajari.</span>
                 </div>
             </div>

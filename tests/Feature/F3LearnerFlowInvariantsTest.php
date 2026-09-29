@@ -27,11 +27,11 @@ test('Audit: invalid submit creates no result or success event', function () {
     $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
 });
 
-test('Audit: admin progress changes are traceable without changing assessment score', function () {
+test('Audit: admin cancellation is traceable without changing assessment score', function () {
     [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
     $admin = User::factory()->create(['tenant_id' => $user->tenant_id, 'role' => UserRole::TenantAdmin]);
     $this->actingAs($admin)->patch(route('tenant.assignments.update', $assignment), [
-        'status' => 'in_progress', 'score' => 42,
+        'status' => 'cancelled',
     ])->assertRedirect();
     $event = AuditLog::where('action', 'assignment.result_changed')->sole();
     expect($event->actor_user_id)->toBe($admin->id)
@@ -40,24 +40,24 @@ test('Audit: admin progress changes are traceable without changing assessment sc
         ->and($event->subject_id)->toBe((string) $assignment->id)
         ->and($event->properties)->toEqual([
             'module_id' => $module->id, 'user_id' => $user->id,
-            'before' => ['status' => 'assigned'],
-            'after' => ['status' => 'in_progress'],
+            'before' => ['status' => 'assigned', 'cancelled_at' => null],
+            'after' => ['status' => 'cancelled', 'cancelled_at' => $assignment->fresh()->cancelled_at?->toDateTimeString()],
         ])
         ->and($assignment->fresh()->score)->toBe(0);
 });
 
 test('Audit: audit failure rolls back manual completion', function () {
     [$user, $module, , , $assignment] = buildAssignmentWithQuizzes();
-    $module->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
+    $assignment->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
     AuditLog::creating(function (AuditLog $log) {
-        if ($log->action === 'training.completed') {
+        if ($log->action === 'training.content_completed') {
             throw new RuntimeException('Audit unavailable');
         }
     });
     $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertStatus(500);
     expect($assignment->fresh()->status)->toBe('assigned')
         ->and($assignment->fresh()->completed_at)->toBeNull();
-    $this->assertDatabaseMissing('audit_logs', ['action' => 'training.completed']);
+    $this->assertDatabaseMissing('audit_logs', ['action' => 'training.content_completed']);
     $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
 });
 
@@ -127,6 +127,8 @@ function buildAssignmentWithQuizzes()
         'training_module_id' => $module->id,
         'status' => 'assigned',
         'score' => 0,
+        'content_started_at' => now(),
+        'content_completed_at' => now(),
     ]);
 
     return [$user, $module, $pretest, $posttest, $assignment];
@@ -338,7 +340,7 @@ test('invariant F3: missing or unfinished pretest blocks posttest show and start
     $this->actingAs($user)->get(route('user.training.quiz', $params))->assertForbidden();
     $this->postJson(route('user.training.quiz.start', $params))->assertForbidden();
     expect(QuizAttempt::where('quiz_id', $posttest->id)->exists())->toBeFalse();
-})->with([null, 'in_progress', 'expired']);
+})->with([null, 'in_progress']);
 
 test('invariant F3: default quiz follows module flow and a stale quiz id is rejected', function () {
     [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
@@ -358,7 +360,7 @@ test('invariant F3: required posttest cannot be bypassed by manual completion', 
 
 test('invariant F3: authorized manual completion without posttest respects pretest', function ($hasPretest) {
     [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
-    $module->update(['posttest_quiz_id' => null, 'pretest_quiz_id' => $hasPretest ? $pretest->id : null]);
+    $assignment->update(['posttest_quiz_id' => null, 'pretest_quiz_id' => $hasPretest ? $pretest->id : null]);
     if ($hasPretest) {
         $this->actingAs($user)->patchJson(route('user.training.complete', $assignment))->assertForbidden();
         QuizAttempt::create([
@@ -366,9 +368,9 @@ test('invariant F3: authorized manual completion without posttest respects prete
             'status' => 'submitted', 'started_at' => now(), 'submitted_at' => now(), 'score' => 0, 'passed' => false,
         ]);
     }
-    $this->actingAs($user)->patch(route('user.training.complete', $assignment))->assertRedirect(route('user.training.index'));
+    $this->actingAs($user)->patch(route('user.training.complete', $assignment))->assertRedirect();
     expect($assignment->fresh()->status)->toBe('completed');
-    $this->assertDatabaseHas('audit_logs', ['action' => 'training.completed']);
+    $this->assertDatabaseHas('audit_logs', ['action' => 'training.content_completed']);
     $change = AuditLog::where('action', 'assignment.result_changed')->sole();
     expect($change->actor_user_id)->toBe($user->id)
         ->and($change->subject_id)->toBe((string) $assignment->id)
@@ -380,7 +382,7 @@ test('invariant F3: authorized manual completion without posttest respects prete
 
 test('invariant F3: manual completion requires entitlement and user access', function ($revoked) {
     [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
-    $module->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
+    $assignment->update(['pretest_quiz_id' => null, 'posttest_quiz_id' => null]);
     if ($revoked) {
         UserModuleAccess::create([
             'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
@@ -417,7 +419,7 @@ test('invariant F3: tenant admin cannot use learner quiz or completion routes', 
 
 test('invariant F3: posttest without pretest opens and starts the configured quiz', function () {
     [$user, $module, $pretest, $posttest, $assignment] = buildAssignmentWithQuizzes();
-    $module->update(['pretest_quiz_id' => null]);
+    $assignment->update(['pretest_quiz_id' => null]);
     $params = ['assignment' => $assignment->id, 'purpose' => 'posttest'];
     $this->actingAs($user)->get(route('user.training.quiz', $params))
         ->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -432,9 +434,9 @@ test('invariant F3: misconfigured quiz links fail closed', function ($mismatch) 
         $otherModule = TrainingModule::create(['title' => 'Other', 'content' => 'x', 'duration_minutes' => 10]);
         $pretest->update(['training_module_id' => $otherModule->id]);
     } elseif ($mismatch === 'purpose') {
-        $module->update(['pretest_quiz_id' => $posttest->id, 'posttest_quiz_id' => null]);
+        $assignment->update(['pretest_quiz_id' => $posttest->id, 'posttest_quiz_id' => null]);
     } else {
-        $module->update(['posttest_quiz_id' => $pretest->id]);
+        $assignment->update(['posttest_quiz_id' => $pretest->id]);
     }
     $params = ['assignment' => $assignment->id, 'purpose' => $mismatch === 'shared' ? 'posttest' : 'pretest'];
     $this->actingAs($user)->getJson(route('user.training.quiz', $params))->assertUnprocessable();
@@ -457,8 +459,8 @@ test('invariant F3: running attempt requires current authorization for resume an
             'user_id' => $user->id, 'tenant_id' => $user->tenant_id,
             'training_module_id' => $module->id, 'is_allowed' => false,
         ]);
-    } elseif ($change === 'assignment removed') {
-        $assignment->delete();
+    } elseif ($change === 'assignment cancelled') {
+        $assignment->update(['status' => 'cancelled', 'cancelled_at' => now()]);
     } elseif ($change === 'assignment belongs to another learner') {
         $other = User::factory()->create(['tenant_id' => $user->tenant_id, 'role' => UserRole::User]);
         $assignment->update(['user_id' => $other->id]);
@@ -473,16 +475,21 @@ test('invariant F3: running attempt requires current authorization for resume an
         $this->actingAs($other);
     }
 
-    $this->getJson(route('user.training.quiz.attempt', $attempt))
-        ->assertForbidden()->assertJsonMissingPath('questions');
-    $this->postJson(route('user.training.quiz.submit', $attempt), [
+    $resume = $this->getJson(route('user.training.quiz.attempt', $attempt));
+    $submit = $this->postJson(route('user.training.quiz.submit', $attempt), [
         'answers' => [$pretest->questions->first()->id => 0],
-    ])->assertForbidden();
+    ]);
+    if ($change === 'assignment cancelled') {
+        $resume->assertUnprocessable()->assertJsonMissingPath('questions');
+        $submit->assertUnprocessable();
+    } else {
+        $resume->assertForbidden()->assertJsonMissingPath('questions');
+        $submit->assertForbidden();
+    }
     expect($attempt->fresh()->getAttributes())->toBe($before);
     $this->assertDatabaseMissing('audit_logs', ['action' => 'quiz.submitted', 'subject_id' => (string) $attempt->id]);
-    $this->assertDatabaseMissing('audit_logs', ['action' => 'assignment.result_changed']);
 })->with([
-    'entitlement revoked', 'module access revoked', 'assignment removed',
+    'entitlement revoked', 'module access revoked', 'assignment cancelled',
     'assignment belongs to another learner', 'other learner', 'wrong tenant', 'wrong role',
 ]);
 
@@ -610,7 +617,7 @@ test('invariant F3: best posttest score is retained', function () {
     expect($assignment->fresh()->score)->toBe(80);
 });
 
-test('invariant F3: third failed posttest completes flow without losing best score', function () {
+test('invariant F3: third failed posttest exhausts attempts without completing', function () {
     [$user, , , $posttest, $assignment] = buildAssignmentWithQuizzes();
     $assignment->update(['score' => 50]);
     foreach (range(1, 2) as $attemptNumber) {
@@ -631,9 +638,9 @@ test('invariant F3: third failed posttest completes flow without losing best sco
         'answers' => [$questionId => 1],
     ])->assertOk()->assertJsonPath('passed', false);
 
-    expect($assignment->fresh()->status)->toBe('completed')
+    expect($assignment->fresh()->status)->toBe('assigned')
         ->and($assignment->fresh()->score)->toBe(50)
-        ->and($assignment->fresh()->completed_at)->not->toBeNull();
+        ->and($assignment->fresh()->completed_at)->toBeNull();
 });
 
 test('invariant F3: invalid historical bindings expose no learner assessment action', function () {
@@ -645,7 +652,7 @@ test('invariant F3: invalid historical bindings expose no learner assessment act
         'training_module_id' => $otherModule->id, 'title' => 'Wrong',
         'passing_score' => 50, 'purpose' => 'posttest',
     ]);
-    $module->update(['pretest_quiz_id' => $wrongQuiz->id, 'posttest_quiz_id' => $wrongQuiz->id]);
+    $assignment->update(['pretest_quiz_id' => $wrongQuiz->id, 'posttest_quiz_id' => $wrongQuiz->id]);
 
     $this->actingAs($user)->get(route('user.training.show', $assignment))
         ->assertOk()

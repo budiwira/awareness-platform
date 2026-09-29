@@ -275,7 +275,7 @@ test('historical assignment remains visible after learner and module become unav
         );
 });
 
-test('tenant admin manual completion does not overwrite assessment score', function () {
+test('tenant admin cannot manually complete or overwrite assessment score', function () {
     $tenant = Tenant::factory()->create();
     $admin = User::factory()->tenantAdmin()->create(['tenant_id' => $tenant->id]);
     $learner = User::factory()->create(['tenant_id' => $tenant->id]);
@@ -294,12 +294,12 @@ test('tenant admin manual completion does not overwrite assessment score', funct
     $this->actingAs($admin)->patch(route('tenant.assignments.update', $assignment), [
         'status' => 'completed',
         'score' => 100,
-    ])->assertRedirect(route('tenant.assignments.index'));
+    ])->assertSessionHasErrors(['status', 'score']);
 
     $assignment->refresh();
-    expect($assignment->status)->toBe('completed')
+    expect($assignment->status)->toBe('in_progress')
         ->and($assignment->score)->toBe(37)
-        ->and($assignment->completed_at)->not->toBeNull();
+        ->and($assignment->completed_at)->toBeNull();
 });
 
 test('assignment history loads soft deleted learners without exposing them as eligible', function () {

@@ -116,7 +116,7 @@ class UserQuizReviewTest extends TestCase
         );
     }
 
-    public function test_user_can_review_expired_attempt()
+    public function test_user_cannot_review_expired_posttest_while_retries_remain()
     {
         $fixture = $this->makeQuizFixture();
         extract($fixture);
@@ -141,11 +141,7 @@ class UserQuizReviewTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('user.training.quiz.review', $attempt->id));
 
-        $response->assertOk();
-        $response->assertInertia(fn ($page) => $page
-            ->component('User/MyTraining/Review')
-            ->where('attempt.status', 'expired')
-        );
+        $response->assertForbidden();
     }
 
     public function test_user_cannot_review_in_progress_attempt()
@@ -177,8 +173,15 @@ class UserQuizReviewTest extends TestCase
         extract($fixture);
 
         $otherUser = User::factory()->create(['tenant_id' => $tenant->id, 'role' => 'user']);
+        $otherAssignment = ModuleAssignment::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $otherUser->id,
+            'training_module_id' => $module->id,
+            'status' => 'assigned',
+        ]);
 
         $attempt = QuizAttempt::create([
+            'module_assignment_id' => $otherAssignment->id,
             'quiz_id' => $quiz->id,
             'user_id' => $otherUser->id,
             'tenant_id' => $tenant->id,
