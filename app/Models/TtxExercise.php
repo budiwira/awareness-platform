@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property int $injects_count
  * @property int|null $playbook_id
  * @property int|null $runbook_id
+ * @property int|null $source_scenario_template_id
  * @property string $phase
  * @property Carbon|null $scheduled_at
  * @property string|null $aar_notes
@@ -44,6 +45,11 @@ class TtxExercise extends Model
     public function playbook(): BelongsTo
     {
         return $this->belongsTo(TtxPlaybook::class, 'playbook_id');
+    }
+
+    public function sourceScenarioTemplate(): BelongsTo
+    {
+        return $this->belongsTo(TtxScenarioTemplate::class, 'source_scenario_template_id');
     }
 
     public function runbook(): BelongsTo

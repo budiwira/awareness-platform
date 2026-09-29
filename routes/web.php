@@ -21,6 +21,7 @@ use App\Http\Controllers\Tenant\ModuleAssignmentController as TenantAssignmentCo
 use App\Http\Controllers\Tenant\PhishingCampaignController as TenantPhishingController;
 use App\Http\Controllers\Tenant\TtxController as TenantTtxController;
 use App\Http\Controllers\Tenant\TtxExerciseController as TenantTtxExerciseController;
+use App\Http\Controllers\Tenant\TtxScenarioCatalogController as TenantTtxScenarioCatalogController;
 use App\Http\Controllers\Tenant\TtxSessionController as TenantTtxSessionController;
 use App\Http\Controllers\Tenant\UserController as TenantUserController;
 use App\Http\Controllers\TenantReportController;
@@ -87,6 +88,16 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/dashboard', [PlatformReportController::class, 'dashboard'])->name('dashboard');
             Route::get('/ttx/scenarios', [PlatformTtxScenarioController::class, 'index'])->name('ttx.scenarios.index');
+            Route::get('/ttx/scenarios/create', [PlatformTtxScenarioController::class, 'create'])->name('ttx.scenarios.create');
+            Route::post('/ttx/scenarios', [PlatformTtxScenarioController::class, 'store'])->name('ttx.scenarios.store');
+            Route::get('/ttx/scenarios/{template}/edit', [PlatformTtxScenarioController::class, 'edit'])->name('ttx.scenarios.edit');
+            Route::put('/ttx/scenarios/{template}', [PlatformTtxScenarioController::class, 'update'])->name('ttx.scenarios.update');
+            Route::post('/ttx/scenarios/{template}/publish', [PlatformTtxScenarioController::class, 'publish'])->name('ttx.scenarios.publish');
+            Route::post('/ttx/scenarios/{template}/archive', [PlatformTtxScenarioController::class, 'archive'])->name('ttx.scenarios.archive');
+            Route::post('/ttx/scenarios/{template}/injects', [PlatformTtxScenarioController::class, 'storeInject'])->name('ttx.scenarios.injects.store');
+            Route::post('/ttx/scenarios/{template}/injects/reorder', [PlatformTtxScenarioController::class, 'reorderInjects'])->name('ttx.scenarios.injects.reorder');
+            Route::put('/ttx/scenarios/{template}/injects/{inject}', [PlatformTtxScenarioController::class, 'updateInject'])->name('ttx.scenarios.injects.update');
+            Route::delete('/ttx/scenarios/{template}/injects/{inject}', [PlatformTtxScenarioController::class, 'archiveInject'])->name('ttx.scenarios.injects.archive');
 
             // Route Tenants
             Route::get('/tenants', [PlatformTenantController::class, 'index'])->name('tenants.index');
@@ -267,6 +278,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/ttx/runbooks', [TenantTtxController::class, 'storeRunbook'])->name('ttx.runbooks.store');
 
             // Route TTX Exercises & Teams
+            Route::get('/ttx/scenarios', [TenantTtxScenarioCatalogController::class, 'index'])->name('ttx.scenarios.index');
+            Route::post('/ttx/scenarios/{template}/instantiate', [TenantTtxScenarioCatalogController::class, 'instantiate'])->name('ttx.scenarios.instantiate');
             Route::get('/ttx/exercises', [TenantTtxExerciseController::class, 'index'])->name('ttx.exercises.index');
             Route::post('/ttx/exercises', [TenantTtxExerciseController::class, 'store'])->name('ttx.exercises.store');
             Route::get('/ttx/exercises/{exercise}', [TenantTtxExerciseController::class, 'show'])->name('ttx.exercises.show');

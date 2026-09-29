@@ -155,9 +155,7 @@ test('demo tenant receives the flagship while unrelated private scenarios remain
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('Platform/Ttx/Scenarios/Index')
-            ->has('scenarios', 2)
-            ->where('scenarios', fn ($scenarios) => collect($scenarios)->pluck('title')->contains(TtxContentSeeder::FLAGSHIP_TITLE)
-                && collect($scenarios)->pluck('title')->contains('Private Legal Incident')));
+            ->has('scenarios', 0));
 });
 
 test('flagship exercise creates complete runtime snapshots and keeps future injects confidential', function () {

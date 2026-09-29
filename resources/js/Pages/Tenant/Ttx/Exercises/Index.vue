@@ -31,9 +31,10 @@ const phaseBadge = (p) => ({
     <AppLayout title="Simulasi Tabletop Exercise">
         <div class="flex items-center justify-between mb-6">
             <p class="text-sm t-muted">Rencanakan & kelola simulasi tabletop berdasarkan playbook & runbook.</p>
-            <button @click="showForm = !showForm" class="btn btn-primary">
-                + Buat Exercise
-            </button>
+            <div class="flex flex-wrap gap-2">
+                <Link :href="route('tenant.ttx.scenarios.index')" class="btn btn-secondary focus-visible:ring-2 focus-visible:ring-[var(--brand)] active:translate-y-px">Pilih dari Katalog</Link>
+                <button @click="showForm = !showForm" class="btn btn-primary focus-visible:ring-2 focus-visible:ring-[var(--brand)] active:translate-y-px">Buat Exercise Kustom</button>
+            </div>
         </div>
 
         <div v-if="showForm" class="card p-6 mb-6">
