@@ -59,6 +59,8 @@ class UserQuizReviewTest extends TestCase
             'duration_minutes' => 10,
             'is_active' => true,
         ]);
+        $module->update(['posttest_quiz_id' => $quiz->id]);
+        $assignment->update(['posttest_quiz_id' => $quiz->id]);
 
         $q1 = QuizQuestion::create([
             'quiz_id' => $quiz->id,

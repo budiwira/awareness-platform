@@ -6,6 +6,8 @@ const props = defineProps({
     attempt: Object,
     quiz: Object,
     questions: Array,
+    assignment: Object,
+    result_url: String,
 });
 
 const formatDate = (dateString) => {
@@ -19,24 +21,24 @@ const formatDate = (dateString) => {
     <Head :title="`Review: ${quiz.title}`" />
 
     <AppLayout :title="`Review: ${quiz.title}`">
-        <Link :href="route('user.score')" class="inline-flex items-center gap-2 mb-8 transition-colors" style="color: var(--t-muted)">
+        <Link :href="result_url" class="inline-flex min-h-11 items-center gap-2 mb-8 transition-colors t-muted hover:t-ink focus-visible:outline-none focus-visible:ring-2">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Kembali ke Skor Saya
+            Kembali ke Hasil
         </Link>
 
         <div class="card p-6 mb-8">
             <div class="flex items-start justify-between">
                 <div>
                     <div class="text-xs font-semibold uppercase tracking-wide t-muted mb-1">{{ quiz.purpose === 'pretest' ? 'Pretest baseline' : 'Posttest' }}</div>
-                    <div class="text-sm mb-1 t-muted">Skor Anda</div>
+                    <div class="text-sm mb-1 t-muted">{{ quiz.purpose === 'pretest' ? 'Skor baseline' : 'Skor percobaan' }}</div>
                     <div class="font-display text-4xl font-bold mb-2 t-ink">{{ attempt.score }}%</div>
                     <span v-if="quiz.purpose !== 'pretest'" class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
-                        {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
+                        {{ attempt.status === 'expired' ? 'Waktu habis' : (attempt.passed ? 'Lulus' : 'Belum lulus') }}
                     </span>
                 </div>
-                <div class="text-right">
+                <div v-if="quiz.purpose === 'posttest'" class="text-right">
                     <div class="text-sm t-muted">Nilai kelulusan</div>
                     <div class="font-semibold text-2xl t-ink">{{ quiz.passing_score }}%</div>
                     <div class="text-xs mt-1 t-muted">{{ formatDate(attempt.submitted_at) }}</div>

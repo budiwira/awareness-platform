@@ -26,22 +26,44 @@ class MyTrainingController extends Controller
         $entitlement = app(TenantEntitlement::class);
         $entitledModuleIds = $entitlement->getEntitledModuleIds($tenant);
 
-        // User hanya bisa melihat assignment miliknya sendiri,
-        // termasuk info apakah modulnya punya quiz aktif
         $assignments = ModuleAssignment::with([
             'module:id,title,description,duration_minutes',
-            'module.quiz:id,training_module_id',
+            'pretestQuiz:id,training_module_id,purpose',
+            'posttestQuiz:id,training_module_id,purpose',
+            'quizAttempts:id,module_assignment_id,quiz_id,status',
         ])
             ->where('user_id', $userId)
             ->whereIn('training_module_id', $entitledModuleIds)
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         // Filter out modules revoked from this user
         $manager = app(UserAccessManager::class);
-        $assignments = $assignments->filter(function ($assignment) use ($manager, $request) {
-            return $manager->hasModuleAccessById($request->user(), $assignment->training_module_id);
-        })->values();
+        $lifecycle = app(AssessmentLifecycle::class);
+        $assignments = $assignments
+            ->filter(fn (ModuleAssignment $assignment): bool => $manager->hasModuleAccessById($request->user(), $assignment->training_module_id))
+            ->map(function (ModuleAssignment $assignment) use ($lifecycle): array {
+                $snapshot = $assignment->module_snapshot ?? $assignment->module->runtimeSnapshot();
+                $state = $lifecycle->state($assignment);
+                $bestPosttestScore = $this->bestValidPosttestScore($assignment, $state['posttest_quiz']?->id);
+
+                return [
+                    'id' => $assignment->id,
+                    'training_module_id' => $assignment->training_module_id,
+                    'status' => $assignment->status,
+                    'stage' => $state['stage'],
+                    'overdue' => $state['overdue'],
+                    'deadline_at' => $assignment->deadline_at?->toIso8601String(),
+                    'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                    'best_posttest_score' => $bestPosttestScore,
+                    'module' => [
+                        'title' => $snapshot['title'],
+                        'description' => $snapshot['description'],
+                        'duration_minutes' => $snapshot['duration_minutes'],
+                    ],
+                ];
+            })->values();
 
         return Inertia::render('User/MyTraining/Index', [
             'assignments' => $assignments,
@@ -75,21 +97,29 @@ class MyTrainingController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
-        $assignment->load(['module', 'pretestQuiz', 'posttestQuiz']);
+        $assignment->load(['module', 'pretestQuiz', 'posttestQuiz', 'quizAttempts:id,module_assignment_id,quiz_id,status']);
         $module = $assignment->module;
         $lifecycle = app(AssessmentLifecycle::class)->state($assignment);
         $pretestAttempt = $lifecycle['pretest_attempt'];
         $posttestAttempt = $lifecycle['posttest_attempt'];
         $pretestQuiz = $lifecycle['pretest_quiz'];
         $posttestQuiz = $lifecycle['posttest_quiz'];
+        $bestPosttestScore = $this->bestValidPosttestScore($assignment, $posttestQuiz?->id);
 
         $snapshot = $assignment->module_snapshot ?? $module->runtimeSnapshot();
-        $contentAvailable = $pretestQuiz === null || $pretestAttempt !== null;
+        $contentAvailable = $lifecycle['configuration_valid']
+            && ($pretestQuiz === null || $pretestAttempt !== null);
 
         return Inertia::render('User/MyTraining/Show', [
             'assignment' => [
                 'id' => $assignment->id,
                 'status' => $assignment->status,
+                'deadline_at' => $assignment->deadline_at?->toIso8601String(),
+                'assigned_at' => $assignment->assigned_at?->toIso8601String(),
+                'content_started_at' => $assignment->content_started_at?->toIso8601String(),
+                'content_completed_at' => $assignment->content_completed_at?->toIso8601String(),
+                'pretest_score' => $assignment->pretest_score,
+                'best_posttest_score' => $bestPosttestScore,
             ],
             'module' => [
                 'id' => $snapshot['module_id'],
@@ -102,7 +132,6 @@ class MyTrainingController extends Controller
             'pretestQuiz' => $pretestQuiz ? [
                 'id' => $pretestQuiz->id,
                 'title' => $pretestQuiz->title,
-                'passing_score' => $pretestQuiz->passing_score,
             ] : null,
             'posttestQuiz' => $posttestQuiz ? [
                 'id' => $posttestQuiz->id,
@@ -112,11 +141,14 @@ class MyTrainingController extends Controller
             'pretestAttempt' => $pretestAttempt ? [
                 'id' => $pretestAttempt->id,
                 'score' => $pretestAttempt->score,
+                'status' => $pretestAttempt->status,
                 'submitted_at' => $pretestAttempt->submitted_at?->toIso8601String(),
             ] : null,
             'posttestAttempt' => $posttestAttempt ? [
                 'id' => $posttestAttempt->id,
                 'score' => $posttestAttempt->score,
+                'status' => $posttestAttempt->status,
+                'passed' => $posttestAttempt->passed,
                 'submitted_at' => $posttestAttempt->submitted_at?->toIso8601String(),
             ] : null,
         ]);
@@ -188,13 +220,29 @@ class MyTrainingController extends Controller
     {
         abort_if(in_array($assignment->status, ['completed', 'cancelled'], true), 422, 'Assignment sudah berstatus terminal.');
 
-        $pretest = app(AssessmentLifecycle::class)->quiz($assignment, 'pretest');
+        $lifecycle = app(AssessmentLifecycle::class);
+        $state = $lifecycle->state($assignment);
+        abort_unless($state['configuration_valid'], 422, 'Assessment sementara tidak tersedia.');
+
+        $pretest = $lifecycle->quiz($assignment, 'pretest');
         if ($pretest) {
             abort_unless(
-                app(AssessmentLifecycle::class)->terminalAttempts($assignment, $pretest)->exists(),
+                $lifecycle->terminalAttempts($assignment, $pretest)->exists(),
                 403,
                 'Selesaikan baseline pretest terlebih dahulu.'
             );
         }
+    }
+
+    private function bestValidPosttestScore(ModuleAssignment $assignment, ?int $posttestQuizId): ?int
+    {
+        if ($posttestQuizId === null || ! $assignment->quizAttempts
+            ->where('quiz_id', $posttestQuizId)
+            ->where('status', 'submitted')
+            ->isNotEmpty()) {
+            return null;
+        }
+
+        return $assignment->score;
     }
 }

@@ -2,65 +2,76 @@
 import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { BaseBadge } from '@/Components';
 
 const props = defineProps({
     attempt: Object,
     assignment: Object,
+    attemptContext: Object,
+    actions: Object,
 });
 
-const learningGain = computed(() => {
-    if (props.assignment?.pretest_score === null || props.assignment?.pretest_score === undefined || props.assignment?.score === null || props.assignment?.score === undefined) return null;
-    return props.assignment.score - props.assignment.pretest_score;
+const attemptStatus = computed(() => {
+    if (props.attempt.purpose === 'pretest') return { label: 'Baseline tercatat', variant: 'info' };
+    if (props.attempt.expired) return { label: 'Waktu habis', variant: 'warning' };
+    return props.attempt.passed ? { label: 'Lulus', variant: 'success' } : { label: 'Belum lulus', variant: 'danger' };
 });
-
-const resultMessage = computed(() => {
-    if (props.attempt.assessment_purpose === 'pretest') return 'Baseline tersimpan. Lanjutkan ke materi pembelajaran.';
-    if (props.attempt.passed) return 'Nilai Anda sudah memenuhi standar kelulusan.';
-    if (props.assignment?.status === 'completed') return 'Training telah selesai. Nilai terbaik tetap tersimpan sebagai catatan kompetensi Anda.';
-    return 'Pelajari kembali materi dan coba lagi setelah masa tunggu berakhir.';
+const overallStatus = computed(() => ({
+    completed: { label: 'Training selesai', variant: 'success' },
+    needs_remediation: { label: 'Perlu tindak lanjut', variant: 'danger' },
+    cancelled: { label: 'Dibatalkan', variant: 'neutral' },
+    in_progress: { label: 'Sedang berjalan', variant: 'info' },
+}[props.assignment.overall_status] ?? { label: 'Sedang berjalan', variant: 'info' }));
+const gainLabel = computed(() => {
+    const gain = props.assignment.learning_gain;
+    if (gain === null || gain === undefined) return null;
+    return `${gain > 0 ? '+' : ''}${gain} pp`;
 });
+const formatDateTime = (value) => value
+    ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
+    : '-';
 </script>
 
 <template>
-    <Head title="Hasil Quiz" />
-
-    <AppLayout title="Hasil Quiz">
-        <div class="max-w-2xl mx-auto space-y-6">
-            <div class="card p-8 text-center">
-                <div class="text-sm font-medium mb-2 t-muted">{{ attempt.assessment_purpose === 'pretest' ? 'HASIL PRETEST' : 'HASIL POSTTEST' }}</div>
-                <h1 class="font-display text-3xl font-bold mb-6 t-ink">{{ attempt.quiz.title }}</h1>
-                <div class="mx-auto w-28 h-28 rounded-2xl flex items-center justify-center text-3xl font-display font-bold mb-4"
-                    :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
-                    {{ attempt.score }}%
+    <Head title="Hasil Assessment" />
+    <AppLayout title="Hasil Assessment">
+        <div class="mx-auto max-w-4xl space-y-6">
+            <section class="card p-6 sm:p-8 fade-in">
+                <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide t-muted">Hasil percobaan</p>
+                        <h1 class="mt-2 font-display text-2xl font-bold t-ink">{{ attempt.quiz_title }}</h1>
+                        <p class="mt-2 text-sm t-muted">{{ attempt.purpose === 'pretest' ? 'Pretest baseline' : `Posttest · Percobaan ${attempt.number} / ${attemptContext.attempts_maximum}` }}</p>
+                    </div>
+                    <BaseBadge :variant="attemptStatus.variant">{{ attemptStatus.label }}</BaseBadge>
                 </div>
-                <span v-if="attempt.assessment_purpose !== 'pretest'" class="badge" :class="attempt.passed ? 'badge-ok' : 'badge-warn'">
-                    {{ attempt.passed ? 'Lulus' : 'Belum lulus' }}
-                </span>
-                <p class="mt-4 t-muted">
-                    {{ resultMessage }}
-                </p>
-            </div>
 
-            <div v-if="attempt.assessment_purpose === 'posttest' && learningGain !== null" class="card p-6">
-                <div class="text-sm font-medium mb-1 t-muted">Learning gain</div>
-                <div class="text-2xl font-bold" :style="{ color: learningGain >= 0 ? 'var(--success)' : 'var(--danger)' }">
-                    {{ learningGain > 0 ? '+' : '' }}{{ learningGain }}%
-                </div>
-                <div class="text-sm mt-1 t-muted">
-                    Perbandingan nilai pretest {{ assignment.pretest_score }}% dan nilai posttest terbaik {{ assignment.score }}%.
-                </div>
-            </div>
+                <dl class="mt-6 grid gap-4 sm:grid-cols-3">
+                    <div class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">{{ attempt.purpose === 'pretest' ? 'Skor baseline' : 'Skor percobaan' }}</dt><dd class="mt-1 font-display text-3xl font-bold t-ink">{{ attempt.score }}%</dd></div>
+                    <div v-if="attempt.purpose === 'posttest'" class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">Passing score</dt><dd class="mt-1 font-display text-3xl font-bold t-ink">{{ attempt.passing_score }}%</dd></div>
+                    <div v-if="attempt.purpose === 'posttest'" class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">Sisa percobaan</dt><dd class="mt-1 font-display text-3xl font-bold t-ink">{{ attemptContext.attempts_remaining }}</dd></div>
+                </dl>
+                <p v-if="attempt.purpose === 'pretest'" class="mt-5 text-sm leading-6 t-muted">Nilai ini digunakan sebagai titik awal untuk mengukur peningkatan setelah pembelajaran. Pretest bukan penentu lulus atau gagal dan tidak dapat diulang.</p>
+                <p v-else-if="attempt.expired" class="mt-5 text-sm leading-6 t-muted">Percobaan berakhir karena waktu habis. Percobaan ini memakai satu kuota, tidak dianggap lulus, dan tidak memperbarui skor Posttest terbaik.</p>
+                <p v-if="attemptContext.cooldown_until && !attempt.passed" class="mt-3 text-sm font-medium t-ink">Percobaan berikutnya tersedia {{ formatDateTime(attemptContext.cooldown_until) }}.</p>
+            </section>
 
-            <div class="card p-6 flex flex-wrap gap-3 justify-center">
-                <Link :href="route('user.training.quiz.review', attempt.id)" class="btn">
-                    Review jawaban
-                </Link>
-                <Link v-if="assignment" :href="route('user.training.show', assignment.id)" class="btn btn-primary">
-                    Kembali ke training
-                </Link>
-                <Link v-else :href="route('user.training.index')" class="btn btn-primary">
-                    Daftar training
-                </Link>
+            <section v-if="attempt.purpose === 'posttest'" class="card p-6 sm:p-8">
+                <div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide t-muted">Progress keseluruhan modul</p><h2 class="mt-2 font-display text-xl font-bold t-ink">Hasil pembelajaran</h2></div><BaseBadge :variant="overallStatus.variant">{{ overallStatus.label }}</BaseBadge></div>
+                <dl class="mt-6 grid gap-4 sm:grid-cols-3">
+                    <div v-if="assignment.has_pretest" class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">Baseline</dt><dd class="mt-1 text-2xl font-bold t-ink">{{ assignment.baseline_score ?? '-' }}{{ assignment.baseline_score !== null ? '%' : '' }}</dd></div>
+                    <div v-if="assignment.has_posttest" class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">Posttest valid terbaik</dt><dd class="mt-1 text-2xl font-bold t-ink">{{ assignment.best_posttest_score ?? '-' }}{{ assignment.best_posttest_score !== null ? '%' : '' }}</dd></div>
+                    <div v-if="assignment.learning_gain_available" class="rounded-xl bg-surface2 p-4"><dt class="text-xs t-muted">Learning Gain</dt><dd class="mt-1 text-2xl font-bold t-ink">{{ gainLabel }}</dd><p class="mt-1 text-xs t-muted">Peningkatan pembelajaran dalam percentage points.</p></div>
+                </dl>
+                <p v-if="attempt.purpose === 'posttest' && !assignment.has_pretest" class="mt-5 text-sm t-muted">Learning Gain tidak tersedia karena modul ini tidak menggunakan Pretest.</p>
+                <p v-else-if="attempt.purpose === 'posttest' && assignment.has_pretest && !assignment.learning_gain_available" class="mt-5 text-sm t-muted">Learning Gain tersedia setelah ada skor Posttest valid.</p>
+                <p v-if="assignment.overall_status === 'needs_remediation'" class="mt-5 text-sm font-medium t-ink">Percobaan telah habis. Hubungi admin organisasi untuk tindak lanjut.</p>
+            </section>
+
+            <div class="card flex flex-wrap justify-center gap-3 p-5">
+                <Link v-if="actions.review_allowed" :href="actions.review_url" class="btn btn-secondary">Review jawaban</Link>
+                <Link :href="actions.module_url" class="btn btn-primary">{{ attempt.purpose === 'pretest' ? 'Lanjutkan belajar' : 'Kembali ke Module Room' }}</Link>
+                <Link :href="actions.training_url" class="btn btn-secondary">Training Saya</Link>
             </div>
         </div>
     </AppLayout>

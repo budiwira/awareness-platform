@@ -10,6 +10,7 @@ const props = defineProps({
     activeAttempt: Object,
     alreadyPassed: Boolean,
     passedAttempt: Object,
+    attemptContext: Object,
 });
 
 const state = ref('start'); // 'start' | 'attempt' | 'result'
@@ -184,7 +185,7 @@ onUnmounted(() => {
                     <span class="badge" style="background: var(--bg-subtle); color: var(--t-muted);">{{ quizPurpose }}</span>
                     <h2 class="text-3xl font-display font-bold mt-3" style="color: var(--t-ink);">{{ quiz.title }}</h2>
                     <p class="mt-2 max-w-2xl" style="color: var(--t-muted);">
-                        Ukur pemahaman Anda sebelum melanjutkan ke tahap berikutnya dalam training.
+                        {{ quiz.purpose === 'pretest' ? 'Catat pemahaman awal Anda. Pretest ini bukan penentu lulus atau gagal.' : 'Ukur pemahaman Anda setelah menyelesaikan materi pembelajaran.' }}
                     </p>
                 </div>
             </div>
@@ -214,7 +215,7 @@ onUnmounted(() => {
 
             <div v-else class="space-y-6">
                 <div class="space-y-3">
-                    <div class="flex items-center gap-3 text-sm">
+                    <div v-if="quiz.purpose === 'posttest'" class="flex items-center gap-3 text-sm">
                         <svg class="w-5 h-5" style="color: var(--t-muted);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -228,7 +229,7 @@ onUnmounted(() => {
                         <span style="color: var(--t-ink);">{{ quiz.duration_minutes }} menit</span>
                     </div>
 
-                    <div class="flex items-center gap-3 text-sm">
+                    <div v-if="quiz.purpose === 'posttest'" class="flex items-center gap-3 text-sm">
                         <svg class="w-5 h-5" style="color: var(--t-muted);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -242,8 +243,8 @@ onUnmounted(() => {
                         <li>Semua soal harus dijawab</li>
                         <li v-if="quiz.duration_minutes">Jawaban otomatis terkirim saat waktu habis</li>
                         <li>Urutan soal dan opsi jawaban diacak untuk setiap peserta</li>
-                        <li v-if="quiz.purpose === 'posttest'">Posttest dapat dikerjakan kembali jika belum lulus, maksimal 3 attempt</li>
-                        <li v-else>Pretest adalah baseline satu kali dan tidak mensyaratkan kelulusan</li>
+                        <li v-if="quiz.purpose === 'posttest'">Posttest dapat dikerjakan kembali jika belum lulus, maksimal {{ attemptContext.attempts_maximum }} percobaan</li>
+                        <li v-else>Pretest adalah baseline satu kali, bukan assessment lulus atau gagal, dan tidak dapat diulang</li>
                     </ul>
                 </div>
 
@@ -253,7 +254,7 @@ onUnmounted(() => {
 
                 <button @click="startQuiz" :disabled="submitting" class="btn btn-primary">
                     <span v-if="submitting">Memproses...</span>
-                    <span v-else>Mulai Quiz</span>
+                    <span v-else>{{ quiz.purpose === 'pretest' ? 'Mulai Pretest' : `Mulai Percobaan ${attemptContext.attempts_used + 1}` }}</span>
                 </button>
             </div>
         </div>
@@ -348,7 +349,7 @@ onUnmounted(() => {
                                     ? 'var(--success-bg)'
                                     : 'var(--bg-subtle)',
                                 color: qi === currentQuestionIndex
-                                    ? 'white'
+                                    ? 'var(--white)'
                                     : isAnswered(q.id)
                                     ? 'var(--success)'
                                     : 'var(--t-muted)',
@@ -374,7 +375,7 @@ onUnmounted(() => {
         <!-- State: Result -->
         <div v-if="state === 'result'" class="card p-8">
             <div class="text-center mb-8">
-                <div v-if="result.passed" class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style="background: var(--success-bg);">
+                <div v-if="result.attempt.purpose === 'pretest' || result.attempt.passed" class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4" style="background: var(--success-bg);">
                     <svg class="w-10 h-10" style="color: var(--success);" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -386,32 +387,25 @@ onUnmounted(() => {
                 </div>
 
                 <h2 class="text-3xl font-display font-bold mb-2" style="color: var(--t-ink);">
-                    {{ result.passed ? 'Selamat!' : 'Belum Lulus' }}
+                    {{ result.attempt.purpose === 'pretest' ? 'Baseline tercatat' : (result.attempt.expired ? 'Waktu habis' : (result.attempt.passed ? 'Lulus' : 'Belum lulus')) }}
                 </h2>
                 <p class="text-lg" style="color: var(--t-muted);">
-                    {{ result.passed ? 'Pemahaman Anda sudah memenuhi nilai kelulusan.' : 'Nilai kelulusan belum tercapai. Anda dapat mencoba lagi.' }}
+                    {{ result.attempt.purpose === 'pretest' ? 'Nilai ini menjadi titik awal untuk mengukur peningkatan setelah pembelajaran.' : (result.attempt.passed ? 'Pemahaman Anda sudah memenuhi nilai kelulusan.' : 'Lihat hasil percobaan dan waktu percobaan berikutnya di Module Room.') }}
                 </p>
 
-                <div class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl" :style="{ background: result.passed ? 'var(--success-bg)' : 'var(--danger-bg)' }">
-                    <span class="text-sm" :style="{ color: result.passed ? 'var(--success)' : 'var(--danger)' }">Skor Anda:</span>
-                    <span class="text-3xl font-display font-bold" :style="{ color: result.passed ? 'var(--success)' : 'var(--danger)' }">{{ result.score }}%</span>
+                <div class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl" style="background: var(--surface2)">
+                    <span class="text-sm t-muted">{{ result.attempt.purpose === 'pretest' ? 'Skor baseline:' : 'Skor percobaan:' }}</span>
+                    <span class="text-3xl font-display font-bold t-ink">{{ result.attempt.score }}%</span>
                 </div>
 
-                <div v-if="result.status === 'expired'" class="mt-4 text-sm" style="color: var(--t-muted);">
-                    (Waktu habis - jawaban otomatis terkirim)
+                <div v-if="result.attempt.expired" class="mt-4 text-sm t-muted">
+                    {{ result.attempt.purpose === 'pretest' ? 'Baseline tercatat setelah waktu berakhir.' : 'Percobaan ini memakai satu kuota dan tidak memperbarui skor terbaik.' }}
                 </div>
             </div>
 
             <div class="flex justify-center gap-3">
-                <Link :href="route('user.quiz.result', result.attempt_id)" class="btn btn-primary">
-                    Lihat Detail Hasil
-                </Link>
-                <Link v-if="!result.passed" :href="route('user.training.quiz', quizRouteParams)" class="btn">
-                    Coba Lagi
-                </Link>
-                <Link v-else :href="route('user.training.index')" class="btn">
-                    Kembali ke Training
-                </Link>
+                <Link :href="route('user.quiz.result', result.attempt.id)" class="btn btn-primary">Lihat detail hasil</Link>
+                <Link :href="result.actions.module_url" class="btn">{{ result.attempt.purpose === 'pretest' ? 'Lanjutkan belajar' : 'Kembali ke Module Room' }}</Link>
             </div>
         </div>
     </AppLayout>

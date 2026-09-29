@@ -6,19 +6,30 @@ import { BaseBadge } from '@/Components';
 
 defineProps({ assignments: Array });
 
-const statusLabel = (status) => ({
+const statusLabel = (assignment) => ({
     assigned: 'Ditugaskan',
     in_progress: 'Sedang dikerjakan',
-    completed: 'Selesai',
-}[status] || 'Ditugaskan');
+    completed: 'Training selesai',
+    cancelled: 'Dibatalkan',
+    needs_remediation: 'Perlu tindak lanjut',
+    configuration_unavailable: 'Tidak tersedia',
+}[assignment.stage === 'attempts_exhausted' ? 'needs_remediation' : (assignment.stage === 'configuration_unavailable' ? 'configuration_unavailable' : assignment.status)] || 'Ditugaskan');
 
-const statusVariant = (status) => ({
+const statusVariant = (assignment) => ({
     assigned: 'warning',
     in_progress: 'info',
     completed: 'success',
-}[status] || 'warning');
+    cancelled: 'neutral',
+    needs_remediation: 'danger',
+    configuration_unavailable: 'danger',
+}[assignment.stage === 'attempts_exhausted' ? 'needs_remediation' : (assignment.stage === 'configuration_unavailable' ? 'configuration_unavailable' : assignment.status)] || 'warning');
 
-const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status === 'in_progress' ? 'Lanjutkan' : 'Mulai modul');
+const ctaLabel = (assignment) => {
+    if (assignment.status === 'completed' || assignment.status === 'cancelled'
+        || ['attempts_exhausted', 'configuration_unavailable'].includes(assignment.stage)) return 'Lihat detail';
+    return assignment.status === 'in_progress' ? 'Lanjutkan' : 'Mulai modul';
+};
+const formatDate = (value) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
 </script>
 
 <template>
@@ -41,8 +52,8 @@ const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status ===
                             {{ assignment.module.description }}
                         </p>
                     </div>
-                    <BaseBadge class="shrink-0" :variant="statusVariant(assignment.status)">
-                        {{ statusLabel(assignment.status) }}
+                    <BaseBadge class="shrink-0" :variant="statusVariant(assignment)">
+                        {{ statusLabel(assignment) }}
                     </BaseBadge>
                 </div>
 
@@ -53,7 +64,9 @@ const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status ===
                         </svg>
                         {{ assignment.module.duration_minutes }} menit
                     </span>
-                    <span v-if="assignment.score !== null" class="font-medium t-ink">Skor {{ assignment.score }}</span>
+                    <span v-if="assignment.deadline_at">Deadline {{ formatDate(assignment.deadline_at) }}</span>
+                    <span v-if="assignment.overdue" class="font-semibold" style="color: var(--danger)">Terlambat</span>
+                    <span v-if="assignment.best_posttest_score !== null" class="font-medium t-ink">Skor terbaik {{ assignment.best_posttest_score }}%</span>
                 </div>
 
                 <div class="mt-auto pt-1">
@@ -61,7 +74,7 @@ const ctaLabel = (status) => status === 'completed' ? 'Buka modul' : (status ===
                         :href="route('user.training.show', assignment.id)"
                         class="btn btn-primary w-full justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                     >
-                        {{ ctaLabel(assignment.status) }}
+                        {{ ctaLabel(assignment) }}
                         <svg class="ml-2 h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-6-6 6 6-6 6" />
                         </svg>

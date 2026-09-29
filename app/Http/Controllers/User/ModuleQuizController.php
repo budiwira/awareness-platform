@@ -91,7 +91,7 @@ class ModuleQuizController extends Controller
                     'id' => $quiz->id,
                     'purpose' => $this->quizPurpose($assignment, $quiz),
                     'title' => $quiz->title,
-                    'passing_score' => $quiz->passing_score,
+                    'passing_score' => $purpose === 'posttest' ? $quiz->passing_score : null,
                     'duration_minutes' => $quiz->duration_minutes,
                     'question_count' => $quiz->questions->count(),
                 ],
@@ -101,6 +101,7 @@ class ModuleQuizController extends Controller
                     'score' => $passedAttempt->score,
                     'submitted_at' => $passedAttempt->submitted_at,
                 ],
+                'attemptContext' => $this->assessmentContext($assignment, $quiz),
             ]);
         }
 
@@ -125,12 +126,13 @@ class ModuleQuizController extends Controller
                 'id' => $quiz->id,
                 'purpose' => $this->quizPurpose($assignment, $quiz),
                 'title' => $quiz->title,
-                'passing_score' => $quiz->passing_score,
+                'passing_score' => $purpose === 'posttest' ? $quiz->passing_score : null,
                 'duration_minutes' => $quiz->duration_minutes,
                 'question_count' => $quiz->questions->count(),
             ],
             'activeAttempt' => $activeAttempt ? ['id' => $activeAttempt->id] : null,
             'alreadyPassed' => false,
+            'attemptContext' => $this->assessmentContext($assignment, $quiz),
         ]);
     }
 
@@ -381,41 +383,33 @@ class ModuleQuizController extends Controller
             return ['score' => $score, 'passed' => $passed, 'status' => 'submitted'];
         });
 
-        return response()->json([
-            'attempt_id' => $attempt->id,
-            ...$result,
-        ]);
+        $attempt->refresh();
+        $assignment = $attempt->moduleAssignment()->firstOrFail();
+
+        return response()->json($this->attemptResultPayload($assignment, $attempt, $result));
     }
 
     public function result(Request $request, QuizAttempt $attempt)
     {
-        $this->ensureAttemptAccess($request, $attempt);
-
+        $assignment = $this->ensureAttemptAccess($request, $attempt);
+        abort_if($attempt->status === 'in_progress', 403, 'Hasil hanya tersedia setelah assessment selesai.');
         $attempt->load('quiz:id,title,passing_score,training_module_id,purpose');
 
-        $assignment = $request->user()->moduleAssignments()
-            ->whereKey($attempt->module_assignment_id)
-            ->first(['id', 'status', 'pretest_score', 'score']);
-
         return Inertia::render('User/MyTraining/Result', [
-            'attempt' => $attempt,
-            'assignment' => $assignment,
+            ...$this->attemptResultPayload($assignment, $attempt),
         ]);
     }
 
     public function review(Request $request, QuizAttempt $attempt)
     {
-        $this->ensureAttemptAccess($request, $attempt);
+        $assignment = $this->ensureAttemptAccess($request, $attempt);
 
         // Hanya attempt yang sudah selesai
         if ($attempt->status === 'in_progress') {
             abort(403, 'Review hanya tersedia untuk attempt yang sudah selesai.');
         }
 
-        if ($attempt->assessment_purpose === 'posttest' && ! $attempt->passed) {
-            $terminalCount = $this->lifecycle->terminalAttempts($attempt->moduleAssignment, $attempt->quiz)->count();
-            abort_if($terminalCount < AssessmentLifecycle::POSTTEST_MAX_ATTEMPTS, 403, 'Review tersedia setelah assessment berakhir.');
-        }
+        abort_unless($this->canReview($assignment, $attempt), 403, 'Review tersedia setelah perjalanan assessment berakhir.');
 
         $quiz = $attempt->quiz;
         $questions = $quiz->questions->keyBy('id');
@@ -454,6 +448,7 @@ class ModuleQuizController extends Controller
                 'passed' => $attempt->passed,
                 'status' => $attempt->status,
                 'submitted_at' => $attempt->submitted_at,
+                'purpose' => $attempt->assessment_purpose,
             ],
             'quiz' => [
                 'id' => $quiz->id,
@@ -462,7 +457,137 @@ class ModuleQuizController extends Controller
                 'purpose' => $attempt->assessment_purpose,
             ],
             'questions' => $reviewQuestions,
+            'assignment' => ['id' => $assignment->id],
+            'result_url' => route('user.quiz.result', $attempt),
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function attemptResultPayload(ModuleAssignment $assignment, QuizAttempt $attempt, ?array $result = null): array
+    {
+        $quiz = $attempt->quiz;
+        $context = $this->assessmentContext($assignment, $quiz, $attempt);
+        $baseline = $assignment->pretest_score;
+        $bestPosttest = $context['best_valid_posttest_score'];
+        $gainAvailable = $attempt->assessment_purpose === 'posttest'
+            && $baseline !== null
+            && $bestPosttest !== null;
+        $reviewAllowed = $this->canReview($assignment, $attempt);
+
+        return [
+            'attempt_id' => $attempt->id,
+            'score' => $result['score'] ?? $attempt->score,
+            'status' => $result['status'] ?? $attempt->status,
+            'passed' => $result['passed'] ?? $attempt->passed,
+            'attempt' => [
+                'id' => $attempt->id,
+                'purpose' => $attempt->assessment_purpose,
+                'quiz_title' => $quiz->title,
+                'score' => $result['score'] ?? $attempt->score,
+                'status' => $result['status'] ?? $attempt->status,
+                'passed' => $result['passed'] ?? $attempt->passed,
+                'expired' => ($result['status'] ?? $attempt->status) === 'expired',
+                'number' => $context['attempt_number'],
+                'passing_score' => $attempt->assessment_purpose === 'posttest' ? $quiz->passing_score : null,
+                'submitted_at' => $attempt->submitted_at?->toIso8601String(),
+            ],
+            'assignment' => [
+                'id' => $assignment->id,
+                'status' => $assignment->status,
+                'has_pretest' => $assignment->pretest_quiz_id !== null,
+                'has_posttest' => $assignment->posttest_quiz_id !== null,
+                'baseline_score' => $baseline,
+                'best_posttest_score' => $bestPosttest,
+                'learning_gain' => $gainAvailable ? $bestPosttest - $baseline : null,
+                'learning_gain_available' => $gainAvailable,
+                'overall_status' => $context['overall_status'],
+            ],
+            'attemptContext' => $context,
+            'actions' => [
+                'review_allowed' => $reviewAllowed,
+                'review_url' => $reviewAllowed ? route('user.training.quiz.review', $attempt) : null,
+                'module_url' => route('user.training.show', $assignment),
+                'training_url' => route('user.training.index'),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function assessmentContext(ModuleAssignment $assignment, Quiz $quiz, ?QuizAttempt $currentAttempt = null): array
+    {
+        $purpose = $this->quizPurpose($assignment, $quiz);
+        $terminalAttempts = $this->lifecycle->terminalAttempts($assignment, $quiz)
+            ->orderBy('submitted_at')
+            ->orderBy('id')
+            ->get();
+        $used = $terminalAttempts->count();
+        $currentAttemptIndex = $currentAttempt
+            ? $terminalAttempts->search(fn (QuizAttempt $candidate): bool => $candidate->id === $currentAttempt->id)
+            : false;
+        $maximum = $purpose === 'posttest' ? AssessmentLifecycle::POSTTEST_MAX_ATTEMPTS : 1;
+        $latest = $terminalAttempts->last();
+        $cooldownUntil = $purpose === 'posttest' && $latest && ! $latest->passed && $used < $maximum
+            ? $latest->submitted_at?->copy()->addHours(AssessmentLifecycle::POSTTEST_COOLDOWN_HOURS)
+            : null;
+        $passed = $purpose === 'posttest' && $terminalAttempts
+            ->contains(fn (QuizAttempt $candidate): bool => $candidate->status === 'submitted' && $candidate->passed === true);
+        $retryAllowed = $purpose === 'posttest'
+            && ! $passed
+            && $used < $maximum
+            && $assignment->content_completed_at !== null
+            && ! in_array($assignment->status, ['completed', 'cancelled'], true)
+            && (! $cooldownUntil || now()->greaterThanOrEqualTo($cooldownUntil));
+        $stage = $this->lifecycle->state($assignment)['stage'];
+        $bestPosttest = $purpose === 'posttest' ? $this->bestValidPosttestScore($assignment) : null;
+
+        return [
+            'attempt_number' => $currentAttemptIndex !== false ? $currentAttemptIndex + 1 : max(1, $used + 1),
+            'attempts_used' => $used,
+            'attempts_maximum' => $maximum,
+            'attempts_remaining' => $passed ? 0 : max(0, $maximum - $used),
+            'best_valid_posttest_score' => $bestPosttest,
+            'cooldown_until' => $cooldownUntil?->toIso8601String(),
+            'retry_allowed' => $retryAllowed,
+            'overall_status' => match (true) {
+                $assignment->status === 'completed' => 'completed',
+                $assignment->status === 'cancelled' => 'cancelled',
+                $stage === 'attempts_exhausted' => 'needs_remediation',
+                default => 'in_progress',
+            },
+        ];
+    }
+
+    private function bestValidPosttestScore(ModuleAssignment $assignment): ?int
+    {
+        $posttest = $this->lifecycle->quiz($assignment, 'posttest');
+        if (! $posttest || ! $this->lifecycle->terminalAttempts($assignment, $posttest)
+            ->where('status', 'submitted')->exists()) {
+            return null;
+        }
+
+        return $assignment->score;
+    }
+
+    private function canReview(ModuleAssignment $assignment, QuizAttempt $attempt): bool
+    {
+        if ($attempt->status === 'in_progress') {
+            return false;
+        }
+
+        if ($attempt->assessment_purpose === 'posttest') {
+            return $attempt->status === 'submitted' && $attempt->passed === true
+                || $this->lifecycle->terminalAttempts($assignment, $attempt->quiz)->count() >= AssessmentLifecycle::POSTTEST_MAX_ATTEMPTS;
+        }
+
+        $posttest = $this->lifecycle->quiz($assignment, 'posttest');
+        if (! $posttest) {
+            return $assignment->status === 'completed';
+        }
+
+        $posttestAttempts = $this->lifecycle->terminalAttempts($assignment, $posttest);
+
+        return (clone $posttestAttempts)->where('status', 'submitted')->where('passed', true)->exists()
+            || $posttestAttempts->count() >= AssessmentLifecycle::POSTTEST_MAX_ATTEMPTS;
     }
 
     private function resolveQuiz(Request $request, ModuleAssignment $assignment): ?Quiz
@@ -508,7 +633,7 @@ class ModuleQuizController extends Controller
         };
     }
 
-    private function ensureAttemptAccess(Request $request, QuizAttempt $attempt): void
+    private function ensureAttemptAccess(Request $request, QuizAttempt $attempt): ModuleAssignment
     {
         $user = $request->user();
 
@@ -519,16 +644,27 @@ class ModuleQuizController extends Controller
         $moduleId = $attempt->quiz->training_module_id;
         abort_unless($moduleId !== null, 403, 'Attempt tidak terhubung ke modul.');
 
-        $hasAssignment = $user->moduleAssignments()
+        $assignment = ModuleAssignment::query()
             ->whereKey($attempt->module_assignment_id)
             ->where('user_id', $user->id)
             ->where('tenant_id', $user->tenant_id)
             ->where('training_module_id', $moduleId)
-            ->exists();
+            ->first();
 
-        abort_unless($hasAssignment, 403, 'Anda tidak memiliki assignment untuk modul ini.');
+        if (! $assignment) {
+            abort(403, 'Anda tidak memiliki assignment untuk modul ini.');
+        }
+        $expectedQuizId = match ($attempt->assessment_purpose) {
+            'pretest' => $assignment->pretest_quiz_id,
+            'posttest' => $assignment->posttest_quiz_id,
+            default => null,
+        };
+        abort_unless($expectedQuizId === $attempt->quiz_id, 403, 'Attempt tidak sesuai binding assessment assignment.');
+        abort_unless($attempt->quiz->purpose === $attempt->assessment_purpose, 403, 'Purpose attempt tidak sesuai binding assessment.');
         abort_unless($user->tenant && app(TenantEntitlement::class)->hasModule($user->tenant, $moduleId), 403, 'Organisasi Anda belum mengaktifkan modul ini.');
         abort_unless(app(UserAccessManager::class)->hasModuleAccessById($user, $moduleId), 403, 'Akses modul dibatasi oleh admin.');
+
+        return $assignment;
     }
 
     private function ensureOwner(Request $request, ModuleAssignment $assignment): void
@@ -582,7 +718,7 @@ class ModuleQuizController extends Controller
             'quiz' => [
                 'id' => $quiz->id,
                 'title' => $quiz->title,
-                'passing_score' => $quiz->passing_score,
+                'passing_score' => $attempt->assessment_purpose === 'posttest' ? $quiz->passing_score : null,
             ],
             'questions' => $shuffledQuestions,
             'deadline_at' => $attempt->deadline_at?->toIso8601String(),
